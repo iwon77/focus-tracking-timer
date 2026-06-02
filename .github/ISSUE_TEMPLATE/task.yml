@@ -1,0 +1,92 @@
+name: Task
+description: Track setup, refactoring, documentation, testing, or infrastructure work.
+title: "[INFRA-chore] "
+labels:
+  - chore
+body:
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      description: Select the primary scope for this work.
+      options:
+        - FE
+        - BE
+        - FULLSTACK
+        - DOCS
+        - INFRA
+    validations:
+      required: true
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      description: Select the work type for the issue title.
+      options:
+        - chore
+        - docs
+        - test
+        - refactor
+        - design
+    validations:
+      required: true
+  - type: textarea
+    id: overview
+    attributes:
+      label: 개요
+      description: Summarize the purpose of this work.
+      placeholder: |
+        협업 자동 검증을 위해 GitHub Actions CI를 추가한다.
+    validations:
+      required: true
+  - type: textarea
+    id: requirements
+    attributes:
+      label: 요구사항
+      description: List the specific tasks or deliverables.
+      placeholder: |
+        - windows-latest 러너에서 restore/build/test를 수행한다.
+        - main push와 PR에서 자동 실행된다.
+    validations:
+      required: true
+  - type: textarea
+    id: decisions
+    attributes:
+      label: 결정사항
+      description: Record fixed approaches, policies, or exclusions.
+      placeholder: |
+        - UI 자동화 테스트는 이번 범위에서 제외한다.
+        - Release 구성으로 검증한다.
+    validations:
+      required: false
+  - type: textarea
+    id: done_criteria
+    attributes:
+      label: 완료 기준
+      description: Define the observable success criteria.
+      placeholder: |
+        - workflow 파일이 추가된다.
+        - PR 생성 시 CI가 자동 실행된다.
+    validations:
+      required: true
+  - type: textarea
+    id: excluded
+    attributes:
+      label: 제외
+      description: State what this task will not cover.
+      placeholder: |
+        - 배포 workflow
+        - release artifact 업로드
+    validations:
+      required: false
+  - type: textarea
+    id: validation_plan
+    attributes:
+      label: 검증 계획
+      description: List the build, test, and manual checks to run.
+      placeholder: |
+        - GitHub Actions workflow syntax 확인
+        - dotnet build FocusTrackingTimer.sln
+        - dotnet test FocusTrackingTimer.sln
+    validations:
+      required: true

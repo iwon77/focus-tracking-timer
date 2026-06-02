@@ -1,0 +1,112 @@
+name: Bug
+description: Report a bug, regression, or incorrect behavior.
+title: "[FULLSTACK-fix] "
+labels:
+  - bug
+body:
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      description: Select the primary scope for this work.
+      options:
+        - FE
+        - BE
+        - FULLSTACK
+        - DOCS
+        - INFRA
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        Use the title format `[scope-type] 제목`.
+        When exact reproduction steps are unclear, describe the problem context as concretely as possible.
+  - type: textarea
+    id: overview
+    attributes:
+      label: 개요
+      description: Summarize the issue in one or two sentences.
+      placeholder: |
+        포커스 전환 시 이전 앱 세션이 닫히지 않아 시간이 중복 누적된다.
+    validations:
+      required: true
+  - type: textarea
+    id: problem_context
+    attributes:
+      label: 문제 상황
+      description: Describe the screen, timing, input, or condition where the issue appears.
+      placeholder: |
+        여러 앱 사이를 빠르게 전환하면 1분 이내의 세션이 중복 저장된다.
+        특히 앱 최소화 직후 다른 창으로 전환할 때 자주 발생한다.
+    validations:
+      required: true
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: 기대 동작
+      description: Describe how the system should behave.
+      placeholder: |
+        포커스가 바뀌면 이전 세션은 즉시 종료되고, 새 앱 세션만 하나 생성되어야 한다.
+    validations:
+      required: true
+  - type: textarea
+    id: actual_behavior
+    attributes:
+      label: 실제 동작
+      description: Describe what currently happens instead.
+      placeholder: |
+        이전 세션이 열린 상태로 남아 다음 세션과 시간이 겹쳐 저장된다.
+    validations:
+      required: true
+  - type: textarea
+    id: reference_info
+    attributes:
+      label: 참고 정보
+      description: Add logs, error messages, screenshots, suspect files, or probable causes.
+      placeholder: |
+        - 로그: FocusChanged event duplicated within 300ms
+        - 의심 지점: focus event handler / session close timing
+    validations:
+      required: false
+  - type: textarea
+    id: decisions
+    attributes:
+      label: 결정사항
+      description: Record the chosen fix direction, policy, or exception handling.
+      placeholder: |
+        - 500ms 이내 중복 이벤트는 같은 전환으로 간주할지 검토한다.
+        - 세션 종료는 새 세션 시작보다 먼저 처리한다.
+    validations:
+      required: false
+  - type: textarea
+    id: done_criteria
+    attributes:
+      label: 완료 기준
+      description: Define the observable success criteria.
+      placeholder: |
+        - 동일 시나리오에서 세션 중복 저장이 재발하지 않는다.
+        - 관련 테스트가 추가되거나 기존 테스트가 통과한다.
+    validations:
+      required: true
+  - type: textarea
+    id: excluded
+    attributes:
+      label: 제외
+      description: State what this fix will not cover.
+      placeholder: |
+        - 통계 UI 리디자인
+        - 장기 집계 정책 변경
+    validations:
+      required: false
+  - type: textarea
+    id: validation_plan
+    attributes:
+      label: 검증 계획
+      description: List the build, test, and manual checks to run.
+      placeholder: |
+        - dotnet build FocusTrackingTimer.sln
+        - dotnet test FocusTrackingTimer.sln
+        - 앱 전환 수동 시나리오 재확인
+    validations:
+      required: true

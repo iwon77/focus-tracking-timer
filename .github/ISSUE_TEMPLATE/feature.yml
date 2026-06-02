@@ -1,0 +1,94 @@
+name: Feature
+description: Propose a new feature, flow, or structural addition.
+title: "[FULLSTACK-feat] "
+labels:
+  - enhancement
+body:
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      description: Select the primary scope for this work.
+      options:
+        - FE
+        - BE
+        - FULLSTACK
+        - DOCS
+        - INFRA
+    validations:
+      required: true
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      description: Select the work type for the issue title.
+      options:
+        - feat
+        - design
+        - refactor
+        - docs
+        - test
+        - chore
+    validations:
+      required: true
+  - type: textarea
+    id: overview
+    attributes:
+      label: 개요
+      description: Summarize the problem and the purpose of this work.
+      placeholder: |
+        프로젝트별 앱 매핑 기능이 없어 포커스 시간 집계 기준을 정의할 수 없다.
+        이번 작업에서는 프로젝트와 앱의 연결 구조를 추가한다.
+    validations:
+      required: true
+  - type: textarea
+    id: requirements
+    attributes:
+      label: 요구사항
+      description: Write only the implementation targets and required outcomes.
+      placeholder: |
+        - 프로젝트 엔티티를 추가한다.
+        - 추적 앱과 프로젝트를 연결할 수 있어야 한다.
+        - 연결 상태를 저장/조회할 수 있어야 한다.
+    validations:
+      required: true
+  - type: textarea
+    id: decisions
+    attributes:
+      label: 결정사항
+      description: Record fixed policies, chosen approaches, exception handling, and exclusions.
+      placeholder: |
+        - 프로젝트와 앱은 N:1 관계로 시작한다.
+        - 저장소 구현은 이번 이슈 범위에 포함하지 않는다.
+    validations:
+      required: false
+  - type: textarea
+    id: done_criteria
+    attributes:
+      label: 완료 기준
+      description: Define observable success criteria.
+      placeholder: |
+        - 프로젝트 생성/수정/삭제 모델이 추가된다.
+        - 앱-프로젝트 연결 로직이 테스트로 검증된다.
+    validations:
+      required: true
+  - type: textarea
+    id: excluded
+    attributes:
+      label: 제외
+      description: State what this issue will not cover.
+      placeholder: |
+        - 통계 화면 구현
+        - SQLite 영속화 연결
+    validations:
+      required: false
+  - type: textarea
+    id: validation_plan
+    attributes:
+      label: 검증 계획
+      description: List the build, test, and manual checks to run.
+      placeholder: |
+        - dotnet build FocusTrackingTimer.sln
+        - dotnet test FocusTrackingTimer.sln
+    validations:
+      required: true
