@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Writing Guide
+    url: https://github.com/iwon77/focus-tracking-timer/blob/main/README.md
+    about: Check the repository overview and writing conventions before opening an issue.

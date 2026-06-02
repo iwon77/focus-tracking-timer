@@ -1,0 +1,104 @@
+<Window x:Class="FocusTrackingTimer.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Focus Tracking Timer"
+        Width="960"
+        Height="640"
+        MinWidth="860"
+        MinHeight="560">
+    <Grid Background="#F5F7FA">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border Margin="24,24,24,16"
+                Padding="24"
+                Background="White"
+                CornerRadius="20">
+            <StackPanel>
+                <TextBlock FontSize="28"
+                           FontWeight="SemiBold"
+                           Foreground="#111827"
+                           Text="Focus Tracking Timer" />
+                <TextBlock Margin="0,8,0,0"
+                           Foreground="#4B5563"
+                           Text="Track focused apps locally and build project-level usage statistics." />
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="24,0,24,24">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.25*" />
+                <ColumnDefinition Width="0.9*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0"
+                    Margin="0,0,16,0"
+                    Padding="24"
+                    Background="White"
+                    CornerRadius="20">
+                <StackPanel>
+                    <TextBlock FontSize="20"
+                               FontWeight="SemiBold"
+                               Foreground="#111827"
+                               Text="Bootstrap Status" />
+                    <TextBlock Margin="0,16,0,0"
+                               FontSize="14"
+                               Foreground="#4B5563"
+                               TextWrapping="Wrap"
+                               Text="The repository is ready for the next implementation steps: focus tracking, project mapping, local persistence, and statistics views." />
+                    <Border Margin="0,20,0,0"
+                            Padding="16"
+                            Background="#F9FAFB"
+                            CornerRadius="12">
+                        <StackPanel>
+                            <TextBlock FontWeight="SemiBold"
+                                       Foreground="#111827"
+                                       Text="Suggested next steps" />
+                            <TextBlock Margin="0,10,0,0"
+                                       Foreground="#374151"
+                                       Text="1. Add a Win32 focus change tracking service" />
+                            <TextBlock Margin="0,6,0,0"
+                                       Foreground="#374151"
+                                       Text="2. Design project and app mapping models" />
+                            <TextBlock Margin="0,6,0,0"
+                                       Foreground="#374151"
+                                       Text="3. Add SQLite persistence for session logs" />
+                            <TextBlock Margin="0,6,0,0"
+                                       Foreground="#374151"
+                                       Text="4. Build daily, weekly, and monthly statistics views" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1"
+                    Padding="24"
+                    Background="#0F172A"
+                    CornerRadius="20">
+                <StackPanel>
+                    <TextBlock FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="White"
+                               Text="Current Stack" />
+                    <TextBlock Margin="0,16,0,0"
+                               Foreground="#CBD5E1"
+                               Text=".NET 10 / WPF" />
+                    <TextBlock Margin="0,8,0,0"
+                               Foreground="#CBD5E1"
+                               Text="Core library + xUnit tests" />
+                    <TextBlock Margin="0,8,0,0"
+                               Foreground="#CBD5E1"
+                               Text="GitHub remote connected" />
+                    <TextBlock Margin="0,8,0,0"
+                               Foreground="#CBD5E1"
+                               Text="VS Code tasks configured" />
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>
