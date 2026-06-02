@@ -1,0 +1,7 @@
+{
+  "dotnet.defaultSolution": "FocusTrackingTimer.sln",
+  "files.exclude": {
+    "**/bin": true,
+    "**/obj": true
+  }
+}
