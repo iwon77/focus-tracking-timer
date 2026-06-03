@@ -1,0 +1,64 @@
+<Window x:Class="FocusTrackingTimer.App.NameEditDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="이름 수정"
+        Width="360"
+        Height="180"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        Background="#F7F7F4">
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock FontSize="16"
+                   FontWeight="SemiBold"
+                   Text="{Binding TitleText}" />
+
+        <Grid Grid.Row="1" Margin="0,16,0,0" VerticalAlignment="Top">
+            <TextBox Padding="10,8"
+                     BorderBrush="#D5D5D0"
+                     BorderThickness="1.5"
+                     Text="{Binding NameValue, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBlock Margin="12,9,0,0"
+                       Foreground="#8B8B84"
+                       IsHitTestVisible="False"
+                       Text="{Binding PlaceholderText}">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding NameValue}" Value="">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </Grid>
+
+        <StackPanel Grid.Row="2"
+                    HorizontalAlignment="Right"
+                    Orientation="Horizontal">
+            <Button Width="78"
+                    Height="34"
+                    Margin="0,0,8,0"
+                    Background="#FFFFFF"
+                    BorderBrush="#D5D5D0"
+                    BorderThickness="1.5"
+                    Click="CancelButton_Click"
+                    Content="취소" />
+            <Button Width="78"
+                    Height="34"
+                    Background="#1F1F1F"
+                    BorderBrush="#1F1F1F"
+                    BorderThickness="1.5"
+                    Click="SaveButton_Click"
+                    Content="저장"
+                    Foreground="#FFFFFF" />
+        </StackPanel>
+    </Grid>
+</Window>
