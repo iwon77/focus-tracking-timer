@@ -21,4 +21,29 @@ public sealed record TrackedApplication
     public string ProcessName { get; }
 
     public string DisplayName { get; }
+
+    public static TrackedApplication FromExecutableInput(string executableInput, string? displayName = null)
+    {
+        if (string.IsNullOrWhiteSpace(executableInput))
+        {
+            throw new ArgumentException("Executable input is required.", nameof(executableInput));
+        }
+
+        string normalizedInput = executableInput.Trim();
+        string fileName = Path.GetFileName(normalizedInput);
+        string normalizedProcessName = Path.GetFileNameWithoutExtension(fileName);
+
+        if (string.IsNullOrWhiteSpace(normalizedProcessName))
+        {
+            normalizedProcessName = normalizedInput.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
+                ? normalizedInput[..^4]
+                : normalizedInput;
+        }
+
+        string resolvedDisplayName = string.IsNullOrWhiteSpace(displayName)
+            ? normalizedProcessName
+            : displayName.Trim();
+
+        return new TrackedApplication(normalizedProcessName, resolvedDisplayName);
+    }
 }
