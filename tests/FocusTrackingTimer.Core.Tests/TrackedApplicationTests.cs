@@ -18,4 +18,19 @@ public class TrackedApplicationTests
     {
         Assert.Throws<ArgumentException>(() => new TrackedApplication(" ", "Chrome"));
     }
+
+    [Fact]
+    public void ConstructorThrowsWhenDisplayNameIsMissing()
+    {
+        Assert.Throws<ArgumentException>(() => new TrackedApplication("chrome", " "));
+    }
+
+    [Fact]
+    public void FromExecutableInputNormalizesExecutableName()
+    {
+        TrackedApplication trackedApplication = TrackedApplication.FromExecutableInput(@"C:\Apps\Unity.exe");
+
+        Assert.Equal("Unity", trackedApplication.ProcessName);
+        Assert.Equal("Unity", trackedApplication.DisplayName);
+    }
 }
