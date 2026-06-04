@@ -30,6 +30,7 @@ public sealed record RecordFilterOption(
     string Label);
 
 public sealed record CalendarDayRow(
+    DateOnly? Date,
     string DayText,
     string DurationText,
     bool HasDuration,

@@ -139,7 +139,7 @@ public sealed class ProjectTimerEngine
             session.Project.Name,
             session.StartedAt,
             endedAt,
-            session.GetProgramSummaries());
+            session.GetFocusSegments());
 
         _completedRecords.Add(record);
         _activeSession = null;
@@ -315,13 +315,10 @@ public sealed class ProjectTimerEngine
 
         foreach (ProjectTimerRecord record in GetRecordsForSummary(projectId, observedAt))
         {
-            DateOnly recordDate = DateOnly.FromDateTime(record.StartedAt.LocalDateTime.Date);
-            if (recordDate < fromDate || recordDate > toDate)
+            foreach ((DateOnly date, TimeSpan duration) in SplitFocusDurationsByDate(record.FocusSegments, fromDate, toDate))
             {
-                continue;
+                totalsByDate[date] = totalsByDate.GetValueOrDefault(date, TimeSpan.Zero) + duration;
             }
-
-            totalsByDate[recordDate] = totalsByDate.GetValueOrDefault(recordDate, TimeSpan.Zero) + record.TotalDuration;
         }
 
         List<DailyDurationSummary> summaries = [];
@@ -331,6 +328,43 @@ public sealed class ProjectTimerEngine
         }
 
         return summaries;
+    }
+
+    public IReadOnlyList<DailyProjectDurationSummary> GetDailyProjectDurationSummaries(
+        DateOnly fromDate,
+        DateOnly toDate,
+        DateTimeOffset observedAt,
+        Guid? projectId = null)
+    {
+        if (toDate < fromDate)
+        {
+            throw new ArgumentOutOfRangeException(nameof(toDate), "The end date must be on or after the start date.");
+        }
+
+        Dictionary<(DateOnly Date, Guid ProjectId), TimeSpan> totals = [];
+        Dictionary<Guid, string> projectNames = [];
+
+        foreach (ProjectTimerRecord record in GetRecordsForSummary(projectId, observedAt))
+        {
+            projectNames[record.ProjectId] = record.ProjectName;
+
+            foreach ((DateOnly date, TimeSpan duration) in SplitFocusDurationsByDate(record.FocusSegments, fromDate, toDate))
+            {
+                (DateOnly Date, Guid ProjectId) key = (date, record.ProjectId);
+                totals[key] = totals.GetValueOrDefault(key, TimeSpan.Zero) + duration;
+            }
+        }
+
+        return [.. totals
+            .Where(static pair => pair.Value > TimeSpan.Zero)
+            .OrderBy(static pair => pair.Key.Date)
+            .ThenByDescending(static pair => pair.Value)
+            .ThenBy(pair => projectNames[pair.Key.ProjectId], StringComparer.CurrentCultureIgnoreCase)
+            .Select(pair => new DailyProjectDurationSummary(
+                pair.Key.Date,
+                pair.Key.ProjectId,
+                projectNames[pair.Key.ProjectId],
+                pair.Value))];
     }
 
     public TimeSpan GetTodayDuration(DateOnly today, DateTimeOffset observedAt, Guid? projectId = null)
@@ -350,7 +384,7 @@ public sealed class ProjectTimerEngine
                 _activeSession.Project.Name,
                 _activeSession.StartedAt,
                 observedAt,
-                _activeSession.GetProgramSummaries(observedAt)));
+                _activeSession.GetFocusSegments(observedAt)));
         }
 
         return projectId.HasValue
@@ -379,6 +413,36 @@ public sealed class ProjectTimerEngine
     private static TimeSpan SumProgramFocusDuration(IEnumerable<ProgramFocusSummary> summaries)
     {
         return summaries.Aggregate(TimeSpan.Zero, static (total, summary) => total + summary.FocusDuration);
+    }
+
+    private static IEnumerable<(DateOnly Date, TimeSpan Duration)> SplitFocusDurationsByDate(
+        IEnumerable<ProgramFocusSegment> focusSegments,
+        DateOnly fromDate,
+        DateOnly toDate)
+    {
+        foreach (ProgramFocusSegment segment in focusSegments)
+        {
+            if (segment.FocusDuration <= TimeSpan.Zero)
+            {
+                continue;
+            }
+
+            DateTimeOffset current = segment.StartedAt;
+            while (current < segment.EndedAt)
+            {
+                DateOnly currentDate = DateOnly.FromDateTime(current.LocalDateTime.Date);
+                DateTime nextMidnightLocal = current.LocalDateTime.Date.AddDays(1);
+                DateTimeOffset nextBoundary = new(nextMidnightLocal, TimeZoneInfo.Local.GetUtcOffset(nextMidnightLocal));
+                DateTimeOffset sliceEnd = nextBoundary < segment.EndedAt ? nextBoundary : segment.EndedAt;
+
+                if (currentDate >= fromDate && currentDate <= toDate)
+                {
+                    yield return (currentDate, sliceEnd - current);
+                }
+
+                current = sliceEnd;
+            }
+        }
     }
 
     private ProjectDefinition GetRequiredProject(Guid projectId)
@@ -412,7 +476,7 @@ public sealed class ProjectTimerEngine
 
     private sealed class ActiveProjectSession
     {
-        private readonly Dictionary<string, TimeSpan> _completedFocusDurations = new(StringComparer.OrdinalIgnoreCase);
+        private readonly List<ProgramFocusSegment> _completedFocusSegments = [];
 
         public ActiveProjectSession(ProjectDefinition project, DateTimeOffset startedAt)
         {
@@ -443,13 +507,30 @@ public sealed class ProjectTimerEngine
 
             if (observedAt > FocusStartedAt.Value)
             {
-                _completedFocusDurations[FocusedProgram.ProcessName] =
-                    _completedFocusDurations.GetValueOrDefault(FocusedProgram.ProcessName, TimeSpan.Zero) +
-                    (observedAt - FocusStartedAt.Value);
+                _completedFocusSegments.Add(new ProgramFocusSegment(FocusedProgram, FocusStartedAt.Value, observedAt));
             }
 
             FocusedProgram = null;
             FocusStartedAt = null;
+        }
+
+        public List<ProgramFocusSegment> GetFocusSegments()
+        {
+            return [.. _completedFocusSegments];
+        }
+
+        public List<ProgramFocusSegment> GetFocusSegments(DateTimeOffset observedAt)
+        {
+            List<ProgramFocusSegment> segments = [.. _completedFocusSegments];
+
+            if (FocusedProgram is not null &&
+                FocusStartedAt is not null &&
+                observedAt >= FocusStartedAt.Value)
+            {
+                segments.Add(new ProgramFocusSegment(FocusedProgram, FocusStartedAt.Value, observedAt));
+            }
+
+            return segments;
         }
 
         public IReadOnlyList<ProgramFocusSummary> GetProgramSummaries()
@@ -459,25 +540,14 @@ public sealed class ProjectTimerEngine
 
         public IReadOnlyList<ProgramFocusSummary> GetProgramSummaries(DateTimeOffset observedAt)
         {
-            Dictionary<string, TimeSpan> durations = new(_completedFocusDurations, StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, ProgramFocusSummary> summaries = new(StringComparer.OrdinalIgnoreCase);
 
-            if (FocusedProgram is not null &&
-                FocusStartedAt is not null &&
-                observedAt >= FocusStartedAt.Value)
+            foreach (ProgramFocusSegment segment in GetFocusSegments(observedAt))
             {
-                durations[FocusedProgram.ProcessName] =
-                    durations.GetValueOrDefault(FocusedProgram.ProcessName, TimeSpan.Zero) +
-                    (observedAt - FocusStartedAt.Value);
+                AddOrUpdateSummary(summaries, segment.Program, segment.FocusDuration);
             }
 
-            return [.. durations
-                .Select(pair =>
-                {
-                    TrackedApplication program = Project.FindProgram(pair.Key)
-                        ?? new TrackedApplication(pair.Key, pair.Key);
-
-                    return new ProgramFocusSummary(program, pair.Value);
-                })
+            return [.. summaries.Values
                 .OrderByDescending(static summary => summary.FocusDuration)
                 .ThenBy(static summary => summary.Program.DisplayName, StringComparer.CurrentCultureIgnoreCase)];
         }

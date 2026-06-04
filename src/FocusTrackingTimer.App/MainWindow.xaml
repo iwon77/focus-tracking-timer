@@ -361,7 +361,58 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
                             </Grid.RowDefinitions>
-                            <TextBlock FontSize="20" FontWeight="SemiBold" Text="캘린더형 요약" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock FontSize="20" FontWeight="SemiBold" Text="캘린더형 요약" />
+                                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                    <Button Width="54"
+                                            Height="32"
+                                            Margin="0,0,8,0"
+                                            Background="#FFFFFF"
+                                            BorderBrush="#D7D7D0"
+                                            BorderThickness="1.5"
+                                            Click="PreviousRecordYearButton_Click"
+                                            Content="-1Y" />
+                                    <Button Width="32"
+                                            Height="32"
+                                            Background="#FFFFFF"
+                                            BorderBrush="#D7D7D0"
+                                            BorderThickness="1.5"
+                                            Click="PreviousRecordMonthButton_Click"
+                                            Content="‹" />
+                                    <Button Width="58"
+                                            Height="32"
+                                            Margin="8,0,0,0"
+                                            Background="#FFFFFF"
+                                            BorderBrush="#D7D7D0"
+                                            BorderThickness="1.5"
+                                            Click="CurrentRecordMonthButton_Click"
+                                            Content="이번 달" />
+                                    <TextBlock Margin="12,0"
+                                               VerticalAlignment="Center"
+                                               FontSize="16"
+                                               FontWeight="SemiBold"
+                                               Text="{Binding DisplayedRecordMonthText}" />
+                                    <Button Width="32"
+                                            Height="32"
+                                            Background="#FFFFFF"
+                                            BorderBrush="#D7D7D0"
+                                            BorderThickness="1.5"
+                                            Click="NextRecordMonthButton_Click"
+                                            Content="›" />
+                                    <Button Width="54"
+                                            Height="32"
+                                            Margin="8,0,0,0"
+                                            Background="#FFFFFF"
+                                            BorderBrush="#D7D7D0"
+                                            BorderThickness="1.5"
+                                            Click="NextRecordYearButton_Click"
+                                            Content="+1Y" />
+                                </StackPanel>
+                            </Grid>
                             <ItemsControl Grid.Row="1" Margin="0,18,0,0" ItemsSource="{Binding CalendarRows}">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
@@ -370,7 +421,14 @@
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Margin="4" Padding="8" Background="#FFFFFF" BorderBrush="#D5D5D5" BorderThickness="1.5" CornerRadius="8">
+                                        <Border Margin="4"
+                                                Padding="8"
+                                                Background="#FFFFFF"
+                                                BorderBrush="#D5D5D5"
+                                                BorderThickness="1.5"
+                                                CornerRadius="8"
+                                                MouseEnter="CalendarDayBorder_MouseEnter"
+                                                MouseLeave="CalendarDayBorder_MouseLeave">
                                             <StackPanel HorizontalAlignment="Center">
                                                 <TextBlock HorizontalAlignment="Center" FontWeight="SemiBold" Text="{Binding DayText}" />
                                                 <Ellipse Width="18" Height="18" Margin="0,10,0,8">
@@ -392,6 +450,39 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
+                            <Border Grid.RowSpan="2"
+                                    Width="240"
+                                    Margin="0,52,0,0"
+                                    Padding="16"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Top"
+                                    Background="#1F1F1F"
+                                    BorderBrush="#1F1F1F"
+                                    BorderThickness="1.5"
+                                    CornerRadius="12"
+                                    Panel.ZIndex="5"
+                                    Visibility="{Binding CalendarHoverCardVisibility}">
+                                <StackPanel>
+                                    <TextBlock FontSize="16"
+                                               FontWeight="SemiBold"
+                                               Foreground="#FFFFFF"
+                                               Text="{Binding CalendarHoverTitle}" />
+                                    <ScrollViewer Height="132"
+                                                  Margin="0,10,0,0"
+                                                  VerticalScrollBarVisibility="Auto">
+                                        <ItemsControl ItemsSource="{Binding CalendarHoverLines}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Margin="0,0,0,8"
+                                                               Foreground="#E5E7EB"
+                                                               Text="{Binding}"
+                                                               TextWrapping="Wrap" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </StackPanel>
+                            </Border>
                         </Grid>
                     </Border>
 
