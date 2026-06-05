@@ -9,7 +9,7 @@ public sealed class ProjectTimerRecord
         string projectName,
         DateTimeOffset startedAt,
         DateTimeOffset endedAt,
-        IEnumerable<ProgramFocusSummary> programSummaries)
+        IEnumerable<ProgramFocusSegment> focusSegments)
     {
         if (projectId == Guid.Empty)
         {
@@ -26,13 +26,16 @@ public sealed class ProjectTimerRecord
             throw new ArgumentOutOfRangeException(nameof(endedAt), "End time must be later than start time.");
         }
 
-        ArgumentNullException.ThrowIfNull(programSummaries);
+        ArgumentNullException.ThrowIfNull(focusSegments);
+
+        List<ProgramFocusSegment> materializedSegments = focusSegments.ToList();
 
         ProjectId = projectId;
         ProjectName = projectName.Trim();
         StartedAt = startedAt;
         EndedAt = endedAt;
-        ProgramSummaries = new ReadOnlyCollection<ProgramFocusSummary>(programSummaries.ToList());
+        FocusSegments = new ReadOnlyCollection<ProgramFocusSegment>(materializedSegments);
+        ProgramSummaries = new ReadOnlyCollection<ProgramFocusSummary>(BuildProgramSummaries(materializedSegments));
     }
 
     public Guid ProjectId { get; }
@@ -45,9 +48,34 @@ public sealed class ProjectTimerRecord
 
     public TimeSpan WallClockDuration => EndedAt - StartedAt;
 
+    public ReadOnlyCollection<ProgramFocusSegment> FocusSegments { get; }
+
     public TimeSpan TotalDuration => ProgramSummaries.Aggregate(
         TimeSpan.Zero,
         static (total, summary) => total + summary.FocusDuration);
 
     public ReadOnlyCollection<ProgramFocusSummary> ProgramSummaries { get; }
+
+    private static List<ProgramFocusSummary> BuildProgramSummaries(IEnumerable<ProgramFocusSegment> focusSegments)
+    {
+        Dictionary<string, ProgramFocusSummary> summaries = new(StringComparer.OrdinalIgnoreCase);
+
+        foreach (ProgramFocusSegment segment in focusSegments)
+        {
+            if (summaries.TryGetValue(segment.Program.ProcessName, out ProgramFocusSummary? current))
+            {
+                summaries[segment.Program.ProcessName] = current with
+                {
+                    FocusDuration = current.FocusDuration + segment.FocusDuration
+                };
+                continue;
+            }
+
+            summaries[segment.Program.ProcessName] = new ProgramFocusSummary(segment.Program, segment.FocusDuration);
+        }
+
+        return [.. summaries.Values
+            .OrderByDescending(static summary => summary.FocusDuration)
+            .ThenBy(static summary => summary.Program.DisplayName, StringComparer.CurrentCultureIgnoreCase)];
+    }
 }

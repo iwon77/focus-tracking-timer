@@ -223,7 +223,7 @@ public class ProjectTimerEngineTests
     }
 
     [Fact]
-    public void ProjectCanBeRemovedWithItsRecords()
+    public void ProjectRemovalHidesProjectButKeepsCompletedRecords()
     {
         ProjectTimerEngine engine = new();
         Assert.True(engine.TryAddProject("Work", out ProjectDefinition project));
@@ -236,7 +236,30 @@ public class ProjectTimerEngineTests
         Assert.True(engine.TryRemoveProject(project.Id));
 
         Assert.Empty(engine.Projects);
-        Assert.Empty(engine.CompletedRecords);
+        ProjectTimerRecord remainingRecord = Assert.Single(engine.CompletedRecords);
+        Assert.Equal(project.Id, remainingRecord.ProjectId);
+        Assert.Equal("Work", remainingRecord.ProjectName);
+    }
+
+    [Fact]
+    public void DeletedProjectsRemainInStateSnapshotButAreHiddenFromActiveProjectList()
+    {
+        ProjectTimerEngine engine = new();
+        Assert.True(engine.TryAddProject("Work", out ProjectDefinition project));
+        Assert.True(engine.TryRegisterProgram(project.Id, new TrackedApplication("code", "Code")));
+        DateTimeOffset startedAt = new(2026, 6, 3, 9, 0, 0, TimeSpan.Zero);
+
+        engine.StartProject(project.Id, startedAt);
+        engine.ObserveFocusedProgram("code", startedAt);
+        engine.StopProject(startedAt.AddMinutes(10));
+        Assert.True(engine.TryRemoveProject(project.Id));
+
+        ProjectTimerEngineState snapshot = engine.CreateStateSnapshot();
+
+        Assert.Empty(engine.Projects);
+        ProjectState deletedProject = Assert.Single(snapshot.Projects);
+        Assert.True(deletedProject.IsDeleted);
+        Assert.Single(snapshot.CompletedRecords);
     }
 
     [Fact]
@@ -257,30 +280,70 @@ public class ProjectTimerEngineTests
     }
 
     [Fact]
-    public void GetDailyDurationSummariesAggregatesFocusDurationsByStartedDate()
+    public void GetDailyDurationSummariesSplitFocusDurationsAcrossDateBoundaries()
     {
         ProjectTimerEngine engine = new();
         Assert.True(engine.TryAddProject("Work", out ProjectDefinition project));
         Assert.True(engine.TryRegisterProgram(project.Id, new TrackedApplication("code", "Code")));
-        DateTimeOffset dayOne = new(2026, 6, 1, 9, 0, 0, TimeSpan.Zero);
-        DateTimeOffset dayTwo = new(2026, 6, 2, 10, 0, 0, TimeSpan.Zero);
+        TimeSpan localOffset = TimeZoneInfo.Local.GetUtcOffset(new DateTime(2026, 6, 1, 23, 50, 0));
+        DateTimeOffset startedAt = new(2026, 6, 1, 23, 50, 0, localOffset);
+        DateTimeOffset endedAt = new(2026, 6, 2, 0, 20, 0, localOffset);
 
-        engine.StartProject(project.Id, dayOne);
-        engine.ObserveFocusedProgram("code", dayOne);
-        engine.StopProject(dayOne.AddMinutes(30));
-        engine.StartProject(project.Id, dayTwo);
-        engine.ObserveFocusedProgram("code", dayTwo);
-        engine.StopProject(dayTwo.AddMinutes(20));
+        engine.StartProject(project.Id, startedAt);
+        engine.ObserveFocusedProgram("code", startedAt);
+        engine.StopProject(endedAt);
 
         IReadOnlyList<DailyDurationSummary> summaries = engine.GetDailyDurationSummaries(
             new DateOnly(2026, 6, 1),
             new DateOnly(2026, 6, 3),
-            dayTwo.AddMinutes(20));
+            endedAt);
 
         Assert.Collection(
             summaries,
-            summary => Assert.Equal(TimeSpan.FromMinutes(30), summary.TotalDuration),
+            summary => Assert.Equal(TimeSpan.FromMinutes(10), summary.TotalDuration),
             summary => Assert.Equal(TimeSpan.FromMinutes(20), summary.TotalDuration),
             summary => Assert.Equal(TimeSpan.Zero, summary.TotalDuration));
+    }
+
+    [Fact]
+    public void GetDailyProjectDurationSummariesReturnPerProjectBreakdownForTheSameDay()
+    {
+        ProjectTimerEngine engine = new();
+        Assert.True(engine.TryAddProject("Work", out ProjectDefinition work));
+        Assert.True(engine.TryAddProject("Study", out ProjectDefinition study));
+        Assert.True(engine.TryRegisterProgram(work.Id, new TrackedApplication("code", "Code")));
+        Assert.True(engine.TryRegisterProgram(study.Id, new TrackedApplication("word", "Word")));
+        TimeSpan localOffset = TimeZoneInfo.Local.GetUtcOffset(new DateTime(2026, 6, 3, 18, 0, 0));
+        DateTimeOffset observedAt = new(2026, 6, 3, 18, 0, 0, localOffset);
+
+        engine.StartProject(work.Id, observedAt.AddHours(-4));
+        engine.ObserveFocusedProgram("code", observedAt.AddHours(-4));
+        engine.StopProject(observedAt.AddHours(-3).AddMinutes(-30));
+
+        engine.StartProject(study.Id, observedAt.AddHours(-2));
+        engine.ObserveFocusedProgram("word", observedAt.AddHours(-2));
+        engine.StopProject(observedAt.AddHours(-1).AddMinutes(-40));
+
+        IReadOnlyList<DailyProjectDurationSummary> summaries = engine.GetDailyProjectDurationSummaries(
+            new DateOnly(2026, 6, 3),
+            new DateOnly(2026, 6, 3),
+            observedAt);
+
+        Assert.Collection(
+            summaries,
+            summary =>
+            {
+                Assert.Equal(new DateOnly(2026, 6, 3), summary.Date);
+                Assert.Equal(work.Id, summary.ProjectId);
+                Assert.Equal("Work", summary.ProjectName);
+                Assert.Equal(TimeSpan.FromMinutes(30), summary.TotalDuration);
+            },
+            summary =>
+            {
+                Assert.Equal(new DateOnly(2026, 6, 3), summary.Date);
+                Assert.Equal(study.Id, summary.ProjectId);
+                Assert.Equal("Study", summary.ProjectName);
+                Assert.Equal(TimeSpan.FromMinutes(20), summary.TotalDuration);
+            });
     }
 }
