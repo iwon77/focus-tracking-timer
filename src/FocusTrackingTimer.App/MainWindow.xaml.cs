@@ -1,11 +1,13 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
+using FocusTrackingTimer.Core.Persistence;
 using FocusTrackingTimer.Core.Tracking;
 
 namespace FocusTrackingTimer.App;
@@ -25,6 +27,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private static readonly Brush RecordUnselectedButtonBackground = new SolidColorBrush(Color.FromRgb(255, 255, 255));
 
     private readonly ProjectTimerEngine _engine = new();
+    private readonly SqliteProjectTimerStore _store = new(BuildStorePath());
     private readonly DispatcherTimer _uiTimer;
     private readonly int _currentProcessId = Environment.ProcessId;
 
@@ -298,7 +301,28 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
-        RefreshAll(DateTimeOffset.Now, "프로젝트를 추가하고 등록 프로그램을 관리해보세요.");
+        string startupMessage = "프로젝트를 추가하고 등록 프로그램을 관리해보세요.";
+
+        try
+        {
+            _engine.ReplaceState(_store.LoadState());
+
+            if (_engine.Projects.Count > 0 || _engine.CompletedRecords.Count > 0)
+            {
+                startupMessage = "저장된 프로젝트와 완료 기록을 불러왔습니다.";
+            }
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(
+                this,
+                $"저장된 데이터를 불러오지 못했습니다.{Environment.NewLine}{exception.Message}",
+                "SQLite 로드 오류",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+
+        RefreshAll(DateTimeOffset.Now, startupMessage);
         _uiTimer.Start();
     }
 
@@ -310,6 +334,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             _engine.StopProject(DateTimeOffset.Now);
         }
+
+        PersistState();
     }
 
     private void UiTimer_Tick(object? sender, EventArgs e)
@@ -378,6 +404,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         _selectedProject = project;
+        PersistState();
         RefreshAll(DateTimeOffset.Now, $"'{project.Name}' 프로젝트를 추가했습니다.");
     }
 
@@ -408,6 +435,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         _selectedProject = _engine.Projects.FirstOrDefault();
+        PersistState();
         RefreshAll(DateTimeOffset.Now, "프로젝트를 삭제했습니다.");
     }
 
@@ -443,6 +471,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         _selectedProject = _engine.Projects.FirstOrDefault(item => item.Id == projectId);
+        PersistState();
         RefreshAll(DateTimeOffset.Now, "프로젝트 이름을 변경했습니다.");
     }
 
@@ -483,6 +512,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (_engine.ActiveProjectId == _selectedProject.Id)
         {
             ProjectTimerRecord record = _engine.StopProject(now);
+            PersistState();
             RefreshAll(now, $"'{record.ProjectName}' 타이머를 종료했습니다.");
         }
     }
@@ -495,11 +525,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        ProgramManagerWindow manager = new(_engine, _selectedProject, _currentProcessId)
+        ProgramManagerWindow manager = new(_engine, _selectedProject, _currentProcessId, PersistState)
         {
             Owner = this
         };
         _ = manager.ShowDialog();
+        PersistState();
         RefreshAll(DateTimeOffset.Now, "등록 프로그램 변경사항을 반영했습니다.");
     }
 
@@ -538,6 +569,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         _ = _engine.TryUpdateProgram(_selectedProject.Id, row.ProcessName, new TrackedApplication(row.ProcessName, displayName));
+        PersistState();
 
         if (_engine.IsRunning && _engine.ActiveProjectId == _selectedProject.Id)
         {
@@ -575,6 +607,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         _ = _engine.TryRemoveProgram(_selectedProject.Id, row.ProcessName);
+        PersistState();
         RefreshAll(now, "등록 프로그램을 삭제했습니다.");
     }
 
@@ -980,6 +1013,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         return new DateOnly(today.Year, today.Month, 1);
     }
 
+    private static string BuildStorePath()
+    {
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "FocusTrackingTimer",
+            "focus-tracking-timer.db");
+    }
+
     private string GetNextDefaultProjectName()
     {
         int index = _engine.Projects.Count + 1;
@@ -1048,6 +1089,23 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         foreach (string line in lines)
         {
             CalendarHoverLines.Add(line);
+        }
+    }
+
+    private void PersistState()
+    {
+        try
+        {
+            _store.SaveState(_engine.CreateStateSnapshot());
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(
+                this,
+                $"데이터를 저장하지 못했습니다.{Environment.NewLine}{exception.Message}",
+                "SQLite 저장 오류",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
         }
     }
 

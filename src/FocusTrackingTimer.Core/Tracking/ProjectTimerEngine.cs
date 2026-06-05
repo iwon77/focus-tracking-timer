@@ -20,14 +20,64 @@ public sealed class ProjectTimerEngine
 
     public string? ActiveFocusedProcessName => _activeSession?.FocusedProgram?.ProcessName;
 
-    public ReadOnlyCollection<ProjectDefinition> Projects => _projects.AsReadOnly();
+    public ReadOnlyCollection<ProjectDefinition> Projects => new(_projects
+        .Where(static project => !project.IsDeleted)
+        .ToList());
 
     public ReadOnlyCollection<ProjectTimerRecord> CompletedRecords => _completedRecords.AsReadOnly();
+
+    public ProjectTimerEngineState CreateStateSnapshot()
+    {
+        return new ProjectTimerEngineState(
+            _projects.Select(project => new ProjectState(
+                project.Id,
+                project.Name,
+                project.RegisteredProgramInfos,
+                project.IsDeleted)),
+            _completedRecords);
+    }
+
+    public void ReplaceState(ProjectTimerEngineState state)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+
+        if (_activeSession is not null)
+        {
+            throw new InvalidOperationException("Cannot replace state while a project session is running.");
+        }
+
+        _projects.Clear();
+        _completedRecords.Clear();
+
+        HashSet<Guid> projectIds = [];
+        foreach (ProjectState projectState in state.Projects)
+        {
+            if (!projectIds.Add(projectState.Id))
+            {
+                throw new InvalidOperationException("Project ids must be unique.");
+            }
+
+            ProjectDefinition project = new(projectState.Id, projectState.Name, projectState.IsDeleted);
+            project.ReplaceRegisteredPrograms(projectState.RegisteredPrograms);
+            _projects.Add(project);
+        }
+
+        foreach (ProjectTimerRecord record in state.CompletedRecords)
+        {
+            if (!projectIds.Contains(record.ProjectId))
+            {
+                throw new InvalidOperationException("Completed records must reference an existing project.");
+            }
+
+            _completedRecords.Add(record);
+        }
+    }
 
     public bool TryAddProject(string name, out ProjectDefinition project)
     {
         string normalizedName = NormalizeRequiredValue(name, nameof(name));
         ProjectDefinition? existingProject = _projects.FirstOrDefault(item =>
+            !item.IsDeleted &&
             string.Equals(item.Name, normalizedName, StringComparison.OrdinalIgnoreCase));
 
         if (existingProject is not null)
@@ -48,6 +98,7 @@ public sealed class ProjectTimerEngine
 
         if (_projects.Any(item =>
                 item.Id != projectId &&
+                !item.IsDeleted &&
                 string.Equals(item.Name, normalizedName, StringComparison.OrdinalIgnoreCase)))
         {
             return false;
@@ -64,14 +115,13 @@ public sealed class ProjectTimerEngine
             return false;
         }
 
-        ProjectDefinition? project = _projects.FirstOrDefault(item => item.Id == projectId);
+        ProjectDefinition? project = _projects.FirstOrDefault(item => item.Id == projectId && !item.IsDeleted);
         if (project is null)
         {
             return false;
         }
 
-        _ = _projects.Remove(project);
-        _completedRecords.RemoveAll(record => record.ProjectId == projectId);
+        project.MarkDeleted();
         return true;
     }
 
@@ -447,7 +497,7 @@ public sealed class ProjectTimerEngine
 
     private ProjectDefinition GetRequiredProject(Guid projectId)
     {
-        ProjectDefinition? project = _projects.FirstOrDefault(item => item.Id == projectId);
+        ProjectDefinition? project = _projects.FirstOrDefault(item => item.Id == projectId && !item.IsDeleted);
         return project ?? throw new InvalidOperationException("The selected project does not exist.");
     }
 

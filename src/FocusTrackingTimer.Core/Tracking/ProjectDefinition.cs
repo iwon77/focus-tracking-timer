@@ -6,7 +6,7 @@ public sealed class ProjectDefinition
 {
     private readonly List<RegisteredProgramInfo> _registeredPrograms = [];
 
-    public ProjectDefinition(Guid id, string name)
+    public ProjectDefinition(Guid id, string name, bool isDeleted = false)
     {
         if (id == Guid.Empty)
         {
@@ -20,11 +20,14 @@ public sealed class ProjectDefinition
 
         Id = id;
         Name = name.Trim();
+        IsDeleted = isDeleted;
     }
 
     public Guid Id { get; }
 
     public string Name { get; private set; }
+
+    public bool IsDeleted { get; private set; }
 
     public ReadOnlyCollection<TrackedApplication> RegisteredPrograms => new(
         _registeredPrograms.Select(item => item.Program).ToList());
@@ -49,6 +52,26 @@ public sealed class ProjectDefinition
         return true;
     }
 
+    public void ReplaceRegisteredPrograms(IEnumerable<RegisteredProgramInfo> registeredPrograms)
+    {
+        ArgumentNullException.ThrowIfNull(registeredPrograms);
+
+        Dictionary<string, RegisteredProgramInfo> registrationsByProcessName = new(StringComparer.OrdinalIgnoreCase);
+        foreach (RegisteredProgramInfo registration in registeredPrograms)
+        {
+            ArgumentNullException.ThrowIfNull(registration);
+            ArgumentNullException.ThrowIfNull(registration.Program);
+
+            if (!registrationsByProcessName.TryAdd(registration.Program.ProcessName, registration))
+            {
+                throw new InvalidOperationException("Registered program process names must be unique.");
+            }
+        }
+
+        _registeredPrograms.Clear();
+        _registeredPrograms.AddRange(registrationsByProcessName.Values);
+    }
+
     public void Rename(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -57,6 +80,11 @@ public sealed class ProjectDefinition
         }
 
         Name = name.Trim();
+    }
+
+    public void MarkDeleted()
+    {
+        IsDeleted = true;
     }
 
     public bool TryUpdateProgram(string processName, TrackedApplication updatedApplication)

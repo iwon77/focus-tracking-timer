@@ -223,7 +223,7 @@ public class ProjectTimerEngineTests
     }
 
     [Fact]
-    public void ProjectCanBeRemovedWithItsRecords()
+    public void ProjectRemovalHidesProjectButKeepsCompletedRecords()
     {
         ProjectTimerEngine engine = new();
         Assert.True(engine.TryAddProject("Work", out ProjectDefinition project));
@@ -236,7 +236,30 @@ public class ProjectTimerEngineTests
         Assert.True(engine.TryRemoveProject(project.Id));
 
         Assert.Empty(engine.Projects);
-        Assert.Empty(engine.CompletedRecords);
+        ProjectTimerRecord remainingRecord = Assert.Single(engine.CompletedRecords);
+        Assert.Equal(project.Id, remainingRecord.ProjectId);
+        Assert.Equal("Work", remainingRecord.ProjectName);
+    }
+
+    [Fact]
+    public void DeletedProjectsRemainInStateSnapshotButAreHiddenFromActiveProjectList()
+    {
+        ProjectTimerEngine engine = new();
+        Assert.True(engine.TryAddProject("Work", out ProjectDefinition project));
+        Assert.True(engine.TryRegisterProgram(project.Id, new TrackedApplication("code", "Code")));
+        DateTimeOffset startedAt = new(2026, 6, 3, 9, 0, 0, TimeSpan.Zero);
+
+        engine.StartProject(project.Id, startedAt);
+        engine.ObserveFocusedProgram("code", startedAt);
+        engine.StopProject(startedAt.AddMinutes(10));
+        Assert.True(engine.TryRemoveProject(project.Id));
+
+        ProjectTimerEngineState snapshot = engine.CreateStateSnapshot();
+
+        Assert.Empty(engine.Projects);
+        ProjectState deletedProject = Assert.Single(snapshot.Projects);
+        Assert.True(deletedProject.IsDeleted);
+        Assert.Single(snapshot.CompletedRecords);
     }
 
     [Fact]

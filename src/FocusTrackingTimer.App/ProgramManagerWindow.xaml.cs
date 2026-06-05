@@ -12,16 +12,22 @@ namespace FocusTrackingTimer.App;
 public partial class ProgramManagerWindow : Window, INotifyPropertyChanged
 {
     private readonly ProjectTimerEngine _engine;
+    private readonly Action? _onProgramsChanged;
     private readonly Guid _projectId;
     private readonly int _currentProcessId;
     private readonly DispatcherTimer _refreshTimer;
     private string _manualExecutableInput = string.Empty;
 
-    public ProgramManagerWindow(ProjectTimerEngine engine, ProjectDefinition project, int currentProcessId)
+    public ProgramManagerWindow(
+        ProjectTimerEngine engine,
+        ProjectDefinition project,
+        int currentProcessId,
+        Action? onProgramsChanged = null)
     {
         InitializeComponent();
         DataContext = this;
         _engine = engine;
+        _onProgramsChanged = onProgramsChanged;
         _projectId = project.Id;
         _currentProcessId = currentProcessId;
         TitleText = $"{project.Name} 프로그램 추가";
@@ -90,6 +96,7 @@ public partial class ProgramManagerWindow : Window, INotifyPropertyChanged
             }
 
             ManualExecutableInput = string.Empty;
+            _onProgramsChanged?.Invoke();
             RefreshRows();
         }
         catch (ArgumentException)
@@ -112,6 +119,7 @@ public partial class ProgramManagerWindow : Window, INotifyPropertyChanged
             MessageBox.Show(this, "이미 등록된 프로그램입니다.", "프로그램 추가");
         }
 
+        _onProgramsChanged?.Invoke();
         RefreshRows();
     }
 
