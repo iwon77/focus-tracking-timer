@@ -42,7 +42,8 @@
 
         <Border Style="{StaticResource Panel}" Padding="8" Background="#FFFFFF">
             <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
-                <Button Width="120"
+                <Button x:Name="ProjectTabButtonControl"
+                        Width="120"
                         Margin="0,0,10,0"
                         Padding="10,6"
                         Background="{Binding ProjectTabBackground}"
@@ -51,14 +52,25 @@
                         Click="ProjectTabButton_Click"
                         Content="프로젝트"
                         Foreground="{Binding ProjectTabForeground}" />
-                <Button Width="120"
+                <Button x:Name="CalendarTabButtonControl"
+                        Width="120"
                         Padding="10,6"
                         Background="{Binding RecordTabBackground}"
                         BorderBrush="#2F2F2F"
                         BorderThickness="2"
-                        Click="RecordTabButton_Click"
+                        Click="CalendarTabButton_Click"
                         Content="기록"
                         Foreground="{Binding RecordTabForeground}" />
+                <Button x:Name="WeeklyTabButtonControl"
+                        Width="120"
+                        Margin="10,0,0,0"
+                        Padding="10,6"
+                        Background="{Binding WeeklyTabBackground}"
+                        BorderBrush="#2F2F2F"
+                        BorderThickness="2"
+                        Click="WeeklyTabButton_Click"
+                        Content="주간 기록"
+                        Foreground="{Binding WeeklyTabForeground}" />
             </StackPanel>
         </Border>
 
@@ -309,19 +321,23 @@
 
                 <Border Grid.Column="0" Style="{StaticResource Panel}" Padding="16">
                     <StackPanel>
-                        <Button Height="52"
+                        <Button x:Name="CalendarRecordButtonControl"
+                                Height="52"
                                 Margin="0,0,0,12"
                                 Background="{Binding CalendarButtonBackground}"
                                 BorderBrush="#2F2F2F"
                                 BorderThickness="2"
                                 Click="CalendarRecordButton_Click"
+                                Visibility="Collapsed"
                                 Content="캘린더" />
-                        <Button Height="52"
+                        <Button x:Name="RecentRecordButtonControl"
+                                Height="52"
                                 Margin="0,0,0,12"
                                 Background="{Binding RecentButtonBackground}"
                                 BorderBrush="#2F2F2F"
                                 BorderThickness="2"
                                 Click="RecentRecordButton_Click"
+                                Visibility="Collapsed"
                                 Content="최근 기록" />
                         <TextBlock Margin="0,18,0,8" FontWeight="SemiBold" Text="프로젝트 필터" />
                         <ComboBox Padding="8"
@@ -514,6 +530,18 @@
                         </Grid>
                     </Border>
                 </Grid>
+            </Grid>
+
+            <Grid Visibility="{Binding WeeklyViewVisibility}">
+                <Border Style="{StaticResource Panel}" Padding="20">
+                    <StackPanel>
+                        <TextBlock FontSize="20" FontWeight="SemiBold" Text="주간 기록" />
+                        <TextBlock Margin="0,10,0,0"
+                                   Foreground="#5B5B5B"
+                                   Text="이번 작업에서는 상단 탭 구조만 먼저 정리했습니다. 주간 기록의 상세 목록과 세부 구성은 다음 단계에서 추가합니다."
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
             </Grid>
         </Grid>
     </Grid>
