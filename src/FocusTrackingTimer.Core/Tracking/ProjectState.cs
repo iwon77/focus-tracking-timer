@@ -4,7 +4,14 @@ namespace FocusTrackingTimer.Core.Tracking;
 
 public sealed class ProjectState
 {
-    public ProjectState(Guid id, string name, IEnumerable<RegisteredProgramInfo> registeredPrograms, bool isDeleted = false)
+    public ProjectState(
+        Guid id,
+        string name,
+        IEnumerable<RegisteredProgramInfo> registeredPrograms,
+        bool isDeleted = false,
+        DateTimeOffset? createdAt = null,
+        bool isPinned = false,
+        string memo = "")
     {
         if (id == Guid.Empty)
         {
@@ -21,6 +28,9 @@ public sealed class ProjectState
         Id = id;
         Name = name.Trim();
         IsDeleted = isDeleted;
+        CreatedAt = createdAt ?? DateTimeOffset.Now;
+        IsPinned = isPinned;
+        Memo = memo ?? string.Empty;
         RegisteredPrograms = new ReadOnlyCollection<RegisteredProgramInfo>(registeredPrograms.ToList());
     }
 
@@ -29,6 +39,12 @@ public sealed class ProjectState
     public string Name { get; }
 
     public bool IsDeleted { get; }
+
+    public DateTimeOffset CreatedAt { get; }
+
+    public bool IsPinned { get; }
+
+    public string Memo { get; }
 
     public ReadOnlyCollection<RegisteredProgramInfo> RegisteredPrograms { get; }
 }

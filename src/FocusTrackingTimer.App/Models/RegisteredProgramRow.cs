@@ -7,4 +7,12 @@ public sealed record RegisteredProgramRow(
     string RegisteredAtText = "",
     string InitialDisplayName = "",
     string StatusBrush = "#A7A7A0",
-    string StatusText = "실행 중 아님");
+    string StatusText = "실행 중 아님",
+    bool IsPinned = false,
+    string PinButtonText = "고정",
+    bool ShowsPinnedDivider = false)
+{
+    public string PinIconVisibility => IsPinned ? "Visible" : "Collapsed";
+
+    public string PinnedDividerVisibility => ShowsPinnedDivider ? "Visible" : "Collapsed";
+}

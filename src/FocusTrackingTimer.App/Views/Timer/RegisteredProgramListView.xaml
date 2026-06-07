@@ -1,0 +1,135 @@
+<UserControl x:Class="FocusTrackingTimer.App.Views.Timer.RegisteredProgramListView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Border Style="{StaticResource Panel}" Padding="20">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="110" />
+                    <ColumnDefinition Width="100" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Margin="0,0,16,0">
+                    <TextBlock FontSize="20" FontWeight="SemiBold" Text="등록 프로그램" />
+                    <TextBlock Margin="0,8,0,0"
+                               Foreground="#5B5B5B"
+                               Text="프로젝트 탭에서는 실행 중인 세션의 상태만 확인합니다. 종료된 프로그램별 시간은 기록 탭에서 확인합니다."
+                               TextWrapping="Wrap" />
+                </StackPanel>
+                <ComboBox Grid.Column="1"
+                          Margin="0,2,10,0"
+                          Height="34"
+                          Padding="8,4"
+                          BorderBrush="#D7D7D0"
+                          BorderThickness="1.5"
+                          DisplayMemberPath="Label"
+                          ItemsSource="{Binding ProgramSortOptions}"
+                          SelectedItem="{Binding SelectedProgramSortOption, Mode=TwoWay}"
+                          SelectionChanged="ProgramSort_SelectionChanged" />
+                <Button Grid.Column="2"
+                        Height="34"
+                        Margin="0,2,0,0"
+                        Padding="10,0"
+                        Background="#1F1F1F"
+                        BorderBrush="#1F1F1F"
+                        BorderThickness="1.5"
+                        Click="OpenProgramManagerButton_Click"
+                        Content="프로그램 추가"
+                        Foreground="#FFFFFF" />
+            </Grid>
+
+            <ScrollViewer Grid.Row="1" Margin="0,18,0,0" VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding RegisteredProgramRows}">
+                    <ItemsControl.ItemContainerStyle>
+                        <Style TargetType="ContentPresenter">
+                            <Setter Property="HorizontalAlignment" Value="Stretch" />
+                        </Style>
+                    </ItemsControl.ItemContainerStyle>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <Border Width="96"
+                                        Height="1"
+                                        Margin="14,0,0,10"
+                                        HorizontalAlignment="Left"
+                                        Background="#CFCFC8"
+                                        Visibility="{Binding PinnedDividerVisibility}" />
+                                <Border MinHeight="62"
+                                        HorizontalAlignment="Stretch"
+                                        Margin="0,0,0,8"
+                                        Padding="14,7"
+                                        BorderBrush="#2F2F2F"
+                                        BorderThickness="1.5"
+                                        CornerRadius="8">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="#FFFFFF" />
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background" Value="#EDEDEA" />
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <DockPanel LastChildFill="True">
+                                                <Button DockPanel.Dock="Right"
+                                                        Style="{StaticResource HoverActionButton}"
+                                                        Click="DeleteProgramButton_Click"
+                                                        Content="×" />
+                                                <Button DockPanel.Dock="Right"
+                                                        Style="{StaticResource HoverActionButton}"
+                                                        Click="EditProgramButton_Click"
+                                                        Content="✎" />
+                                                <Button DockPanel.Dock="Right"
+                                                        Style="{StaticResource HoverActionButton}"
+                                                        Width="48"
+                                                        Click="FocusRegisteredProgramButton_Click"
+                                                        Content="보기" />
+                                                <Button DockPanel.Dock="Right"
+                                                        Style="{StaticResource HoverActionButton}"
+                                                        Width="48"
+                                                        Click="PinProgramButton_Click"
+                                                        Content="{Binding PinButtonText}" />
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Ellipse Width="12"
+                                                             Height="12"
+                                                             Margin="0,0,10,0"
+                                                             VerticalAlignment="Center"
+                                                             Fill="{Binding StatusBrush}"
+                                                             ToolTip="{Binding StatusText}" />
+                                                    <TextBlock FontSize="15" FontWeight="SemiBold" Text="{Binding DisplayName}" />
+                                                    <TextBlock Margin="8,0,0,0"
+                                                               VerticalAlignment="Center"
+                                                               Foreground="#5B5B5B"
+                                                               Text="⌖"
+                                                               Visibility="{Binding PinIconVisibility}" />
+                                                </StackPanel>
+                                            </DockPanel>
+                                            <TextBlock Margin="0,3,0,0" Foreground="#5B5B5B" Text="{Binding ProcessName}" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="1"
+                                                   VerticalAlignment="Center"
+                                                   FontSize="18"
+                                                   FontWeight="SemiBold"
+                                                   Text="{Binding FocusDurationText}" />
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Grid>
+    </Border>
+</UserControl>

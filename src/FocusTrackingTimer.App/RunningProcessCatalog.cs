@@ -1,10 +1,33 @@
 using System.Diagnostics;
+using System.IO;
+using System.Runtime.InteropServices;
 using FocusTrackingTimer.Core.Tracking;
 
 namespace FocusTrackingTimer.App;
 
 internal static class RunningProcessCatalog
 {
+    private const int ExtendedWindowStyleIndex = -20;
+    private const long ExtendedToolWindowStyle = 0x00000080L;
+    private const long ExtendedNoActivateStyle = 0x08000000L;
+
+    private static readonly HashSet<string> ExcludedVisibleProcessNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "ApplicationFrameHost",
+        "explorer",
+        "GameBar",
+        "GameBarFTServer",
+        "NVIDIA Overlay",
+        "NVIDIA Share",
+        "nvcontainer",
+        "RuntimeBroker",
+        "SearchHost",
+        "ShellExperienceHost",
+        "StartMenuExperienceHost",
+        "SystemSettings",
+        "TextInputHost"
+    };
+
     public static IReadOnlyDictionary<string, ProcessRunState> GetProcessRunStates(int currentProcessId)
     {
         Dictionary<string, ProcessRunState> processStates = new(StringComparer.OrdinalIgnoreCase);
@@ -19,7 +42,7 @@ internal static class RunningProcessCatalog
                 }
 
                 string processName = process.ProcessName;
-                bool hasFocusableWindow = process.MainWindowHandle != IntPtr.Zero;
+                bool hasFocusableWindow = IsFocusTrackingCandidate(process);
 
                 if (processStates.TryGetValue(processName, out ProcessRunState? current))
                 {
@@ -54,16 +77,14 @@ internal static class RunningProcessCatalog
         {
             try
             {
-                if (process.Id == currentProcessId || process.MainWindowHandle == IntPtr.Zero)
+                if (process.Id == currentProcessId ||
+                    !IsFocusTrackingCandidate(process) ||
+                    string.IsNullOrWhiteSpace(process.MainWindowTitle))
                 {
                     continue;
                 }
 
-                string displayName = string.IsNullOrWhiteSpace(process.MainWindowTitle)
-                    ? process.ProcessName
-                    : process.MainWindowTitle.Trim();
-
-                TrackedApplication application = new(process.ProcessName, displayName);
+                TrackedApplication application = new(process.ProcessName, process.MainWindowTitle.Trim());
 
                 _ = applications.TryAdd(application.ProcessName, application);
             }
@@ -81,6 +102,89 @@ internal static class RunningProcessCatalog
         return [.. applications.Values
             .OrderBy(static item => item.DisplayName, StringComparer.CurrentCultureIgnoreCase)];
     }
+
+    private static string? GetExecutablePath(Process process)
+    {
+        try
+        {
+            return process.MainModule?.FileName;
+        }
+        catch (Exception exception) when (
+            exception is InvalidOperationException or NotSupportedException or System.ComponentModel.Win32Exception)
+        {
+            return null;
+        }
+    }
+
+    private static bool IsFocusTrackingCandidate(Process process)
+    {
+        if (ExcludedVisibleProcessNames.Contains(process.ProcessName) ||
+            !HasMeasurableFocusWindow(process))
+        {
+            return false;
+        }
+
+        string? executablePath = GetExecutablePath(process);
+
+        return !IsSystemProcessPath(executablePath);
+    }
+
+    private static bool IsSystemProcessPath(string? executablePath)
+    {
+        if (string.IsNullOrWhiteSpace(executablePath))
+        {
+            return false;
+        }
+
+        string fullPath = Path.GetFullPath(executablePath);
+        string windowsPath = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+
+        return IsPathUnder(fullPath, windowsPath);
+    }
+
+    private static bool IsPathUnder(string path, string parentPath)
+    {
+        if (string.IsNullOrWhiteSpace(parentPath))
+        {
+            return false;
+        }
+
+        string normalizedPath = Path.GetFullPath(path)
+            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        string normalizedParentPath = Path.GetFullPath(parentPath)
+            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+        return normalizedPath.Equals(normalizedParentPath, StringComparison.OrdinalIgnoreCase) ||
+            normalizedPath.StartsWith(
+                normalizedParentPath + Path.DirectorySeparatorChar,
+                StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool HasMeasurableFocusWindow(Process process)
+    {
+        IntPtr windowHandle = process.MainWindowHandle;
+
+        if (windowHandle == IntPtr.Zero ||
+            !IsWindowVisible(windowHandle) ||
+            !IsWindowEnabled(windowHandle))
+        {
+            return false;
+        }
+
+        long extendedStyle = GetWindowLongPtr(windowHandle, ExtendedWindowStyleIndex).ToInt64();
+
+        return (extendedStyle & ExtendedToolWindowStyle) == 0 &&
+            (extendedStyle & ExtendedNoActivateStyle) == 0;
+    }
+
+    [DllImport("user32.dll")]
+    private static extern bool IsWindowVisible(IntPtr windowHandle);
+
+    [DllImport("user32.dll")]
+    private static extern bool IsWindowEnabled(IntPtr windowHandle);
+
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
+    private static extern IntPtr GetWindowLongPtr(IntPtr windowHandle, int index);
 }
 
 internal sealed record ProcessRunState(
