@@ -4,5 +4,7 @@ public enum ProgramSortMode
 {
     MostUsed,
     Registered,
+    RegisteredDescending,
+    DisplayName,
     Manual
 }

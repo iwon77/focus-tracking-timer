@@ -68,6 +68,45 @@ public class ProjectTimerEngineTests
     }
 
     [Fact]
+    public void PauseStopsCurrentRunAndWallClockDurationsUntilResume()
+    {
+        ProjectTimerEngine engine = new();
+        Assert.True(engine.TryAddProject("Study", out ProjectDefinition project));
+        Assert.True(engine.TryRegisterProgram(project.Id, new TrackedApplication("code", "Code")));
+        DateTimeOffset startedAt = new(2026, 6, 3, 9, 0, 0, TimeSpan.Zero);
+
+        engine.StartProject(project.Id, startedAt);
+        engine.ObserveFocusedProgram("code", startedAt);
+        engine.PauseProject(startedAt.AddMinutes(10));
+
+        Assert.Equal(TimeSpan.FromMinutes(10), engine.GetCurrentRunDuration(project.Id, startedAt.AddMinutes(30)));
+        Assert.Equal(TimeSpan.FromMinutes(10), engine.GetCurrentWallClockDuration(project.Id, startedAt.AddMinutes(30)));
+
+        engine.ResumeProject(startedAt.AddMinutes(30));
+        engine.ObserveFocusedProgram("code", startedAt.AddMinutes(30));
+
+        Assert.Equal(TimeSpan.FromMinutes(15), engine.GetCurrentRunDuration(project.Id, startedAt.AddMinutes(35)));
+        Assert.Equal(TimeSpan.FromMinutes(15), engine.GetCurrentWallClockDuration(project.Id, startedAt.AddMinutes(35)));
+    }
+
+    [Fact]
+    public void ProjectAndProgramPinStateCanBeUpdated()
+    {
+        ProjectTimerEngine engine = new();
+        Assert.True(engine.TryAddProject("Work", out ProjectDefinition work));
+        Assert.True(engine.TryAddProject("Study", out ProjectDefinition study));
+        Assert.True(engine.TryRegisterProgram(study.Id, new TrackedApplication("code", "Code")));
+
+        Assert.True(engine.TrySetProjectPinned(study.Id, true));
+        Assert.True(engine.TrySetProgramPinned(study.Id, "code", true));
+
+        Assert.Equal(study.Id, engine.Projects[0].Id);
+        Assert.True(engine.Projects[0].IsPinned);
+        Assert.True(engine.GetRegisteredProgramInfos(study.Id)[0].IsPinned);
+        Assert.False(work.IsPinned);
+    }
+
+    [Fact]
     public void GetProjectTotalDurationIncludesCompletedAndActiveFocusDurations()
     {
         ProjectTimerEngine engine = new();

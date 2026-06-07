@@ -52,8 +52,10 @@
         </Border>
 
         <Grid Grid.Row="1" Margin="0,16,0,0">
-            <views:TimerView DataContext="{Binding Timer}" Visibility="{Binding Menu.TimerViewVisibility}" />
-            <views:DailyRecordView DataContext="{Binding DailyRecord}" Visibility="{Binding Menu.DailyRecordViewVisibility}" />
+            <views:TimerView DataContext="{Binding Timer}"
+                             Visibility="{Binding DataContext.Menu.TimerViewVisibility, RelativeSource={RelativeSource AncestorType=Window}}" />
+            <views:DailyRecordView DataContext="{Binding DailyRecord}"
+                                   Visibility="{Binding DataContext.Menu.DailyRecordViewVisibility, RelativeSource={RelativeSource AncestorType=Window}}" />
             <views:WeeklyRecordView Visibility="{Binding Menu.WeeklyRecordViewVisibility}" />
         </Grid>
     </Grid>

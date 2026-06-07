@@ -10,16 +10,22 @@ public sealed class TimerViewModel : ObservableObject
     private string _activeSessionPeriodText = "작업 시작/종료 시간이 여기에 표시됩니다.";
     private string _timerStatusText = "시작 버튼을 누르면 등록 프로그램 포커스 시간만 기록합니다.";
     private string _focusStatusText = "등록 프로그램 포커스 상태가 여기에 표시됩니다.";
+    private string _runningProjectNameText = "-";
+    private string _runningProjectWallClockText = "-";
+    private string _runningProjectFocusText = "-";
     private string _activeProjectWallClockText = "00:00:00";
     private string _activeProjectElapsedText = "00:00:00";
     private string _selectedProjectTodayText = "00:00:00";
     private bool _isTimerActionEnabled;
+    private bool _isTimerStopEnabled;
     private bool _isProjectEditEnabled;
     private bool _isProjectDeleteEnabled;
+    private bool _isProjectMemoEnabled;
     private string _timerActionButtonText = "시작";
     private Brush _timerActionButtonBackground;
     private Brush _timerActionButtonForeground;
     private ProjectSidebarRow? _selectedProjectRow;
+    private ProjectSortOption? _selectedProjectSortOption;
     private ProgramSortOption? _selectedProgramSortOption;
 
     public TimerViewModel(Brush timerActionButtonBackground, Brush timerActionButtonForeground)
@@ -29,6 +35,8 @@ public sealed class TimerViewModel : ObservableObject
     }
 
     public ObservableCollection<ProjectSidebarRow> ProjectRows { get; } = [];
+
+    public ObservableCollection<ProjectSortOption> ProjectSortOptions { get; } = [];
 
     public ObservableCollection<RegisteredProgramRow> RegisteredProgramRows { get; } = [];
 
@@ -58,6 +66,24 @@ public sealed class TimerViewModel : ObservableObject
         set => SetProperty(ref _focusStatusText, value);
     }
 
+    public string RunningProjectNameText
+    {
+        get => _runningProjectNameText;
+        set => SetProperty(ref _runningProjectNameText, value);
+    }
+
+    public string RunningProjectWallClockText
+    {
+        get => _runningProjectWallClockText;
+        set => SetProperty(ref _runningProjectWallClockText, value);
+    }
+
+    public string RunningProjectFocusText
+    {
+        get => _runningProjectFocusText;
+        set => SetProperty(ref _runningProjectFocusText, value);
+    }
+
     public string ActiveProjectElapsedText
     {
         get => _activeProjectElapsedText;
@@ -82,6 +108,12 @@ public sealed class TimerViewModel : ObservableObject
         set => SetProperty(ref _isTimerActionEnabled, value);
     }
 
+    public bool IsTimerStopEnabled
+    {
+        get => _isTimerStopEnabled;
+        set => SetProperty(ref _isTimerStopEnabled, value);
+    }
+
     public bool IsProjectEditEnabled
     {
         get => _isProjectEditEnabled;
@@ -92,6 +124,12 @@ public sealed class TimerViewModel : ObservableObject
     {
         get => _isProjectDeleteEnabled;
         set => SetProperty(ref _isProjectDeleteEnabled, value);
+    }
+
+    public bool IsProjectMemoEnabled
+    {
+        get => _isProjectMemoEnabled;
+        set => SetProperty(ref _isProjectMemoEnabled, value);
     }
 
     public string TimerActionButtonText
@@ -116,6 +154,12 @@ public sealed class TimerViewModel : ObservableObject
     {
         get => _selectedProjectRow;
         set => SetProperty(ref _selectedProjectRow, value);
+    }
+
+    public ProjectSortOption? SelectedProjectSortOption
+    {
+        get => _selectedProjectSortOption;
+        set => SetProperty(ref _selectedProjectSortOption, value);
     }
 
     public ProgramSortOption? SelectedProgramSortOption

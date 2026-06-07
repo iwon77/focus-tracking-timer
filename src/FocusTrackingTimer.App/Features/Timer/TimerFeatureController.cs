@@ -63,6 +63,58 @@ internal sealed class TimerFeatureController
         _refreshAll(DateTimeOffset.Now, $"'{project.Name}' 프로젝트를 추가했습니다.");
     }
 
+    public void ToggleProjectPin(ProjectSidebarRow? row)
+    {
+        if (row is null)
+        {
+            return;
+        }
+
+        ToggleProjectPin(row.ProjectId);
+    }
+
+    private void ToggleProjectPin(Guid projectId)
+    {
+        ProjectDefinition? project = _engine.Projects.FirstOrDefault(item => item.Id == projectId);
+        if (project is null)
+        {
+            return;
+        }
+
+        bool isPinned = !project.IsPinned;
+        if (!_engine.TrySetProjectPinned(project.Id, isPinned))
+        {
+            return;
+        }
+
+        SelectedProject = _engine.Projects.FirstOrDefault(item => item.Id == project.Id);
+        _persistState();
+        _refreshAll(DateTimeOffset.Now, isPinned ? "프로젝트를 고정했습니다." : "프로젝트 고정을 해제했습니다.");
+    }
+
+    public void EditSelectedProjectMemo()
+    {
+        if (SelectedProject is null)
+        {
+            return;
+        }
+
+        ProjectMemoDialog dialog = new(SelectedProject.Name, SelectedProject.CreatedAt, SelectedProject.Memo)
+        {
+            Owner = _owner
+        };
+
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        _engine.UpdateProjectMemo(SelectedProject.Id, dialog.MemoText);
+        SelectedProject = _engine.Projects.FirstOrDefault(item => item.Id == SelectedProject.Id);
+        _persistState();
+        _refreshAll(DateTimeOffset.Now, "프로젝트 메모를 저장했습니다.");
+    }
+
     public void DeleteSelectedProject()
     {
         if (SelectedProject is null)
@@ -119,6 +171,12 @@ internal sealed class TimerFeatureController
             return;
         }
 
+        if (newName.Length > ProjectDefinition.MaxNameLength)
+        {
+            MessageBox.Show(_owner, $"프로젝트 이름은 {ProjectDefinition.MaxNameLength}자 이하로 입력해주세요.", "프로젝트 이름 수정");
+            return;
+        }
+
         if (!_engine.TryRenameProject(projectId, newName))
         {
             MessageBox.Show(_owner, "이미 사용 중인 프로젝트 이름입니다.", "프로젝트 이름 수정");
@@ -147,7 +205,25 @@ internal sealed class TimerFeatureController
         RefreshSelectedProjectArea(DateTimeOffset.Now, "선택한 프로젝트를 표시합니다.");
     }
 
-    public void ToggleTimer()
+    public void SelectActiveProject()
+    {
+        if (!_engine.ActiveProjectId.HasValue)
+        {
+            return;
+        }
+
+        ProjectDefinition? project = _engine.Projects.FirstOrDefault(item => item.Id == _engine.ActiveProjectId.Value);
+        if (project is null)
+        {
+            return;
+        }
+
+        SelectedProject = project;
+        _viewModel.SelectedProjectRow = _viewModel.ProjectRows.FirstOrDefault(item => item.ProjectId == project.Id);
+        RefreshSelectedProjectArea(DateTimeOffset.Now, "실행 중인 프로젝트를 표시합니다.");
+    }
+
+    public void ToggleTimerOrPause()
     {
         if (SelectedProject is null)
         {
@@ -166,10 +242,31 @@ internal sealed class TimerFeatureController
 
         if (_engine.ActiveProjectId == SelectedProject.Id)
         {
-            ProjectTimerRecord record = _engine.StopProject(now);
-            _persistState();
-            _refreshAll(now, $"'{record.ProjectName}' 타이머를 종료했습니다.");
+            if (_engine.IsPaused)
+            {
+                _engine.ResumeProject(now);
+                _refreshAll(now, $"'{SelectedProject.Name}' 타이머를 재개했습니다.");
+                return;
+            }
+
+            _engine.PauseProject(now);
+            _refreshAll(now, $"'{SelectedProject.Name}' 타이머를 일시정지했습니다.");
         }
+    }
+
+    public void StopTimer()
+    {
+        if (SelectedProject is null ||
+            !_engine.IsRunning ||
+            _engine.ActiveProjectId != SelectedProject.Id)
+        {
+            return;
+        }
+
+        DateTimeOffset now = DateTimeOffset.Now;
+        ProjectTimerRecord record = _engine.StopProject(now);
+        _persistState();
+        _refreshAll(now, $"'{record.ProjectName}' 타이머를 종료했습니다.");
     }
 
     public void OpenProgramManager()
@@ -264,6 +361,36 @@ internal sealed class TimerFeatureController
         _refreshAll(now, "등록 프로그램을 삭제했습니다.");
     }
 
+    public void ToggleProgramPin(RegisteredProgramRow? row)
+    {
+        if (SelectedProject is null || row is null)
+        {
+            return;
+        }
+
+        bool isPinned = !row.IsPinned;
+        if (!_engine.TrySetProgramPinned(SelectedProject.Id, row.ProcessName, isPinned))
+        {
+            return;
+        }
+
+        _persistState();
+        _refreshAll(DateTimeOffset.Now, isPinned ? "등록 프로그램을 고정했습니다." : "등록 프로그램 고정을 해제했습니다.");
+    }
+
+    public void FocusRegisteredProgram(RegisteredProgramRow? row)
+    {
+        if (row is null)
+        {
+            return;
+        }
+
+        if (!WindowFocusService.TryFocusProcessMainWindow(row.ProcessName))
+        {
+            MessageBox.Show(_owner, "프로그램 창을 앞으로 가져오지 못했습니다.", "프로그램 보기");
+        }
+    }
+
     public string RefreshFocusTracking(DateTimeOffset observedAt)
     {
         if (!_engine.IsRunning)
@@ -271,9 +398,14 @@ internal sealed class TimerFeatureController
             return "타이머 대기 중입니다. 시작 후 등록 프로그램이 포커스된 시간만 기록합니다.";
         }
 
+        if (_engine.IsPaused)
+        {
+            return "타이머가 일시정지 중입니다.";
+        }
+
         FocusObservation observation = ForegroundWindowTracker.GetCurrentFocusedApplication(_currentProcessId);
         IReadOnlyDictionary<string, ProcessRunState> processStates = RunningProcessCatalog.GetProcessRunStates(_currentProcessId);
-        string? focusableProcessName = GetFocusableObservedProcessName(observation.Application, processStates);
+        string? focusableProcessName = TimerProgramFocusStatus.GetFocusableObservedProcessName(observation.Application, processStates);
         _engine.ObserveFocusedProgram(focusableProcessName, observedAt);
 
         if (observation.Application is null)
@@ -294,19 +426,33 @@ internal sealed class TimerFeatureController
     public void RefreshProjectSidebar(DateTimeOffset observedAt)
     {
         Guid? selectedProjectId = SelectedProject?.Id;
+        ProjectDefinition? activeProject = _engine.ActiveProjectId.HasValue
+            ? _engine.Projects.FirstOrDefault(item => item.Id == _engine.ActiveProjectId.Value)
+            : null;
+
+        if (activeProject is null)
+        {
+            _viewModel.RunningProjectNameText = "-";
+            _viewModel.RunningProjectWallClockText = "-";
+            _viewModel.RunningProjectFocusText = "-";
+        }
+        else
+        {
+            _viewModel.RunningProjectNameText = activeProject.Name;
+            _viewModel.RunningProjectWallClockText = AppTimeFormatter.FormatDuration(
+                _engine.GetCurrentWallClockDuration(activeProject.Id, observedAt));
+            _viewModel.RunningProjectFocusText = AppTimeFormatter.FormatDuration(
+                _engine.GetCurrentRunDuration(activeProject.Id, observedAt));
+        }
 
         _viewModel.ProjectRows.Clear();
-        foreach (ProjectDefinition project in _engine.Projects.OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase))
+        ProjectSortMode sortMode = _viewModel.SelectedProjectSortOption?.Mode ?? ProjectSortMode.Created;
+        foreach (ProjectDefinition project in TimerProjectDisplayService.GetSortedProjects(_engine.Projects, sortMode))
         {
-            bool isActiveProject = _engine.ActiveProjectId == project.Id;
-            string timerText = isActiveProject ? AppTimeFormatter.FormatDuration(_engine.GetCurrentRunDuration(project.Id, observedAt)) : string.Empty;
-            string statusText = isActiveProject ? $"{timerText} 실행 중" : string.Empty;
-
             _viewModel.ProjectRows.Add(new ProjectSidebarRow(
                 project.Id,
                 project.Name,
-                string.Empty,
-                statusText));
+                project.IsPinned));
         }
 
         if (selectedProjectId.HasValue)
@@ -330,17 +476,19 @@ internal sealed class TimerFeatureController
     {
         _viewModel.IsProjectEditEnabled = SelectedProject is not null;
         _viewModel.IsProjectDeleteEnabled = SelectedProject is not null && _engine.ActiveProjectId != SelectedProject.Id;
+        _viewModel.IsProjectMemoEnabled = SelectedProject is not null;
 
         if (SelectedProject is null)
         {
             _viewModel.SelectedProjectTitle = "프로젝트를 추가해보세요";
-            _viewModel.ActiveSessionPeriodText = string.Empty;
+            _viewModel.ActiveSessionPeriodText = "최근 작업 일시: -";
             _viewModel.TimerStatusText = message;
             _viewModel.FocusStatusText = string.Empty;
             _viewModel.ActiveProjectWallClockText = "00:00:00";
             _viewModel.ActiveProjectElapsedText = "00:00:00";
             _viewModel.SelectedProjectTodayText = "00:00:00";
             _viewModel.IsTimerActionEnabled = false;
+            _viewModel.IsTimerStopEnabled = false;
             _viewModel.TimerActionButtonText = "시작";
             _viewModel.TimerActionButtonBackground = _disabledButtonBackground;
             _viewModel.TimerActionButtonForeground = _defaultButtonForeground;
@@ -357,11 +505,27 @@ internal sealed class TimerFeatureController
                 info => info.InitialDisplayName,
                 StringComparer.OrdinalIgnoreCase);
         IReadOnlyDictionary<string, ProcessRunState> processStates = RunningProcessCatalog.GetProcessRunStates(_currentProcessId);
+        Dictionary<string, RegisteredProgramInfo> registrationByProcessName = _engine
+            .GetRegisteredProgramInfos(SelectedProject.Id)
+            .ToDictionary(
+                info => info.Program.ProcessName,
+                StringComparer.OrdinalIgnoreCase);
 
         _viewModel.RegisteredProgramRows.Clear();
-        foreach (ProgramFocusSummary summary in _engine.GetCurrentSessionProgramSummaries(SelectedProject.Id, observedAt, sortMode))
+        IReadOnlyList<ProgramFocusSummary> programSummaries = _engine.GetCurrentSessionProgramSummaries(
+            SelectedProject.Id,
+            observedAt,
+            sortMode);
+        bool hasPinnedPrograms = programSummaries.Any(summary =>
+            registrationByProcessName.GetValueOrDefault(summary.Program.ProcessName)?.IsPinned == true);
+        bool showedPinnedDivider = false;
+
+        foreach (ProgramFocusSummary summary in programSummaries)
         {
-            (string statusBrush, string statusText) = GetProgramRuntimeStatus(summary.Program.ProcessName, processStates);
+            (string statusBrush, string statusText) = TimerProgramFocusStatus.GetRuntimeStatus(summary.Program.ProcessName, processStates);
+            bool isPinned = registrationByProcessName.GetValueOrDefault(summary.Program.ProcessName)?.IsPinned ?? false;
+            bool showsPinnedDivider = hasPinnedPrograms && !isPinned && !showedPinnedDivider;
+            showedPinnedDivider |= showsPinnedDivider;
             _viewModel.RegisteredProgramRows.Add(new RegisteredProgramRow(
                 summary.Program.DisplayName,
                 summary.Program.ProcessName,
@@ -370,15 +534,16 @@ internal sealed class TimerFeatureController
                     summary.Program.ProcessName,
                     summary.Program.DisplayName),
                 StatusBrush: statusBrush,
-                StatusText: statusText));
+                StatusText: statusText,
+                IsPinned: isPinned,
+                PinButtonText: isPinned ? "해제" : "고정",
+                ShowsPinnedDivider: showsPinnedDivider));
         }
 
         bool anotherProjectIsRunning = _engine.IsRunning && !isActiveProject;
 
         _viewModel.SelectedProjectTitle = SelectedProject.Name;
-        _viewModel.ActiveSessionPeriodText = _engine.ActiveStartedAt.HasValue && isActiveProject
-            ? $"시작 {AppTimeFormatter.FormatDateTime(_engine.ActiveStartedAt.Value)} / 종료 대기 중"
-            : string.Empty;
+        _viewModel.ActiveSessionPeriodText = TimerProjectDisplayService.GetProjectPeriodText(_engine, SelectedProject, isActiveProject);
         _viewModel.ActiveProjectElapsedText = isActiveProject
             ? AppTimeFormatter.FormatDuration(_engine.GetCurrentRunDuration(SelectedProject.Id, observedAt))
             : "00:00:00";
@@ -391,17 +556,20 @@ internal sealed class TimerFeatureController
             SelectedProject.Id));
 
         _viewModel.FocusStatusText = isActiveProject
-            ? (_engine.ActiveFocusedProgramName is null
+            ? (_engine.IsPaused
+                ? "타이머가 일시정지 중입니다."
+                : _engine.ActiveFocusedProgramName is null
                 ? "등록 프로그램이 포커스될 때까지 프로젝트 타이머는 멈춰 있습니다."
                 : $"현재 포커스 프로그램: {_engine.ActiveFocusedProgramName}")
             : string.Empty;
 
         _viewModel.TimerStatusText = message;
         _viewModel.IsTimerActionEnabled = !anotherProjectIsRunning;
+        _viewModel.IsTimerStopEnabled = isActiveProject && _engine.IsRunning;
         _viewModel.TimerActionButtonText = !_engine.IsRunning
             ? "시작"
             : isActiveProject
-                ? "종료"
+                ? _engine.IsPaused ? "재개" : "일시정지"
                 : "실행 중";
         _viewModel.TimerActionButtonBackground = !_engine.IsRunning
             ? _startButtonBackground
@@ -426,32 +594,4 @@ internal sealed class TimerFeatureController
         return $"프로젝트 {index}";
     }
 
-    private static (string Brush, string Text) GetProgramRuntimeStatus(
-        string processName,
-        IReadOnlyDictionary<string, ProcessRunState> processStates)
-    {
-        if (!processStates.TryGetValue(processName, out ProcessRunState? state))
-        {
-            return ("#A7A7A0", "등록됨 / 현재 실행 중 아님");
-        }
-
-        return state.HasFocusableWindow
-            ? ("#2EAD62", "등록됨 / 실행 중 / 포커스 기록 가능")
-            : ("#D14B4B", "등록됨 / 실행 중 / 포커스 기록 불가");
-    }
-
-    private static string? GetFocusableObservedProcessName(
-        TrackedApplication? observedApplication,
-        IReadOnlyDictionary<string, ProcessRunState> processStates)
-    {
-        if (observedApplication is null)
-        {
-            return null;
-        }
-
-        return processStates.TryGetValue(observedApplication.ProcessName, out ProcessRunState? state) &&
-            state.HasFocusableWindow
-                ? observedApplication.ProcessName
-                : null;
-    }
 }
