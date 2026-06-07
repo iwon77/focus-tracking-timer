@@ -32,7 +32,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly int _currentProcessId = Environment.ProcessId;
 
     private PrototypeTab _selectedTab = PrototypeTab.Project;
-    private RecordSubView _selectedRecordSubView = RecordSubView.Calendar;
     private DateOnly _displayedRecordMonth = new(DateTime.Now.Year, DateTime.Now.Month, 1);
     private DateOnly? _hoveredCalendarDate;
     private Dictionary<DateOnly, IReadOnlyList<string>> _calendarHoverLinesByDate = [];
@@ -62,10 +61,13 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private Brush _projectTabForeground = SelectedTabForeground;
     private Brush _recordTabBackground = UnselectedTabBackground;
     private Brush _recordTabForeground = UnselectedTabForeground;
+    private Brush _weeklyTabBackground = UnselectedTabBackground;
+    private Brush _weeklyTabForeground = UnselectedTabForeground;
     private Brush _calendarButtonBackground = RecordSelectedButtonBackground;
     private Brush _recentButtonBackground = RecordUnselectedButtonBackground;
     private Visibility _projectViewVisibility = Visibility.Visible;
     private Visibility _recordViewVisibility = Visibility.Collapsed;
+    private Visibility _weeklyViewVisibility = Visibility.Collapsed;
     private Visibility _calendarRecordVisibility = Visibility.Visible;
     private Visibility _recentRecordVisibility = Visibility.Collapsed;
     private Visibility _calendarHoverCardVisibility = Visibility.Collapsed;
@@ -80,6 +82,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         ProgramSortOptions.Add(new ProgramSortOption(ProgramSortMode.Manual, "사용자 지정"));
         SelectedProgramSortOption = ProgramSortOptions[0];
         DisplayedRecordMonthText = FormatRecordMonth(_displayedRecordMonth);
+        ProjectTabButtonControl.Content = "타이머";
+        CalendarTabButtonControl.Content = "캘린더";
 
         _uiTimer = new DispatcherTimer
         {
@@ -237,6 +241,18 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         private set => SetProperty(ref _recordTabForeground, value);
     }
 
+    public Brush WeeklyTabBackground
+    {
+        get => _weeklyTabBackground;
+        private set => SetProperty(ref _weeklyTabBackground, value);
+    }
+
+    public Brush WeeklyTabForeground
+    {
+        get => _weeklyTabForeground;
+        private set => SetProperty(ref _weeklyTabForeground, value);
+    }
+
     public Brush CalendarButtonBackground
     {
         get => _calendarButtonBackground;
@@ -259,6 +275,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         get => _recordViewVisibility;
         private set => SetProperty(ref _recordViewVisibility, value);
+    }
+
+    public Visibility WeeklyViewVisibility
+    {
+        get => _weeklyViewVisibility;
+        private set => SetProperty(ref _weeklyViewVisibility, value);
     }
 
     public Visibility CalendarRecordVisibility
@@ -350,21 +372,26 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         SetSelectedTab(PrototypeTab.Project);
     }
 
-    private void RecordTabButton_Click(object sender, RoutedEventArgs e)
+    private void CalendarTabButton_Click(object sender, RoutedEventArgs e)
     {
         SetSelectedTab(PrototypeTab.Record);
     }
 
+    private void WeeklyTabButton_Click(object sender, RoutedEventArgs e)
+    {
+        SetSelectedTab(PrototypeTab.Weekly);
+    }
+
     private void CalendarRecordButton_Click(object sender, RoutedEventArgs e)
     {
-        _selectedRecordSubView = RecordSubView.Calendar;
         RefreshRecordViewState();
+        RefreshRecordArea(DateTimeOffset.Now);
     }
 
     private void RecentRecordButton_Click(object sender, RoutedEventArgs e)
     {
-        _selectedRecordSubView = RecordSubView.Recent;
         RefreshRecordViewState();
+        RefreshRecordArea(DateTimeOffset.Now);
     }
 
     private void PreviousRecordYearButton_Click(object sender, RoutedEventArgs e)
@@ -660,14 +687,19 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _selectedTab = tab;
 
         bool isProject = tab == PrototypeTab.Project;
+        bool isCalendar = tab == PrototypeTab.Record;
+        bool isWeekly = tab == PrototypeTab.Weekly;
         ProjectViewVisibility = isProject ? Visibility.Visible : Visibility.Collapsed;
-        RecordViewVisibility = isProject ? Visibility.Collapsed : Visibility.Visible;
+        RecordViewVisibility = isCalendar ? Visibility.Visible : Visibility.Collapsed;
+        WeeklyViewVisibility = isWeekly ? Visibility.Visible : Visibility.Collapsed;
         ProjectTabBackground = isProject ? SelectedTabBackground : UnselectedTabBackground;
         ProjectTabForeground = isProject ? SelectedTabForeground : UnselectedTabForeground;
-        RecordTabBackground = isProject ? UnselectedTabBackground : SelectedTabBackground;
-        RecordTabForeground = isProject ? UnselectedTabForeground : SelectedTabForeground;
+        RecordTabBackground = isCalendar ? SelectedTabBackground : UnselectedTabBackground;
+        RecordTabForeground = isCalendar ? SelectedTabForeground : UnselectedTabForeground;
+        WeeklyTabBackground = isWeekly ? SelectedTabBackground : UnselectedTabBackground;
+        WeeklyTabForeground = isWeekly ? SelectedTabForeground : UnselectedTabForeground;
 
-        if (!isProject)
+        if (isCalendar)
         {
             RefreshRecordViewState();
             RefreshRecordArea(DateTimeOffset.Now);
@@ -676,11 +708,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void RefreshRecordViewState()
     {
-        bool isCalendar = _selectedRecordSubView == RecordSubView.Calendar;
-        CalendarRecordVisibility = isCalendar ? Visibility.Visible : Visibility.Collapsed;
-        RecentRecordVisibility = isCalendar ? Visibility.Collapsed : Visibility.Visible;
-        CalendarButtonBackground = isCalendar ? RecordSelectedButtonBackground : RecordUnselectedButtonBackground;
-        RecentButtonBackground = isCalendar ? RecordUnselectedButtonBackground : RecordSelectedButtonBackground;
+        CalendarRecordVisibility = Visibility.Visible;
+        RecentRecordVisibility = Visibility.Collapsed;
+        CalendarButtonBackground = RecordSelectedButtonBackground;
+        RecentButtonBackground = RecordUnselectedButtonBackground;
     }
 
     private string RefreshFocusTracking(DateTimeOffset observedAt)
@@ -1129,12 +1160,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private enum PrototypeTab
     {
         Project,
-        Record
-    }
-
-    private enum RecordSubView
-    {
-        Calendar,
-        Recent
+        Record,
+        Weekly
     }
 }
