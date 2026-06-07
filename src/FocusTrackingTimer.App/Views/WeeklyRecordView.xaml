@@ -2,14 +2,409 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Grid>
-        <Border Style="{StaticResource Panel}" Padding="20">
-            <StackPanel>
-                <TextBlock FontSize="20" FontWeight="SemiBold" Text="주간 기록" />
-                <TextBlock Margin="0,10,0,0"
-                           Foreground="#5B5B5B"
-                           Text="주간 기록 화면은 우선 빈 화면으로 제공합니다. 상세 요약과 목록은 다음 작업에서 추가합니다."
-                           TextWrapping="Wrap" />
-            </StackPanel>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="16" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border Style="{StaticResource Panel}" Padding="18">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.05*" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="0.95*" />
+                </Grid.ColumnDefinitions>
+
+                <Grid Grid.Column="0"
+                      HorizontalAlignment="Stretch"
+                      VerticalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center">
+                        <TextBlock FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Text="{Binding WeeklyRecordCountText, StringFormat=이번 주 총 작업 수: {0}}" />
+                        <TextBlock Margin="0,10,0,0"
+                                   FontSize="14"
+                                   FontWeight="SemiBold"
+                                   Text="{Binding WeekTotalWallClockDurationText, StringFormat=주간 총 작업 시간: {0}}" />
+                        <TextBlock Margin="0,10,0,0"
+                                   FontSize="14"
+                                   FontWeight="SemiBold"
+                                   Text="{Binding AverageDailyWallClockDurationText, StringFormat=일간 평균 작업 시간: {0}}" />
+                        <TextBlock Margin="0,10,0,0"
+                                   FontSize="14"
+                                   FontWeight="SemiBold"
+                                   Text="{Binding AverageDailyFocusDurationText, StringFormat=일간 평균 집중 시간: {0}}" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center">
+                        <TextBlock HorizontalAlignment="Center"
+                                   FontSize="14"
+                                   FontWeight="SemiBold"
+                                   Foreground="#202020"
+                                   Text="주간 누적 집중 시간"
+                                   TextAlignment="Center" />
+                        <TextBlock Margin="0,6,0,0"
+                                   HorizontalAlignment="Center"
+                                   FontSize="38"
+                                   FontWeight="SemiBold"
+                                   Foreground="#2E6D36"
+                                   Text="{Binding WeekTotalFocusDurationText}"
+                                   TextAlignment="Center" />
+                    </StackPanel>
+                </Grid>
+
+                <Grid Grid.Column="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="8" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="10" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock VerticalAlignment="Center"
+                                   FontSize="15"
+                                   FontWeight="SemiBold"
+                                   Foreground="#5B5B5B"
+                                   Text="{Binding DisplayedWeekLabelText}" />
+                        <ComboBox Grid.Column="2"
+                                  Width="220"
+                                  HorizontalAlignment="Right"
+                                  Padding="8"
+                                  BorderBrush="#2F2F2F"
+                                  BorderThickness="2"
+                                  DisplayMemberPath="Label"
+                                  ItemsSource="{Binding RecordFilterOptions}"
+                                  SelectedItem="{Binding SelectedRecordFilter, Mode=TwoWay}"
+                                  SelectionChanged="WeeklyRecordFilter_SelectionChanged" />
+                    </Grid>
+
+                    <Border Grid.Row="2"
+                            Padding="8,6"
+                            Background="#F5F5F0"
+                            BorderBrush="#E0E0D8"
+                            BorderThickness="1"
+                            CornerRadius="18">
+                        <ItemsControl ItemsSource="{Binding WeeklyDayBubbleRows}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="7" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Padding="0"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            FocusVisualStyle="{x:Null}"
+                                            Focusable="False"
+                                            Click="WeeklySummaryDayButton_Click"
+                                            IsEnabled="{Binding HasBubble}">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <ContentPresenter />
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                        <Border Padding="3"
+                                                HorizontalAlignment="Center"
+                                                BorderBrush="#FFFFFF"
+                                                BorderThickness="0"
+                                                CornerRadius="12">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Background" Value="Transparent" />
+                                                    <Setter Property="BorderThickness" Value="0" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=IsMouseOver}" Value="True">
+                                                            <Setter Property="Background" Value="#E7E7E1" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                            <Setter Property="Background" Value="#FFFFFF" />
+                                                            <Setter Property="BorderThickness" Value="1.5" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock HorizontalAlignment="Center"
+                                                           FontSize="10"
+                                                           FontWeight="SemiBold"
+                                                           Text="{Binding DayOfWeekText}">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="#7A7A74" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsSunday}" Value="True">
+                                                                    <Setter Property="Foreground" Value="#D95148" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                                <Grid Width="22" Height="22" Margin="0,3,0,3">
+                                                    <Ellipse Width="{Binding BubbleDiameter}"
+                                                             Height="{Binding BubbleDiameter}"
+                                                             HorizontalAlignment="Center"
+                                                             VerticalAlignment="Center"
+                                                             Fill="#24D060"
+                                                             Visibility="{Binding BubbleVisibility}" />
+                                                </Grid>
+                                                <TextBlock HorizontalAlignment="Center"
+                                                           FontSize="11"
+                                                           FontWeight="SemiBold"
+                                                           Text="{Binding DateText}">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="#3A3A36" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsSunday}" Value="True">
+                                                                    <Setter Property="Foreground" Value="#D95148" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </Border>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Border>
+
+                    <StackPanel Grid.Row="4"
+                                HorizontalAlignment="Center"
+                                Orientation="Horizontal">
+                        <Button Width="44"
+                                Height="32"
+                                Background="#FFFFFF"
+                                BorderBrush="#D7D7D0"
+                                BorderThickness="1.5"
+                                Click="PreviousWeekButton_Click"
+                                Content="&lt;" />
+                        <Button Width="72"
+                                Height="32"
+                                Margin="8,0,0,0"
+                                Background="#FFFFFF"
+                                BorderBrush="#D7D7D0"
+                                BorderThickness="1.5"
+                                Click="CurrentWeekButton_Click"
+                                Content="이번 주" />
+                        <Button Width="44"
+                                Height="32"
+                                Margin="8,0,0,0"
+                                Background="#FFFFFF"
+                                BorderBrush="#D7D7D0"
+                                BorderThickness="1.5"
+                                Click="NextWeekButton_Click"
+                                Content="&gt;" />
+                    </StackPanel>
+                </Grid>
+            </Grid>
         </Border>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.05*" />
+                <ColumnDefinition Width="16" />
+                <ColumnDefinition Width="0.95*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Style="{StaticResource Panel}" Padding="20">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock FontSize="20" FontWeight="SemiBold" Text="주간 작업 목록" />
+                    <ListBox x:Name="WeeklyRecordListControl"
+                             Grid.Row="1"
+                             Margin="0,16,0,0"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             ItemsSource="{Binding WeeklyRecordRows}"
+                             SelectedItem="{Binding SelectedWeeklyRecordRow, Mode=TwoWay}"
+                             SelectionChanged="WeeklyRecordList_SelectionChanged">
+                        <ListBox.GroupStyle>
+                            <GroupStyle>
+                                <GroupStyle.HeaderTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Margin="0,0,0,10"
+                                                   FontSize="16"
+                                                   FontWeight="SemiBold"
+                                                   Text="{Binding Name}" />
+                                    </DataTemplate>
+                                </GroupStyle.HeaderTemplate>
+                            </GroupStyle>
+                        </ListBox.GroupStyle>
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="Padding" Value="0" />
+                                <Setter Property="Margin" Value="0,0,0,12" />
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListBoxItem">
+                                            <ContentPresenter />
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Padding="16"
+                                        Background="#F7F7F4"
+                                        BorderBrush="#D5D5D5"
+                                        BorderThickness="1.5"
+                                        CornerRadius="12">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="#F7F7F4" />
+                                            <Setter Property="BorderBrush" Value="#D5D5D5" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsSelected}" Value="True">
+                                                    <Setter Property="Background" Value="#EEF5E8" />
+                                                    <Setter Property="BorderBrush" Value="#2E6D36" />
+                                                    <Setter Property="BorderThickness" Value="2" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel>
+                                            <TextBlock FontSize="17"
+                                                       FontWeight="SemiBold"
+                                                       Text="{Binding ProjectName}" />
+                                            <TextBlock Margin="0,8,0,0"
+                                                       Foreground="#6B6B66"
+                                                       Text="{Binding PeriodText}" />
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                                            <TextBlock HorizontalAlignment="Right"
+                                                       FontSize="18"
+                                                       FontWeight="SemiBold"
+                                                       Text="{Binding TotalDurationText, StringFormat=작업 시간: {0}}" />
+                                            <TextBlock Margin="0,6,0,0"
+                                                       HorizontalAlignment="Right"
+                                                       FontSize="16"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="#2E6D36"
+                                                       Text="{Binding FocusDurationText, StringFormat=집중 시간: {0}}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="2" Style="{StaticResource Panel}" Padding="20">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock FontSize="20" FontWeight="SemiBold" Text="작업 상세" />
+                    <TextBlock Grid.Row="1"
+                               Margin="0,16,0,0"
+                               FontSize="22"
+                               FontWeight="SemiBold"
+                               Text="{Binding SelectedRecordTitle}" />
+                    <StackPanel Grid.Row="2" Margin="0,10,0,0">
+                        <TextBlock Foreground="#6B6B66" Text="{Binding SelectedRecordSubtitle}" />
+                        <TextBlock Margin="0,8,0,0"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Text="{Binding SelectedRecordTotalDurationText, StringFormat=작업 시간: {0}}" />
+                        <TextBlock Margin="0,8,0,0"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Foreground="#2E6D36"
+                                   Text="{Binding SelectedRecordFocusDurationText, StringFormat=집중 시간: {0}}" />
+                    </StackPanel>
+
+                    <ScrollViewer Grid.Row="3" Margin="0,18,0,0" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding SelectedRecordProgramRows}"
+                                      Visibility="{Binding SelectedRecordDetailVisibility}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="0,0,0,10"
+                                            Padding="14"
+                                            Background="#FFFFFF"
+                                            BorderBrush="#D5D5D5"
+                                            BorderThickness="1.5"
+                                            CornerRadius="10">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <StackPanel Orientation="Horizontal">
+                                                <Ellipse Width="10" Height="10" Margin="0,6,10,0" Fill="#26C567" VerticalAlignment="Top" />
+                                                <StackPanel>
+                                                    <TextBlock FontSize="16"
+                                                               FontWeight="SemiBold"
+                                                               Text="{Binding DisplayName}"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               TextWrapping="NoWrap" />
+                                                    <TextBlock Margin="0,6,0,0" Foreground="#6B6B66" Text="{Binding ProcessName}" />
+                                                </StackPanel>
+                                            </StackPanel>
+
+                                            <TextBlock Grid.Column="1"
+                                                       Margin="12,0,0,0"
+                                                       VerticalAlignment="Top"
+                                                       FontSize="18"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="#2E6D36"
+                                                       Text="{Binding DurationText}" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+
+                    <TextBlock Grid.Row="4"
+                               Margin="0,16,0,0"
+                               Foreground="#E66B5B"
+                               Visibility="{Binding SelectedRecordEmptyVisibility}"
+                               Text="{Binding SelectedRecordEmptyText}"
+                               TextWrapping="Wrap" />
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>

@@ -6,4 +6,7 @@ public sealed record CalendarDayRow(
     string DurationText,
     bool HasDuration,
     bool IsToday,
-    bool IsPlaceholder);
+    bool IsSunday,
+    bool IsPlaceholder,
+    bool IsSelected,
+    double DotSize);

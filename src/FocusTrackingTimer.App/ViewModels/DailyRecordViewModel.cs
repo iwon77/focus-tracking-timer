@@ -1,49 +1,27 @@
 using System.Collections.ObjectModel;
-using System.Windows;
-using System.Windows.Media;
 using FocusTrackingTimer.App.Infrastructure;
 
 namespace FocusTrackingTimer.App.ViewModels;
 
 public sealed class DailyRecordViewModel : ObservableObject
 {
-    private string _recordHeadlineText = "오늘은 아직 작업 기록이 없습니다.";
-    private string _todayWorkedText = "00:00:00";
     private string _displayedRecordMonthText = string.Empty;
-    private string _calendarHoverTitle = string.Empty;
-    private string _selectedRecordFilterLabel = "<모든 프로젝트>";
-    private Brush _calendarButtonBackground;
-    private Brush _recentButtonBackground;
-    private Visibility _calendarRecordVisibility = Visibility.Visible;
-    private Visibility _recentRecordVisibility = Visibility.Collapsed;
-    private Visibility _calendarHoverCardVisibility = Visibility.Collapsed;
+    private string _monthlyWorkedDayCountText = "0일";
+    private string _monthlyTotalWallClockDurationText = "00:00:00";
+    private string _monthlyTotalFocusDurationText = "00:00:00";
+    private string _monthlyAverageWallClockDurationText = "00:00:00";
+    private string _monthlyAverageFocusDurationText = "00:00:00";
+    private string _selectedDailyDateText = string.Empty;
+    private string _selectedDailyTotalDurationText = "0m";
+    private string _selectedDailyFocusRatioText = "0%";
+    private string _selectedDailyEmptyText = "선택한 날짜의 작업 기록이 없습니다.";
     private RecordFilterOption? _selectedRecordFilter;
-
-    public DailyRecordViewModel(Brush calendarButtonBackground, Brush recentButtonBackground)
-    {
-        _calendarButtonBackground = calendarButtonBackground;
-        _recentButtonBackground = recentButtonBackground;
-    }
 
     public ObservableCollection<RecordFilterOption> RecordFilterOptions { get; } = [];
 
     public ObservableCollection<CalendarDayRow> CalendarRows { get; } = [];
 
-    public ObservableCollection<RecentRecordRow> RecentRecordRows { get; } = [];
-
-    public ObservableCollection<string> CalendarHoverLines { get; } = [];
-
-    public string RecordHeadlineText
-    {
-        get => _recordHeadlineText;
-        set => SetProperty(ref _recordHeadlineText, value);
-    }
-
-    public string TodayWorkedText
-    {
-        get => _todayWorkedText;
-        set => SetProperty(ref _todayWorkedText, value);
-    }
+    public ObservableCollection<DailyRecordItemRow> SelectedDailyRecordRows { get; } = [];
 
     public string DisplayedRecordMonthText
     {
@@ -51,46 +29,58 @@ public sealed class DailyRecordViewModel : ObservableObject
         set => SetProperty(ref _displayedRecordMonthText, value);
     }
 
-    public string CalendarHoverTitle
+    public string MonthlyWorkedDayCountText
     {
-        get => _calendarHoverTitle;
-        set => SetProperty(ref _calendarHoverTitle, value);
+        get => _monthlyWorkedDayCountText;
+        set => SetProperty(ref _monthlyWorkedDayCountText, value);
     }
 
-    public string SelectedRecordFilterLabel
+    public string MonthlyTotalWallClockDurationText
     {
-        get => _selectedRecordFilterLabel;
-        set => SetProperty(ref _selectedRecordFilterLabel, value);
+        get => _monthlyTotalWallClockDurationText;
+        set => SetProperty(ref _monthlyTotalWallClockDurationText, value);
     }
 
-    public Brush CalendarButtonBackground
+    public string MonthlyTotalFocusDurationText
     {
-        get => _calendarButtonBackground;
-        set => SetProperty(ref _calendarButtonBackground, value);
+        get => _monthlyTotalFocusDurationText;
+        set => SetProperty(ref _monthlyTotalFocusDurationText, value);
     }
 
-    public Brush RecentButtonBackground
+    public string MonthlyAverageWallClockDurationText
     {
-        get => _recentButtonBackground;
-        set => SetProperty(ref _recentButtonBackground, value);
+        get => _monthlyAverageWallClockDurationText;
+        set => SetProperty(ref _monthlyAverageWallClockDurationText, value);
     }
 
-    public Visibility CalendarRecordVisibility
+    public string MonthlyAverageFocusDurationText
     {
-        get => _calendarRecordVisibility;
-        set => SetProperty(ref _calendarRecordVisibility, value);
+        get => _monthlyAverageFocusDurationText;
+        set => SetProperty(ref _monthlyAverageFocusDurationText, value);
     }
 
-    public Visibility RecentRecordVisibility
+    public string SelectedDailyDateText
     {
-        get => _recentRecordVisibility;
-        set => SetProperty(ref _recentRecordVisibility, value);
+        get => _selectedDailyDateText;
+        set => SetProperty(ref _selectedDailyDateText, value);
     }
 
-    public Visibility CalendarHoverCardVisibility
+    public string SelectedDailyTotalDurationText
     {
-        get => _calendarHoverCardVisibility;
-        set => SetProperty(ref _calendarHoverCardVisibility, value);
+        get => _selectedDailyTotalDurationText;
+        set => SetProperty(ref _selectedDailyTotalDurationText, value);
+    }
+
+    public string SelectedDailyFocusRatioText
+    {
+        get => _selectedDailyFocusRatioText;
+        set => SetProperty(ref _selectedDailyFocusRatioText, value);
+    }
+
+    public string SelectedDailyEmptyText
+    {
+        get => _selectedDailyEmptyText;
+        set => SetProperty(ref _selectedDailyEmptyText, value);
     }
 
     public RecordFilterOption? SelectedRecordFilter

@@ -1,6 +1,4 @@
 using System.Globalization;
-using System.Windows;
-using System.Windows.Media;
 using FocusTrackingTimer.App.Infrastructure;
 using FocusTrackingTimer.App.ViewModels;
 using FocusTrackingTimer.Core.Tracking;
@@ -11,35 +9,14 @@ internal sealed class DailyRecordFeatureController
 {
     private readonly ProjectTimerEngine _engine;
     private readonly DailyRecordViewModel _viewModel;
-    private readonly Brush _calendarButtonBackground;
-    private readonly Brush _recentButtonBackground;
     private DateOnly _displayedRecordMonth = new(DateTime.Now.Year, DateTime.Now.Month, 1);
-    private DateOnly? _hoveredCalendarDate;
-    private Dictionary<DateOnly, IReadOnlyList<string>> _calendarHoverLinesByDate = [];
+    private DateOnly? _selectedDate;
 
-    public DailyRecordFeatureController(
-        ProjectTimerEngine engine,
-        DailyRecordViewModel viewModel,
-        Brush calendarButtonBackground,
-        Brush recentButtonBackground)
+    public DailyRecordFeatureController(ProjectTimerEngine engine, DailyRecordViewModel viewModel)
     {
         _engine = engine;
         _viewModel = viewModel;
-        _calendarButtonBackground = calendarButtonBackground;
-        _recentButtonBackground = recentButtonBackground;
         _viewModel.DisplayedRecordMonthText = AppTimeFormatter.FormatRecordMonth(_displayedRecordMonth);
-    }
-
-    public void ShowCalendarRecord()
-    {
-        RefreshRecordViewState();
-        RefreshRecordArea(DateTimeOffset.Now);
-    }
-
-    public void ShowRecentRecord()
-    {
-        RefreshRecordViewState();
-        RefreshRecordArea(DateTimeOffset.Now);
     }
 
     public void MoveDisplayedRecordMonth(int monthOffset)
@@ -73,82 +50,84 @@ internal sealed class DailyRecordFeatureController
     public void RefreshRecordArea(DateTimeOffset observedAt)
     {
         Guid? projectFilter = _viewModel.SelectedRecordFilter?.ProjectId;
-        _viewModel.SelectedRecordFilterLabel = _viewModel.SelectedRecordFilter?.Label ?? "<모든 프로젝트>";
         _viewModel.DisplayedRecordMonthText = AppTimeFormatter.FormatRecordMonth(_displayedRecordMonth);
 
         DateOnly today = DateOnly.FromDateTime(observedAt.LocalDateTime.Date);
-        _viewModel.TodayWorkedText = AppTimeFormatter.FormatDuration(_engine.GetTodayDuration(today, observedAt, projectFilter));
-        _viewModel.RecordHeadlineText = _viewModel.TodayWorkedText == "00:00:00"
-            ? "오늘은 아직 작업 기록이 없습니다."
-            : $"오늘은 {_viewModel.TodayWorkedText} 작업했습니다.";
+        DateOnly firstDay = new(_displayedRecordMonth.Year, _displayedRecordMonth.Month, 1);
+        DateOnly lastDay = firstDay.AddMonths(1).AddDays(-1);
 
-        RefreshCalendar(today, _displayedRecordMonth, observedAt, projectFilter);
-        RefreshRecentRecords(projectFilter);
-        RefreshRecordViewState();
+        RefreshMonthlySummary(firstDay, lastDay, observedAt, projectFilter);
+        EnsureSelectedDate(today);
+        RefreshCalendar(firstDay, lastDay, today, observedAt, projectFilter);
+        RefreshSelectedDateSummary(observedAt, projectFilter);
     }
 
-    public void RefreshRecordViewState()
+    public void SelectDate(CalendarDayRow? row)
     {
-        _viewModel.CalendarRecordVisibility = Visibility.Visible;
-        _viewModel.RecentRecordVisibility = Visibility.Collapsed;
-        _viewModel.CalendarButtonBackground = _calendarButtonBackground;
-        _viewModel.RecentButtonBackground = _recentButtonBackground;
-    }
-
-    public void ShowCalendarHover(CalendarDayRow? row)
-    {
-        if (row?.Date is null)
-        {
-            HideCalendarHoverCard();
-            return;
-        }
-
-        if (!_calendarHoverLinesByDate.TryGetValue(row.Date.Value, out IReadOnlyList<string>? lines) ||
-            lines.Count == 0)
-        {
-            HideCalendarHoverCard();
-            return;
-        }
-
-        _hoveredCalendarDate = row.Date;
-        _viewModel.CalendarHoverTitle = AppTimeFormatter.FormatCalendarHoverTitle(row.Date.Value);
-        SetCalendarHoverLines(lines);
-        _viewModel.CalendarHoverCardVisibility = Visibility.Visible;
-    }
-
-    public void HideCalendarHover(CalendarDayRow? row)
-    {
-        if (row?.Date is null || _hoveredCalendarDate != row.Date)
+        if (row?.Date is null || row.IsPlaceholder)
         {
             return;
         }
 
-        HideCalendarHoverCard();
+        _selectedDate = row.Date.Value;
+        RefreshRecordArea(DateTimeOffset.Now);
+    }
+
+    private void RefreshMonthlySummary(
+        DateOnly firstDay,
+        DateOnly lastDay,
+        DateTimeOffset observedAt,
+        Guid? projectFilter)
+    {
+        IReadOnlyList<DailyDurationSummary> dailySummaries = _engine.GetDailyDurationSummaries(firstDay, lastDay, observedAt, projectFilter);
+        IReadOnlyList<ProjectTimerRecordSlice> monthlySlices = _engine.GetRecordSlices(firstDay, lastDay, observedAt, projectFilter);
+
+        TimeSpan monthlyFocusDuration = dailySummaries.Aggregate(TimeSpan.Zero, static (total, summary) => total + summary.TotalDuration);
+        TimeSpan monthlyWallClockDuration = monthlySlices.Aggregate(TimeSpan.Zero, static (total, slice) => total + slice.WallClockDuration);
+        int workedDayCount = dailySummaries.Count(static summary => summary.TotalDuration > TimeSpan.Zero);
+
+        _viewModel.MonthlyWorkedDayCountText = $"{workedDayCount}일";
+        _viewModel.MonthlyTotalWallClockDurationText = AppTimeFormatter.FormatDuration(monthlyWallClockDuration);
+        _viewModel.MonthlyTotalFocusDurationText = AppTimeFormatter.FormatDuration(monthlyFocusDuration);
+        _viewModel.MonthlyAverageWallClockDurationText = workedDayCount == 0
+            ? "00:00:00"
+            : AppTimeFormatter.FormatDuration(TimeSpan.FromTicks(monthlyWallClockDuration.Ticks / workedDayCount));
+        _viewModel.MonthlyAverageFocusDurationText = workedDayCount == 0
+            ? "00:00:00"
+            : AppTimeFormatter.FormatDuration(TimeSpan.FromTicks(monthlyFocusDuration.Ticks / workedDayCount));
+    }
+
+    private void EnsureSelectedDate(DateOnly today)
+    {
+        DateOnly monthStart = new(_displayedRecordMonth.Year, _displayedRecordMonth.Month, 1);
+        DateOnly monthEnd = monthStart.AddMonths(1).AddDays(-1);
+
+        if (_selectedDate is { } selectedDate &&
+            selectedDate >= monthStart &&
+            selectedDate <= monthEnd)
+        {
+            return;
+        }
+
+        _selectedDate = today >= monthStart && today <= monthEnd ? today : monthStart;
     }
 
     private void RefreshCalendar(
+        DateOnly firstDay,
+        DateOnly lastDay,
         DateOnly today,
-        DateOnly displayedRecordMonth,
         DateTimeOffset observedAt,
         Guid? projectFilter)
     {
         _viewModel.CalendarRows.Clear();
 
-        DateOnly firstDay = new(displayedRecordMonth.Year, displayedRecordMonth.Month, 1);
-        DateOnly lastDay = firstDay.AddMonths(1).AddDays(-1);
         int leadingBlankCount = (int)firstDay.DayOfWeek;
-
         IReadOnlyList<DailyDurationSummary> summaries = _engine.GetDailyDurationSummaries(firstDay, lastDay, observedAt, projectFilter);
         Dictionary<DateOnly, DailyDurationSummary> summaryByDate = summaries.ToDictionary(summary => summary.Date);
-        Dictionary<DateOnly, IReadOnlyList<string>> detailByDate = BuildCalendarHoverLinesByDate(
-            firstDay,
-            lastDay,
-            observedAt,
-            projectFilter);
 
         for (int index = 0; index < leadingBlankCount; index++)
         {
-            _viewModel.CalendarRows.Add(new CalendarDayRow(null, string.Empty, string.Empty, false, false, true));
+            _viewModel.CalendarRows.Add(new CalendarDayRow(null, string.Empty, string.Empty, false, false, false, true, false, 0));
         }
 
         for (DateOnly date = firstDay; date <= lastDay; date = date.AddDays(1))
@@ -160,87 +139,71 @@ internal sealed class DailyRecordFeatureController
                 duration == TimeSpan.Zero ? string.Empty : AppTimeFormatter.FormatDurationShort(duration),
                 duration > TimeSpan.Zero,
                 date == today,
-                false));
-        }
-
-        _calendarHoverLinesByDate = detailByDate;
-        RefreshCalendarHoverCard(detailByDate);
-    }
-
-    private void RefreshRecentRecords(Guid? projectFilter)
-    {
-        _viewModel.RecentRecordRows.Clear();
-
-        foreach (ProjectTimerRecord record in _engine.GetRecentRecords(12, projectFilter))
-        {
-            string programSummaryText = record.ProgramSummaries.Count == 0
-                ? "등록 프로그램 포커스 기록 없음"
-                : string.Join(" / ", record.ProgramSummaries.Select(summary =>
-                    $"{summary.Program.DisplayName} {AppTimeFormatter.FormatDuration(summary.FocusDuration)}"));
-
-            _viewModel.RecentRecordRows.Add(new RecentRecordRow(
-                record.ProjectName,
-                $"{AppTimeFormatter.FormatDateTime(record.StartedAt)} ~ {AppTimeFormatter.FormatDateTime(record.EndedAt)}",
-                AppTimeFormatter.FormatDuration(record.TotalDuration),
-                programSummaryText));
+                date.DayOfWeek == DayOfWeek.Sunday,
+                false,
+                _selectedDate == date,
+                GetDotSize(duration)));
         }
     }
 
-    private Dictionary<DateOnly, IReadOnlyList<string>> BuildCalendarHoverLinesByDate(
-        DateOnly firstDay,
-        DateOnly lastDay,
-        DateTimeOffset observedAt,
-        Guid? projectFilter)
+    private static double GetDotSize(TimeSpan duration)
     {
-        if (projectFilter.HasValue)
+        double minutes = duration.TotalMinutes;
+        if (minutes <= 0)
         {
-            return [];
+            return 0;
         }
 
-        return _engine.GetDailyProjectDurationSummaries(firstDay, lastDay, observedAt)
-            .GroupBy(summary => summary.Date)
-            .ToDictionary(
-                group => group.Key,
-                group => (IReadOnlyList<string>)[.. group
-                    .OrderByDescending(static summary => summary.TotalDuration)
-                    .ThenBy(static summary => summary.ProjectName, StringComparer.CurrentCultureIgnoreCase)
-                    .Select(summary => $"{summary.ProjectName} {AppTimeFormatter.FormatDuration(summary.TotalDuration)}")]);
+        if (minutes <= 30)
+        {
+            return 12;
+        }
+
+        if (minutes <= 60)
+        {
+            return 15;
+        }
+
+        if (minutes <= 120)
+        {
+            return 18;
+        }
+
+        if (minutes <= 240)
+        {
+            return 21;
+        }
+
+        return 24;
     }
 
-    private void RefreshCalendarHoverCard(Dictionary<DateOnly, IReadOnlyList<string>> detailByDate)
+    private void RefreshSelectedDateSummary(DateTimeOffset observedAt, Guid? projectFilter)
     {
-        if (_hoveredCalendarDate is not { } hoveredDate)
+        DateOnly selectedDate = _selectedDate ?? DateOnly.FromDateTime(observedAt.LocalDateTime.Date);
+        IReadOnlyList<ProjectTimerRecordSlice> slices = _engine.GetRecordSlices(selectedDate, selectedDate, observedAt, projectFilter);
+
+        _viewModel.SelectedDailyDateText = AppTimeFormatter.FormatCalendarDate(selectedDate);
+        _viewModel.SelectedDailyTotalDurationText = AppTimeFormatter.FormatDurationShort(
+            slices.Aggregate(TimeSpan.Zero, static (total, slice) => total + slice.TotalDuration));
+
+        TimeSpan totalWallClock = slices.Aggregate(TimeSpan.Zero, static (total, slice) => total + slice.WallClockDuration);
+        TimeSpan totalFocusDuration = slices.Aggregate(TimeSpan.Zero, static (total, slice) => total + slice.TotalDuration);
+        double focusRatio = totalWallClock <= TimeSpan.Zero
+            ? 0
+            : totalFocusDuration.TotalSeconds / totalWallClock.TotalSeconds;
+        _viewModel.SelectedDailyFocusRatioText = AppTimeFormatter.FormatPercentage(focusRatio);
+
+        _viewModel.SelectedDailyRecordRows.Clear();
+        foreach (ProjectTimerRecordSlice slice in slices.OrderBy(static item => item.StartedAt))
         {
-            _viewModel.CalendarHoverCardVisibility = Visibility.Collapsed;
-            return;
+            _viewModel.SelectedDailyRecordRows.Add(new DailyRecordItemRow(
+                slice.ProjectName,
+                AppTimeFormatter.FormatDurationShort(slice.TotalDuration),
+                AppTimeFormatter.FormatTimeRange(slice.StartedAt, slice.EndedAt)));
         }
 
-        if (!detailByDate.TryGetValue(hoveredDate, out IReadOnlyList<string>? lines) ||
-            lines.Count == 0)
-        {
-            HideCalendarHoverCard();
-            return;
-        }
-
-        _viewModel.CalendarHoverTitle = AppTimeFormatter.FormatCalendarHoverTitle(hoveredDate);
-        SetCalendarHoverLines(lines);
-        _viewModel.CalendarHoverCardVisibility = Visibility.Visible;
-    }
-
-    private void HideCalendarHoverCard()
-    {
-        _hoveredCalendarDate = null;
-        _viewModel.CalendarHoverTitle = string.Empty;
-        _viewModel.CalendarHoverLines.Clear();
-        _viewModel.CalendarHoverCardVisibility = Visibility.Collapsed;
-    }
-
-    private void SetCalendarHoverLines(IEnumerable<string> lines)
-    {
-        _viewModel.CalendarHoverLines.Clear();
-        foreach (string line in lines)
-        {
-            _viewModel.CalendarHoverLines.Add(line);
-        }
+        _viewModel.SelectedDailyEmptyText = slices.Count == 0
+            ? "선택한 날짜의 작업 기록이 없습니다."
+            : string.Empty;
     }
 }

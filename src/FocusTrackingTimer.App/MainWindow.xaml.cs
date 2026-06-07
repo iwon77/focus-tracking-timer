@@ -2,10 +2,12 @@ using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using FocusTrackingTimer.App.Features.DailyRecords;
 using FocusTrackingTimer.App.Features.Timer;
+using FocusTrackingTimer.App.Features.WeeklyRecords;
 using FocusTrackingTimer.App.ViewModels;
 using FocusTrackingTimer.Core.Persistence;
 using FocusTrackingTimer.Core.Tracking;
@@ -19,14 +21,13 @@ public partial class MainWindow : Window
     private static readonly Brush DisabledButtonBackground = new SolidColorBrush(Color.FromRgb(225, 225, 225));
     private static readonly Brush StartButtonForeground = new SolidColorBrush(Color.FromRgb(255, 255, 255));
     private static readonly Brush DefaultButtonForeground = new SolidColorBrush(Color.FromRgb(24, 24, 24));
-    private static readonly Brush RecordSelectedButtonBackground = new SolidColorBrush(Color.FromRgb(237, 237, 234));
-    private static readonly Brush RecordUnselectedButtonBackground = new SolidColorBrush(Color.FromRgb(255, 255, 255));
 
     private readonly ProjectTimerEngine _engine = new();
     private readonly SqliteProjectTimerStore _store = new(BuildStorePath());
     private readonly DispatcherTimer _uiTimer;
     private readonly TimerFeatureController _timerFeature;
     private readonly DailyRecordFeatureController _dailyRecordFeature;
+    private readonly WeeklyRecordFeatureController _weeklyRecordFeature;
 
     public MainWindow()
     {
@@ -50,11 +51,8 @@ public partial class MainWindow : Window
             DisabledButtonBackground,
             StartButtonForeground,
             DefaultButtonForeground);
-        _dailyRecordFeature = new DailyRecordFeatureController(
-            _engine,
-            DailyRecord,
-            RecordSelectedButtonBackground,
-            RecordUnselectedButtonBackground);
+        _dailyRecordFeature = new DailyRecordFeatureController(_engine, DailyRecord);
+        _weeklyRecordFeature = new WeeklyRecordFeatureController(_engine, WeeklyRecord);
 
         _uiTimer = new DispatcherTimer
         {
@@ -70,11 +68,15 @@ public partial class MainWindow : Window
 
     public TimerViewModel Timer { get; } = new(StartButtonBackground, StartButtonForeground);
 
-    public DailyRecordViewModel DailyRecord { get; } = new(RecordSelectedButtonBackground, RecordUnselectedButtonBackground);
+    public DailyRecordViewModel DailyRecord { get; } = new();
+
+    public WeeklyRecordViewModel WeeklyRecord { get; } = new();
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         string startupMessage = "프로젝트를 추가하고 등록 프로그램을 관리해보세요.";
+        bool seededWeeklySample = false;
+        bool seededDailySample = false;
 
         try
         {
@@ -82,17 +84,29 @@ public partial class MainWindow : Window
 
             if (_engine.Projects.Count > 0 || _engine.CompletedRecords.Count > 0)
             {
-                startupMessage = "저장된 프로젝트와 완료 기록을 불러왔습니다.";
+                startupMessage = "저장한 프로젝트와 완료 기록을 불러왔습니다.";
+            }
+
+            seededWeeklySample = EnsureWeeklyClickTestSeed();
+            seededDailySample = EnsureDailyCalendarVisualSeed();
+            if (seededWeeklySample)
+            {
+                startupMessage = "이번 주 클릭 테스트용 샘플 기록을 추가했습니다.";
             }
         }
         catch (Exception exception)
         {
             MessageBox.Show(
                 this,
-                $"저장된 데이터를 불러오지 못했습니다.{Environment.NewLine}{exception.Message}",
+                $"저장한 데이터를 불러오지 못했습니다.{Environment.NewLine}{exception.Message}",
                 "SQLite 로드 오류",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
+        }
+
+        if (seededWeeklySample || seededDailySample)
+        {
+            PersistState();
         }
 
         RefreshAll(DateTimeOffset.Now, startupMessage);
@@ -133,16 +147,6 @@ public partial class MainWindow : Window
         SetSelectedTab(MainMenuTab.WeeklyRecord);
     }
 
-    internal void CalendarRecordButton_Click(object sender, RoutedEventArgs e)
-    {
-        _dailyRecordFeature.ShowCalendarRecord();
-    }
-
-    internal void RecentRecordButton_Click(object sender, RoutedEventArgs e)
-    {
-        _dailyRecordFeature.ShowRecentRecord();
-    }
-
     internal void PreviousRecordYearButton_Click(object sender, RoutedEventArgs e)
     {
         _dailyRecordFeature.MoveDisplayedRecordMonth(-12);
@@ -166,6 +170,21 @@ public partial class MainWindow : Window
     internal void CurrentRecordMonthButton_Click(object sender, RoutedEventArgs e)
     {
         _dailyRecordFeature.MoveDisplayedRecordMonthToCurrent();
+    }
+
+    internal void PreviousWeekButton_Click(object sender, RoutedEventArgs e)
+    {
+        _weeklyRecordFeature.MoveDisplayedWeek(-1);
+    }
+
+    internal void CurrentWeekButton_Click(object sender, RoutedEventArgs e)
+    {
+        _weeklyRecordFeature.MoveDisplayedWeekToCurrent();
+    }
+
+    internal void NextWeekButton_Click(object sender, RoutedEventArgs e)
+    {
+        _weeklyRecordFeature.MoveDisplayedWeek(1);
     }
 
     internal void AddProjectButton_Click(object sender, RoutedEventArgs e)
@@ -220,16 +239,26 @@ public partial class MainWindow : Window
         _dailyRecordFeature.RefreshRecordArea(DateTimeOffset.Now);
     }
 
-    internal void CalendarDayBorder_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+    internal void WeeklyRecordFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        CalendarDayRow? row = (sender as Border)?.DataContext as CalendarDayRow;
-        _dailyRecordFeature.ShowCalendarHover(row);
+        _weeklyRecordFeature.RefreshWeeklyRecordArea(DateTimeOffset.Now);
     }
 
-    internal void CalendarDayBorder_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+    internal void CalendarDayButton_Click(object sender, RoutedEventArgs e)
     {
-        CalendarDayRow? row = (sender as Border)?.DataContext as CalendarDayRow;
-        _dailyRecordFeature.HideCalendarHover(row);
+        CalendarDayRow? row = (sender as FrameworkElement)?.DataContext as CalendarDayRow;
+        _dailyRecordFeature.SelectDate(row);
+    }
+
+    internal void WeeklyRecordList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        _weeklyRecordFeature.SelectRecord(WeeklyRecord.SelectedWeeklyRecordRow);
+    }
+
+    internal void WeeklySummaryDayButton_Click(object sender, RoutedEventArgs e)
+    {
+        WeeklyDayBubbleRow? row = (sender as FrameworkElement)?.DataContext as WeeklyDayBubbleRow;
+        _weeklyRecordFeature.SelectSummaryDay(row);
     }
 
     private void SetSelectedTab(MainMenuTab tab)
@@ -238,8 +267,11 @@ public partial class MainWindow : Window
 
         if (tab == MainMenuTab.DailyRecord)
         {
-            _dailyRecordFeature.RefreshRecordViewState();
             _dailyRecordFeature.RefreshRecordArea(DateTimeOffset.Now);
+        }
+        else if (tab == MainMenuTab.WeeklyRecord)
+        {
+            _weeklyRecordFeature.RefreshWeeklyRecordArea(DateTimeOffset.Now);
         }
     }
 
@@ -247,8 +279,12 @@ public partial class MainWindow : Window
     {
         _timerFeature.RefreshProjectSidebar(observedAt);
         _timerFeature.RefreshSelectedProjectArea(observedAt, message);
+
         _dailyRecordFeature.RefreshRecordFilters();
         _dailyRecordFeature.RefreshRecordArea(observedAt);
+
+        _weeklyRecordFeature.RefreshRecordFilters();
+        _weeklyRecordFeature.RefreshWeeklyRecordArea(observedAt);
     }
 
     private void PersistState()
@@ -268,11 +304,117 @@ public partial class MainWindow : Window
         }
     }
 
+    private bool EnsureWeeklyClickTestSeed()
+    {
+        DateTimeOffset now = DateTimeOffset.Now;
+        DateOnly weekStart = GetWeekStart(DateOnly.FromDateTime(now.Date));
+        DateOnly weekEnd = weekStart.AddDays(6);
+
+        HashSet<DateOnly> datesWithRecords =
+        [
+            .. _engine.GetRecordSlices(weekStart, weekEnd, now)
+                .Select(slice => DateOnly.FromDateTime(slice.StartedAt.LocalDateTime.Date))
+        ];
+
+        if (datesWithRecords.Count >= 2)
+        {
+            return false;
+        }
+
+        DateOnly? seedDate = null;
+        for (DateOnly date = weekStart; date <= weekEnd; date = date.AddDays(1))
+        {
+            if (!datesWithRecords.Contains(date))
+            {
+                seedDate = date;
+                break;
+            }
+        }
+
+        if (seedDate is null)
+        {
+            return false;
+        }
+
+        _engine.TryAddProject("클릭 테스트 프로젝트", out ProjectDefinition project);
+        _engine.TryRegisterProgram(project.Id, new TrackedApplication("notepad", "notepad"), now);
+
+        DateTimeOffset startedAt = CreateLocalDateTimeOffset(seedDate.Value, new TimeOnly(15, 33));
+        DateTimeOffset endedAt = startedAt.AddMinutes(21);
+
+        _engine.StartProject(project.Id, startedAt);
+        _engine.ObserveFocusedProgram("notepad", startedAt);
+        _engine.StopProject(endedAt);
+
+        return true;
+    }
+
+    private bool EnsureDailyCalendarVisualSeed()
+    {
+        DateOnly month = new(DateTime.Now.Year, DateTime.Now.Month, 1);
+        string sampleProjectName = "?쇨컙 湲곕줉 ?덉떆 ?꾨줈?앺듃";
+        DateOnly[] targetDates =
+        [
+            new DateOnly(month.Year, month.Month, 9),
+            new DateOnly(month.Year, month.Month, 10),
+            new DateOnly(month.Year, month.Month, 11),
+            new DateOnly(month.Year, month.Month, 12),
+            new DateOnly(month.Year, month.Month, 13)
+        ];
+        int[] focusMinutes = [15, 45, 90, 180, 300];
+
+        HashSet<DateOnly> existingDates =
+        [
+            .. _engine.CompletedRecords
+                .Where(record => string.Equals(record.ProjectName, sampleProjectName, StringComparison.OrdinalIgnoreCase))
+                .Select(record => DateOnly.FromDateTime(record.StartedAt.LocalDateTime.Date))
+        ];
+
+        if (targetDates.All(existingDates.Contains))
+        {
+            return false;
+        }
+
+        _engine.TryAddProject(sampleProjectName, out ProjectDefinition project);
+        _engine.TryRegisterProgram(project.Id, new TrackedApplication("notepad", "notepad"), DateTimeOffset.Now);
+
+        bool seeded = false;
+        for (int index = 0; index < targetDates.Length; index++)
+        {
+            if (existingDates.Contains(targetDates[index]))
+            {
+                continue;
+            }
+
+            DateTimeOffset startedAt = CreateLocalDateTimeOffset(targetDates[index], new TimeOnly(9, 0));
+            DateTimeOffset endedAt = startedAt.AddMinutes(focusMinutes[index]);
+
+            _engine.StartProject(project.Id, startedAt);
+            _engine.ObserveFocusedProgram("notepad", startedAt);
+            _engine.StopProject(endedAt);
+            seeded = true;
+        }
+
+        return seeded;
+    }
+
     private static string BuildStorePath()
     {
         return Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "FocusTrackingTimer",
             "focus-tracking-timer.db");
+    }
+
+    private static DateOnly GetWeekStart(DateOnly date)
+    {
+        int offset = (7 + (date.DayOfWeek - DayOfWeek.Sunday)) % 7;
+        return date.AddDays(-offset);
+    }
+
+    private static DateTimeOffset CreateLocalDateTimeOffset(DateOnly date, TimeOnly time)
+    {
+        DateTime localDateTime = date.ToDateTime(time);
+        return new DateTimeOffset(localDateTime, TimeZoneInfo.Local.GetUtcOffset(localDateTime));
     }
 }

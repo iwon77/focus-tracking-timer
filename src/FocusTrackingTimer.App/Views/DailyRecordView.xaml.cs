@@ -1,6 +1,5 @@
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 
 namespace FocusTrackingTimer.App.Views;
 
@@ -12,10 +11,6 @@ public partial class DailyRecordView : UserControl
     }
 
     private MainWindow HostWindow => (MainWindow)Window.GetWindow(this)!;
-
-    private void CalendarRecordButton_Click(object sender, RoutedEventArgs e) => HostWindow.CalendarRecordButton_Click(sender, e);
-
-    private void RecentRecordButton_Click(object sender, RoutedEventArgs e) => HostWindow.RecentRecordButton_Click(sender, e);
 
     private void PreviousRecordYearButton_Click(object sender, RoutedEventArgs e) => HostWindow.PreviousRecordYearButton_Click(sender, e);
 
@@ -29,7 +24,5 @@ public partial class DailyRecordView : UserControl
 
     private void RecordFilter_SelectionChanged(object sender, SelectionChangedEventArgs e) => HostWindow.RecordFilter_SelectionChanged(sender, e);
 
-    private void CalendarDayBorder_MouseEnter(object sender, MouseEventArgs e) => HostWindow.CalendarDayBorder_MouseEnter(sender, e);
-
-    private void CalendarDayBorder_MouseLeave(object sender, MouseEventArgs e) => HostWindow.CalendarDayBorder_MouseLeave(sender, e);
+    private void CalendarDayButton_Click(object sender, RoutedEventArgs e) => HostWindow.CalendarDayButton_Click(sender, e);
 }

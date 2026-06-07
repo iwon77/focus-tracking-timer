@@ -1,0 +1,305 @@
+using System.Globalization;
+using System.Windows;
+using FocusTrackingTimer.App.Infrastructure;
+using FocusTrackingTimer.App.ViewModels;
+using FocusTrackingTimer.Core.Tracking;
+
+namespace FocusTrackingTimer.App.Features.WeeklyRecords;
+
+internal sealed class WeeklyRecordFeatureController
+{
+    private readonly ProjectTimerEngine _engine;
+    private readonly WeeklyRecordViewModel _viewModel;
+    private DateOnly _displayedWeekStart = GetWeekStart(DateOnly.FromDateTime(DateTime.Now.Date));
+    private DateOnly _selectedDate = DateOnly.FromDateTime(DateTime.Now.Date);
+    private (Guid ProjectId, DateTimeOffset StartedAt, DateTimeOffset EndedAt)? _selectedRecordKey;
+    private bool _isRefreshingRows;
+
+    public WeeklyRecordFeatureController(ProjectTimerEngine engine, WeeklyRecordViewModel viewModel)
+    {
+        _engine = engine;
+        _viewModel = viewModel;
+    }
+
+    public void MoveDisplayedWeek(int weekOffset)
+    {
+        _displayedWeekStart = _displayedWeekStart.AddDays(weekOffset * 7);
+        AlignSelectedDateToDisplayedWeek();
+        RefreshWeeklyRecordArea(DateTimeOffset.Now);
+    }
+
+    public void MoveDisplayedWeekToCurrent()
+    {
+        _displayedWeekStart = GetWeekStart(DateOnly.FromDateTime(DateTime.Now.Date));
+        AlignSelectedDateToDisplayedWeek();
+        RefreshWeeklyRecordArea(DateTimeOffset.Now);
+    }
+
+    public void RefreshRecordFilters()
+    {
+        Guid? selectedFilterProjectId = _viewModel.SelectedRecordFilter?.ProjectId;
+
+        _viewModel.RecordFilterOptions.Clear();
+        _viewModel.RecordFilterOptions.Add(new RecordFilterOption(null, "<모든 프로젝트>"));
+        foreach (ProjectDefinition project in _engine.Projects.OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase))
+        {
+            _viewModel.RecordFilterOptions.Add(new RecordFilterOption(project.Id, project.Name));
+        }
+
+        _viewModel.SelectedRecordFilter = _viewModel.RecordFilterOptions.FirstOrDefault(option => option.ProjectId == selectedFilterProjectId)
+            ?? _viewModel.RecordFilterOptions[0];
+    }
+
+    public void RefreshWeeklyRecordArea(DateTimeOffset observedAt)
+    {
+        Guid? projectFilter = _viewModel.SelectedRecordFilter?.ProjectId;
+        DateOnly weekEnd = _displayedWeekStart.AddDays(6);
+        AlignSelectedDateToDisplayedWeek();
+
+        IReadOnlyList<ProjectTimerRecordSlice> weeklySlices = _engine.GetRecordSlices(_displayedWeekStart, weekEnd, observedAt, projectFilter);
+        List<ProjectTimerRecordSlice> orderedWeeklySlices = [.. weeklySlices
+            .OrderBy(static slice => slice.StartedAt)
+            .ThenBy(static slice => slice.EndedAt)];
+
+        EnsureSelectedDateHasRecords(orderedWeeklySlices);
+
+        _viewModel.DisplayedWeekRangeText = AppTimeFormatter.FormatWeekRange(_displayedWeekStart, weekEnd);
+        _viewModel.DisplayedWeekLabelText = AppTimeFormatter.FormatWeekOfMonthLabel(DateOnly.FromDateTime(DateTime.Now.Date));
+
+        TimeSpan totalFocusDuration = orderedWeeklySlices.Aggregate(TimeSpan.Zero, static (total, slice) => total + slice.TotalDuration);
+        TimeSpan totalWallClockDuration = orderedWeeklySlices.Aggregate(TimeSpan.Zero, static (total, slice) => total + slice.WallClockDuration);
+
+        _viewModel.WeekTotalFocusDurationText = AppTimeFormatter.FormatDuration(totalFocusDuration);
+        _viewModel.WeekTotalWallClockDurationText = AppTimeFormatter.FormatDuration(totalWallClockDuration);
+        _viewModel.WeeklyRecordCountText = $"{orderedWeeklySlices.Count}건";
+        _viewModel.AverageDailyWallClockDurationText = AppTimeFormatter.FormatDuration(TimeSpan.FromTicks(totalWallClockDuration.Ticks / 7));
+        _viewModel.AverageDailyFocusDurationText = AppTimeFormatter.FormatDuration(TimeSpan.FromTicks(totalFocusDuration.Ticks / 7));
+
+        List<ProjectTimerRecordSlice> selectedDateSlices = [.. orderedWeeklySlices.Where(slice =>
+            DateOnly.FromDateTime(slice.StartedAt.LocalDateTime.Date) == _selectedDate)];
+
+        _isRefreshingRows = true;
+        try
+        {
+            _viewModel.WeeklyRecordRows.Clear();
+            foreach (ProjectTimerRecordSlice slice in selectedDateSlices)
+            {
+                TimeSpan wallClock = slice.WallClockDuration;
+                double focusRatio = wallClock <= TimeSpan.Zero ? 0 : slice.TotalDuration.TotalSeconds / wallClock.TotalSeconds;
+                DateOnly recordDate = DateOnly.FromDateTime(slice.StartedAt.LocalDateTime.Date);
+
+                _viewModel.WeeklyRecordRows.Add(new WeeklyRecordRow(
+                    slice.ProjectId,
+                    recordDate,
+                    AppTimeFormatter.FormatGroupDate(recordDate),
+                    slice.StartedAt,
+                    slice.EndedAt,
+                    AppTimeFormatter.FormatDayLabel(recordDate),
+                    slice.ProjectName,
+                    AppTimeFormatter.FormatDuration(slice.TotalDuration),
+                    AppTimeFormatter.FormatDuration(slice.WallClockDuration),
+                    AppTimeFormatter.FormatTimeRange(slice.StartedAt, slice.EndedAt),
+                    AppTimeFormatter.FormatPercentage(focusRatio),
+                    [.. slice.ProgramSummaries.Select(summary => new ProgramDurationRow(
+                        summary.Program.DisplayName,
+                        summary.Program.ProcessName,
+                        AppTimeFormatter.FormatDuration(summary.FocusDuration)))]));
+            }
+        }
+        finally
+        {
+            _isRefreshingRows = false;
+        }
+
+        WeeklyRecordRow? selectedRow = ResolveSelectedRow();
+        _viewModel.SelectedWeeklyRecordRow = selectedRow;
+        RefreshSelectedRecordDetails(selectedRow);
+        RefreshWeeklyDayBubbles(observedAt, projectFilter);
+    }
+
+    public void SelectRecord(WeeklyRecordRow? row)
+    {
+        if (_isRefreshingRows && row is null)
+        {
+            return;
+        }
+
+        _viewModel.SelectedWeeklyRecordRow = row;
+        _selectedRecordKey = row is null ? null : (row.ProjectId, row.StartedAt, row.EndedAt);
+        if (row is not null)
+        {
+            _selectedDate = row.RecordDate;
+        }
+
+        RefreshSelectedRecordDetails(row);
+        RefreshWeeklyDayBubbles(DateTimeOffset.Now, _viewModel.SelectedRecordFilter?.ProjectId);
+    }
+
+    public void SelectSummaryDay(WeeklyDayBubbleRow? row)
+    {
+        if (row is null || !row.HasBubble)
+        {
+            return;
+        }
+
+        _selectedDate = row.Date;
+        _selectedRecordKey = null;
+        RefreshWeeklyRecordArea(DateTimeOffset.Now);
+    }
+
+    private WeeklyRecordRow? ResolveSelectedRow()
+    {
+        if (_selectedRecordKey is { } key)
+        {
+            WeeklyRecordRow? matched = _viewModel.WeeklyRecordRows.FirstOrDefault(row =>
+                row.ProjectId == key.ProjectId &&
+                row.StartedAt == key.StartedAt &&
+                row.EndedAt == key.EndedAt);
+
+            if (matched is not null)
+            {
+                return matched;
+            }
+        }
+
+        WeeklyRecordRow? firstRow = _viewModel.WeeklyRecordRows.FirstOrDefault();
+        _selectedRecordKey = firstRow is null ? null : (firstRow.ProjectId, firstRow.StartedAt, firstRow.EndedAt);
+        return firstRow;
+    }
+
+    private void RefreshSelectedRecordDetails(WeeklyRecordRow? row)
+    {
+        _viewModel.SelectedRecordProgramRows.Clear();
+
+        if (row is null)
+        {
+            _viewModel.SelectedRecordTitle = "선택한 작업이 없습니다.";
+            _viewModel.SelectedRecordSubtitle = AppTimeFormatter.FormatGroupDate(_selectedDate);
+            _viewModel.SelectedRecordTotalDurationText = "00:00:00";
+            _viewModel.SelectedRecordFocusDurationText = "00:00:00";
+            _viewModel.SelectedRecordFocusRatioText = "0%";
+            _viewModel.SelectedRecordEmptyText = "선택한 날짜의 작업 기록이 없습니다.";
+            _viewModel.SelectedRecordEmptyVisibility = Visibility.Visible;
+            _viewModel.SelectedRecordDetailVisibility = Visibility.Collapsed;
+            return;
+        }
+
+        _viewModel.SelectedRecordTitle = row.ProjectName;
+        _viewModel.SelectedRecordSubtitle = $"{row.DateText} · {row.PeriodText}";
+        _viewModel.SelectedRecordTotalDurationText = row.TotalDurationText;
+        _viewModel.SelectedRecordFocusDurationText = row.FocusDurationText;
+        _viewModel.SelectedRecordFocusRatioText = row.FocusRatioText;
+
+        foreach (ProgramDurationRow program in row.ProgramRows)
+        {
+            _viewModel.SelectedRecordProgramRows.Add(program);
+        }
+
+        _viewModel.SelectedRecordEmptyText = row.ProgramRows.Count == 0
+            ? "이 작업에는 등록된 프로그램 집중 시간이 없습니다."
+            : string.Empty;
+        _viewModel.SelectedRecordEmptyVisibility = row.ProgramRows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        _viewModel.SelectedRecordDetailVisibility = row.ProgramRows.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void RefreshWeeklyDayBubbles(DateTimeOffset observedAt, Guid? projectFilter)
+    {
+        DateOnly weekEnd = _displayedWeekStart.AddDays(6);
+        IReadOnlyList<DailyDurationSummary> summaries = _engine.GetDailyDurationSummaries(_displayedWeekStart, weekEnd, observedAt, projectFilter);
+        Dictionary<DateOnly, TimeSpan> durationsByDate = summaries.ToDictionary(summary => summary.Date, summary => summary.TotalDuration);
+
+        _viewModel.WeeklyDayBubbleRows.Clear();
+        for (DateOnly date = _displayedWeekStart; date <= weekEnd; date = date.AddDays(1))
+        {
+            TimeSpan duration = durationsByDate.GetValueOrDefault(date, TimeSpan.Zero);
+            bool hasBubble = duration > TimeSpan.Zero;
+            bool isSunday = date.DayOfWeek == DayOfWeek.Sunday;
+
+            _viewModel.WeeklyDayBubbleRows.Add(new WeeklyDayBubbleRow(
+                date,
+                AppTimeFormatter.FormatWeekDayName(date),
+                isSunday || _selectedDate == date
+                    ? AppTimeFormatter.FormatWeeklyBubbleDate(date)
+                    : date.Day.ToString(CultureInfo.CurrentCulture),
+                GetBubbleDiameter(duration),
+                hasBubble,
+                hasBubble && _selectedDate == date,
+                isSunday,
+                hasBubble ? Visibility.Visible : Visibility.Collapsed));
+        }
+    }
+
+    private void AlignSelectedDateToDisplayedWeek()
+    {
+        DateOnly weekEnd = _displayedWeekStart.AddDays(6);
+        if (_selectedDate >= _displayedWeekStart && _selectedDate <= weekEnd)
+        {
+            return;
+        }
+
+        DateOnly today = DateOnly.FromDateTime(DateTime.Now.Date);
+        _selectedDate = today >= _displayedWeekStart && today <= weekEnd
+            ? today
+            : _displayedWeekStart;
+        _selectedRecordKey = null;
+    }
+
+    private void EnsureSelectedDateHasRecords(IEnumerable<ProjectTimerRecordSlice> weeklySlices)
+    {
+        List<DateOnly> availableDates = [.. weeklySlices
+            .Select(slice => DateOnly.FromDateTime(slice.StartedAt.LocalDateTime.Date))
+            .Distinct()
+            .OrderBy(static date => date)];
+
+        if (availableDates.Count == 0)
+        {
+            _selectedRecordKey = null;
+            return;
+        }
+
+        if (availableDates.Contains(_selectedDate))
+        {
+            return;
+        }
+
+        _selectedDate = availableDates[0];
+        _selectedRecordKey = null;
+    }
+
+    private static double GetBubbleDiameter(TimeSpan duration)
+    {
+        double minutes = duration.TotalMinutes;
+        if (minutes <= 0)
+        {
+            return 0;
+        }
+
+        if (minutes <= 30)
+        {
+            return 8;
+        }
+
+        if (minutes <= 60)
+        {
+            return 11;
+        }
+
+        if (minutes <= 120)
+        {
+            return 14;
+        }
+
+        if (minutes <= 240)
+        {
+            return 17;
+        }
+
+        return 20;
+    }
+
+    private static DateOnly GetWeekStart(DateOnly date)
+    {
+        int offset = (7 + (date.DayOfWeek - DayOfWeek.Sunday)) % 7;
+        return date.AddDays(-offset);
+    }
+}

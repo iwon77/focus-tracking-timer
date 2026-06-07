@@ -7,9 +7,9 @@
         mc:Ignorable="d"
         Title="Focus Tracking Timer"
         Width="1120"
-        Height="720"
+        Height="960"
         MinWidth="1120"
-        MinHeight="720"
+        MinHeight="960"
         Background="#F7F7F4">
     <Grid Margin="20">
         <Grid.RowDefinitions>
@@ -36,7 +36,7 @@
                         BorderBrush="#2F2F2F"
                         BorderThickness="2"
                         Click="CalendarTabButton_Click"
-                        Content="캘린더"
+                        Content="일간 기록"
                         Foreground="{Binding Menu.DailyRecordTabForeground}" />
                 <Button x:Name="WeeklyTabButtonControl"
                         Width="120"
@@ -52,9 +52,12 @@
         </Border>
 
         <Grid Grid.Row="1" Margin="0,16,0,0">
-            <views:TimerView DataContext="{Binding Timer}" Visibility="{Binding Menu.TimerViewVisibility}" />
-            <views:DailyRecordView DataContext="{Binding DailyRecord}" Visibility="{Binding Menu.DailyRecordViewVisibility}" />
-            <views:WeeklyRecordView Visibility="{Binding Menu.WeeklyRecordViewVisibility}" />
+            <views:TimerView DataContext="{Binding Timer}"
+                             Visibility="{Binding DataContext.Menu.TimerViewVisibility, RelativeSource={RelativeSource AncestorType=Window}}" />
+            <views:DailyRecordView DataContext="{Binding DailyRecord}"
+                                   Visibility="{Binding DataContext.Menu.DailyRecordViewVisibility, RelativeSource={RelativeSource AncestorType=Window}}" />
+            <views:WeeklyRecordView DataContext="{Binding WeeklyRecord}"
+                                    Visibility="{Binding DataContext.Menu.WeeklyRecordViewVisibility, RelativeSource={RelativeSource AncestorType=Window}}" />
         </Grid>
     </Grid>
 </Window>
