@@ -23,38 +23,38 @@
                         Width="120"
                         Margin="0,0,10,0"
                         Padding="10,6"
-                        Background="{Binding ProjectTabBackground}"
+                        Background="{Binding Menu.TimerTabBackground}"
                         BorderBrush="#2F2F2F"
                         BorderThickness="2"
                         Click="ProjectTabButton_Click"
                         Content="타이머"
-                        Foreground="{Binding ProjectTabForeground}" />
+                        Foreground="{Binding Menu.TimerTabForeground}" />
                 <Button x:Name="CalendarTabButtonControl"
                         Width="120"
                         Padding="10,6"
-                        Background="{Binding RecordTabBackground}"
+                        Background="{Binding Menu.DailyRecordTabBackground}"
                         BorderBrush="#2F2F2F"
                         BorderThickness="2"
                         Click="CalendarTabButton_Click"
                         Content="일간기록"
-                        Foreground="{Binding RecordTabForeground}" />
+                        Foreground="{Binding Menu.DailyRecordTabForeground}" />
                 <Button x:Name="WeeklyTabButtonControl"
                         Width="120"
                         Margin="10,0,0,0"
                         Padding="10,6"
-                        Background="{Binding WeeklyTabBackground}"
+                        Background="{Binding Menu.WeeklyRecordTabBackground}"
                         BorderBrush="#2F2F2F"
                         BorderThickness="2"
                         Click="WeeklyTabButton_Click"
                         Content="주간기록"
-                        Foreground="{Binding WeeklyTabForeground}" />
+                        Foreground="{Binding Menu.WeeklyRecordTabForeground}" />
             </StackPanel>
         </Border>
 
         <Grid Grid.Row="1" Margin="0,16,0,0">
-            <views:TimerView Visibility="{Binding ProjectViewVisibility}" />
-            <views:DailyRecordView Visibility="{Binding RecordViewVisibility}" />
-            <views:WeeklyRecordView Visibility="{Binding WeeklyViewVisibility}" />
+            <views:TimerView DataContext="{Binding Timer}" Visibility="{Binding Menu.TimerViewVisibility}" />
+            <views:DailyRecordView DataContext="{Binding DailyRecord}" Visibility="{Binding Menu.DailyRecordViewVisibility}" />
+            <views:WeeklyRecordView Visibility="{Binding Menu.WeeklyRecordViewVisibility}" />
         </Grid>
     </Grid>
 </Window>

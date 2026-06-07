@@ -1,23 +1,18 @@
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
 using FocusTrackingTimer.Core.Persistence;
 using FocusTrackingTimer.Core.Tracking;
+using FocusTrackingTimer.App.ViewModels;
 
 namespace FocusTrackingTimer.App;
 
-public partial class MainWindow : Window, INotifyPropertyChanged
+public partial class MainWindow : Window
 {
-    private static readonly Brush SelectedTabBackground = new SolidColorBrush(Color.FromRgb(31, 31, 31));
-    private static readonly Brush SelectedTabForeground = new SolidColorBrush(Color.FromRgb(255, 255, 255));
-    private static readonly Brush UnselectedTabBackground = new SolidColorBrush(Color.FromRgb(255, 255, 255));
-    private static readonly Brush UnselectedTabForeground = new SolidColorBrush(Color.FromRgb(24, 24, 24));
     private static readonly Brush StartButtonBackground = new SolidColorBrush(Color.FromRgb(31, 31, 31));
     private static readonly Brush StopButtonBackground = new SolidColorBrush(Color.FromRgb(245, 245, 242));
     private static readonly Brush DisabledButtonBackground = new SolidColorBrush(Color.FromRgb(225, 225, 225));
@@ -31,57 +26,21 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly DispatcherTimer _uiTimer;
     private readonly int _currentProcessId = Environment.ProcessId;
 
-    private MainMenuTab _selectedTab = MainMenuTab.Timer;
     private DateOnly _displayedRecordMonth = new(DateTime.Now.Year, DateTime.Now.Month, 1);
     private DateOnly? _hoveredCalendarDate;
     private Dictionary<DateOnly, IReadOnlyList<string>> _calendarHoverLinesByDate = [];
     private ProjectDefinition? _selectedProject;
-    private ProjectSidebarRow? _selectedProjectRow;
-    private RecordFilterOption? _selectedRecordFilter;
-    private ProgramSortOption? _selectedProgramSortOption;
-    private string _selectedProjectTitle = "프로젝트를 추가해보세요";
-    private string _activeSessionPeriodText = "작업 시작/종료 시간이 여기에 표시됩니다.";
-    private string _timerStatusText = "시작 버튼을 누르면 등록 프로그램 포커스 시간만 기록합니다.";
-    private string _focusStatusText = "등록 프로그램 포커스 상태가 여기에 표시됩니다.";
-    private string _activeProjectWallClockText = "00:00:00";
-    private string _activeProjectElapsedText = "00:00:00";
-    private string _selectedProjectTodayText = "00:00:00";
-    private string _recordHeadlineText = "오늘은 아직 작업 기록이 없습니다.";
-    private string _todayWorkedText = "00:00:00";
-    private string _displayedRecordMonthText = string.Empty;
-    private string _calendarHoverTitle = string.Empty;
-    private string _selectedRecordFilterLabel = "<모든 프로젝트>";
-    private bool _isTimerActionEnabled;
-    private bool _isProjectEditEnabled;
-    private bool _isProjectDeleteEnabled;
-    private string _timerActionButtonText = "시작";
-    private Brush _timerActionButtonBackground = StartButtonBackground;
-    private Brush _timerActionButtonForeground = StartButtonForeground;
-    private Brush _projectTabBackground = SelectedTabBackground;
-    private Brush _projectTabForeground = SelectedTabForeground;
-    private Brush _recordTabBackground = UnselectedTabBackground;
-    private Brush _recordTabForeground = UnselectedTabForeground;
-    private Brush _weeklyTabBackground = UnselectedTabBackground;
-    private Brush _weeklyTabForeground = UnselectedTabForeground;
-    private Brush _calendarButtonBackground = RecordSelectedButtonBackground;
-    private Brush _recentButtonBackground = RecordUnselectedButtonBackground;
-    private Visibility _projectViewVisibility = Visibility.Visible;
-    private Visibility _recordViewVisibility = Visibility.Collapsed;
-    private Visibility _weeklyViewVisibility = Visibility.Collapsed;
-    private Visibility _calendarRecordVisibility = Visibility.Visible;
-    private Visibility _recentRecordVisibility = Visibility.Collapsed;
-    private Visibility _calendarHoverCardVisibility = Visibility.Collapsed;
 
     public MainWindow()
     {
         InitializeComponent();
         DataContext = this;
 
-        ProgramSortOptions.Add(new ProgramSortOption(ProgramSortMode.MostUsed, "많이 사용한 순"));
-        ProgramSortOptions.Add(new ProgramSortOption(ProgramSortMode.Registered, "등록 순서"));
-        ProgramSortOptions.Add(new ProgramSortOption(ProgramSortMode.Manual, "사용자 지정"));
-        SelectedProgramSortOption = ProgramSortOptions[0];
-        DisplayedRecordMonthText = FormatRecordMonth(_displayedRecordMonth);
+        Timer.ProgramSortOptions.Add(new ProgramSortOption(ProgramSortMode.MostUsed, "많이 사용한 순"));
+        Timer.ProgramSortOptions.Add(new ProgramSortOption(ProgramSortMode.Registered, "등록 순서"));
+        Timer.ProgramSortOptions.Add(new ProgramSortOption(ProgramSortMode.Manual, "사용자 지정"));
+        Timer.SelectedProgramSortOption = Timer.ProgramSortOptions[0];
+        DailyRecord.DisplayedRecordMonthText = FormatRecordMonth(_displayedRecordMonth);
         _uiTimer = new DispatcherTimer
         {
             Interval = TimeSpan.FromSeconds(1)
@@ -92,231 +51,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         Closing += OnClosing;
     }
 
-    public event PropertyChangedEventHandler? PropertyChanged;
+    public MainMenuViewModel Menu { get; } = new();
 
-    public ObservableCollection<ProjectSidebarRow> ProjectRows { get; } = [];
+    public TimerViewModel Timer { get; } = new(StartButtonBackground, StartButtonForeground);
 
-    public ObservableCollection<RegisteredProgramRow> RegisteredProgramRows { get; } = [];
-
-    public ObservableCollection<RecordFilterOption> RecordFilterOptions { get; } = [];
-
-    public ObservableCollection<ProgramSortOption> ProgramSortOptions { get; } = [];
-
-    public ObservableCollection<CalendarDayRow> CalendarRows { get; } = [];
-
-    public ObservableCollection<RecentRecordRow> RecentRecordRows { get; } = [];
-
-    public string SelectedProjectTitle
-    {
-        get => _selectedProjectTitle;
-        private set => SetProperty(ref _selectedProjectTitle, value);
-    }
-
-    public string ActiveSessionPeriodText
-    {
-        get => _activeSessionPeriodText;
-        private set => SetProperty(ref _activeSessionPeriodText, value);
-    }
-
-    public string TimerStatusText
-    {
-        get => _timerStatusText;
-        private set => SetProperty(ref _timerStatusText, value);
-    }
-
-    public string FocusStatusText
-    {
-        get => _focusStatusText;
-        private set => SetProperty(ref _focusStatusText, value);
-    }
-
-    public string ActiveProjectElapsedText
-    {
-        get => _activeProjectElapsedText;
-        private set => SetProperty(ref _activeProjectElapsedText, value);
-    }
-
-    public string ActiveProjectWallClockText
-    {
-        get => _activeProjectWallClockText;
-        private set => SetProperty(ref _activeProjectWallClockText, value);
-    }
-
-    public string SelectedProjectTodayText
-    {
-        get => _selectedProjectTodayText;
-        private set => SetProperty(ref _selectedProjectTodayText, value);
-    }
-
-    public string RecordHeadlineText
-    {
-        get => _recordHeadlineText;
-        private set => SetProperty(ref _recordHeadlineText, value);
-    }
-
-    public string TodayWorkedText
-    {
-        get => _todayWorkedText;
-        private set => SetProperty(ref _todayWorkedText, value);
-    }
-
-    public string DisplayedRecordMonthText
-    {
-        get => _displayedRecordMonthText;
-        private set => SetProperty(ref _displayedRecordMonthText, value);
-    }
-
-    public string CalendarHoverTitle
-    {
-        get => _calendarHoverTitle;
-        private set => SetProperty(ref _calendarHoverTitle, value);
-    }
-
-    public string SelectedRecordFilterLabel
-    {
-        get => _selectedRecordFilterLabel;
-        private set => SetProperty(ref _selectedRecordFilterLabel, value);
-    }
-
-    public bool IsTimerActionEnabled
-    {
-        get => _isTimerActionEnabled;
-        private set => SetProperty(ref _isTimerActionEnabled, value);
-    }
-
-    public bool IsProjectEditEnabled
-    {
-        get => _isProjectEditEnabled;
-        private set => SetProperty(ref _isProjectEditEnabled, value);
-    }
-
-    public bool IsProjectDeleteEnabled
-    {
-        get => _isProjectDeleteEnabled;
-        private set => SetProperty(ref _isProjectDeleteEnabled, value);
-    }
-
-    public string TimerActionButtonText
-    {
-        get => _timerActionButtonText;
-        private set => SetProperty(ref _timerActionButtonText, value);
-    }
-
-    public Brush TimerActionButtonBackground
-    {
-        get => _timerActionButtonBackground;
-        private set => SetProperty(ref _timerActionButtonBackground, value);
-    }
-
-    public Brush TimerActionButtonForeground
-    {
-        get => _timerActionButtonForeground;
-        private set => SetProperty(ref _timerActionButtonForeground, value);
-    }
-
-    public Brush ProjectTabBackground
-    {
-        get => _projectTabBackground;
-        private set => SetProperty(ref _projectTabBackground, value);
-    }
-
-    public Brush ProjectTabForeground
-    {
-        get => _projectTabForeground;
-        private set => SetProperty(ref _projectTabForeground, value);
-    }
-
-    public Brush RecordTabBackground
-    {
-        get => _recordTabBackground;
-        private set => SetProperty(ref _recordTabBackground, value);
-    }
-
-    public Brush RecordTabForeground
-    {
-        get => _recordTabForeground;
-        private set => SetProperty(ref _recordTabForeground, value);
-    }
-
-    public Brush WeeklyTabBackground
-    {
-        get => _weeklyTabBackground;
-        private set => SetProperty(ref _weeklyTabBackground, value);
-    }
-
-    public Brush WeeklyTabForeground
-    {
-        get => _weeklyTabForeground;
-        private set => SetProperty(ref _weeklyTabForeground, value);
-    }
-
-    public Brush CalendarButtonBackground
-    {
-        get => _calendarButtonBackground;
-        private set => SetProperty(ref _calendarButtonBackground, value);
-    }
-
-    public Brush RecentButtonBackground
-    {
-        get => _recentButtonBackground;
-        private set => SetProperty(ref _recentButtonBackground, value);
-    }
-
-    public Visibility ProjectViewVisibility
-    {
-        get => _projectViewVisibility;
-        private set => SetProperty(ref _projectViewVisibility, value);
-    }
-
-    public Visibility RecordViewVisibility
-    {
-        get => _recordViewVisibility;
-        private set => SetProperty(ref _recordViewVisibility, value);
-    }
-
-    public Visibility WeeklyViewVisibility
-    {
-        get => _weeklyViewVisibility;
-        private set => SetProperty(ref _weeklyViewVisibility, value);
-    }
-
-    public Visibility CalendarRecordVisibility
-    {
-        get => _calendarRecordVisibility;
-        private set => SetProperty(ref _calendarRecordVisibility, value);
-    }
-
-    public Visibility RecentRecordVisibility
-    {
-        get => _recentRecordVisibility;
-        private set => SetProperty(ref _recentRecordVisibility, value);
-    }
-
-    public Visibility CalendarHoverCardVisibility
-    {
-        get => _calendarHoverCardVisibility;
-        private set => SetProperty(ref _calendarHoverCardVisibility, value);
-    }
-
-    public ObservableCollection<string> CalendarHoverLines { get; } = [];
-
-    public ProjectSidebarRow? SelectedProjectRow
-    {
-        get => _selectedProjectRow;
-        set => SetProperty(ref _selectedProjectRow, value);
-    }
-
-    public RecordFilterOption? SelectedRecordFilter
-    {
-        get => _selectedRecordFilter;
-        set => SetProperty(ref _selectedRecordFilter, value);
-    }
-
-    public ProgramSortOption? SelectedProgramSortOption
-    {
-        get => _selectedProgramSortOption;
-        set => SetProperty(ref _selectedProgramSortOption, value);
-    }
+    public DailyRecordViewModel DailyRecord { get; } = new(RecordSelectedButtonBackground, RecordUnselectedButtonBackground);
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
@@ -423,7 +162,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         if (!_engine.TryAddProject(projectName, out ProjectDefinition project))
         {
-            TimerStatusText = "프로젝트를 추가하지 못했습니다.";
+            Timer.TimerStatusText = "프로젝트를 추가하지 못했습니다.";
             return;
         }
 
@@ -454,7 +193,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         Guid projectId = _selectedProject.Id;
         if (!_engine.TryRemoveProject(projectId))
         {
-            TimerStatusText = "실행 중인 프로젝트는 삭제할 수 없습니다.";
+            Timer.TimerStatusText = "실행 중인 프로젝트는 삭제할 수 없습니다.";
             return;
         }
 
@@ -501,12 +240,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     internal void ProjectList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (SelectedProjectRow is null)
+        if (Timer.SelectedProjectRow is null)
         {
             return;
         }
 
-        ProjectDefinition? project = _engine.Projects.FirstOrDefault(item => item.Id == SelectedProjectRow.ProjectId);
+        ProjectDefinition? project = _engine.Projects.FirstOrDefault(item => item.Id == Timer.SelectedProjectRow.ProjectId);
         if (project is null)
         {
             return;
@@ -520,7 +259,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         if (_selectedProject is null)
         {
-            SelectedProjectTitle = "먼저 프로젝트를 선택해주세요.";
+            Timer.SelectedProjectTitle = "먼저 프로젝트를 선택해주세요.";
             return;
         }
 
@@ -545,7 +284,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         if (_selectedProject is null)
         {
-            TimerStatusText = "프로그램을 추가하려면 먼저 프로젝트를 선택해주세요.";
+            Timer.TimerStatusText = "프로그램을 추가하려면 먼저 프로젝트를 선택해주세요.";
             return;
         }
 
@@ -637,7 +376,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     internal void ProgramSort_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        RefreshSelectedProjectArea(DateTimeOffset.Now, TimerStatusText);
+        RefreshSelectedProjectArea(DateTimeOffset.Now, Timer.TimerStatusText);
     }
 
     internal void RecordFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -662,9 +401,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         _hoveredCalendarDate = row.Date;
-        CalendarHoverTitle = FormatCalendarHoverTitle(row.Date.Value);
+        DailyRecord.CalendarHoverTitle = FormatCalendarHoverTitle(row.Date.Value);
         SetCalendarHoverLines(lines);
-        CalendarHoverCardVisibility = Visibility.Visible;
+        DailyRecord.CalendarHoverCardVisibility = Visibility.Visible;
     }
 
     internal void CalendarDayBorder_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
@@ -681,22 +420,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void SetSelectedTab(MainMenuTab tab)
     {
-        _selectedTab = tab;
+        Menu.SelectTab(tab);
 
-        bool isProject = tab == MainMenuTab.Timer;
-        bool isCalendar = tab == MainMenuTab.DailyRecord;
-        bool isWeekly = tab == MainMenuTab.WeeklyRecord;
-        ProjectViewVisibility = isProject ? Visibility.Visible : Visibility.Collapsed;
-        RecordViewVisibility = isCalendar ? Visibility.Visible : Visibility.Collapsed;
-        WeeklyViewVisibility = isWeekly ? Visibility.Visible : Visibility.Collapsed;
-        ProjectTabBackground = isProject ? SelectedTabBackground : UnselectedTabBackground;
-        ProjectTabForeground = isProject ? SelectedTabForeground : UnselectedTabForeground;
-        RecordTabBackground = isCalendar ? SelectedTabBackground : UnselectedTabBackground;
-        RecordTabForeground = isCalendar ? SelectedTabForeground : UnselectedTabForeground;
-        WeeklyTabBackground = isWeekly ? SelectedTabBackground : UnselectedTabBackground;
-        WeeklyTabForeground = isWeekly ? SelectedTabForeground : UnselectedTabForeground;
-
-        if (isCalendar)
+        if (tab == MainMenuTab.DailyRecord)
         {
             RefreshRecordViewState();
             RefreshRecordArea(DateTimeOffset.Now);
@@ -705,10 +431,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void RefreshRecordViewState()
     {
-        CalendarRecordVisibility = Visibility.Visible;
-        RecentRecordVisibility = Visibility.Collapsed;
-        CalendarButtonBackground = RecordSelectedButtonBackground;
-        RecentButtonBackground = RecordUnselectedButtonBackground;
+        DailyRecord.CalendarRecordVisibility = Visibility.Visible;
+        DailyRecord.RecentRecordVisibility = Visibility.Collapsed;
+        DailyRecord.CalendarButtonBackground = RecordSelectedButtonBackground;
+        DailyRecord.RecentButtonBackground = RecordUnselectedButtonBackground;
     }
 
     private string RefreshFocusTracking(DateTimeOffset observedAt)
@@ -750,14 +476,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         Guid? selectedProjectId = _selectedProject?.Id;
 
-        ProjectRows.Clear();
+        Timer.ProjectRows.Clear();
         foreach (ProjectDefinition project in _engine.Projects.OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase))
         {
             bool isActiveProject = _engine.ActiveProjectId == project.Id;
             string timerText = isActiveProject ? FormatDuration(_engine.GetCurrentRunDuration(project.Id, observedAt)) : string.Empty;
             string statusText = isActiveProject ? $"{timerText} 실행 중" : string.Empty;
 
-            ProjectRows.Add(new ProjectSidebarRow(
+            Timer.ProjectRows.Add(new ProjectSidebarRow(
                 project.Id,
                 project.Name,
                 string.Empty,
@@ -766,45 +492,45 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         if (selectedProjectId.HasValue)
         {
-            SelectedProjectRow = ProjectRows.FirstOrDefault(item => item.ProjectId == selectedProjectId.Value);
+            Timer.SelectedProjectRow = Timer.ProjectRows.FirstOrDefault(item => item.ProjectId == selectedProjectId.Value);
             _selectedProject = _engine.Projects.FirstOrDefault(item => item.Id == selectedProjectId.Value);
         }
         else if (_engine.Projects.Count > 0)
         {
             _selectedProject = _engine.Projects[0];
-            SelectedProjectRow = ProjectRows.FirstOrDefault(item => item.ProjectId == _selectedProject.Id);
+            Timer.SelectedProjectRow = Timer.ProjectRows.FirstOrDefault(item => item.ProjectId == _selectedProject.Id);
         }
         else
         {
-            SelectedProjectRow = null;
+            Timer.SelectedProjectRow = null;
             _selectedProject = null;
         }
     }
 
     private void RefreshSelectedProjectArea(DateTimeOffset observedAt, string message)
     {
-        IsProjectEditEnabled = _selectedProject is not null;
-        IsProjectDeleteEnabled = _selectedProject is not null && _engine.ActiveProjectId != _selectedProject.Id;
+        Timer.IsProjectEditEnabled = _selectedProject is not null;
+        Timer.IsProjectDeleteEnabled = _selectedProject is not null && _engine.ActiveProjectId != _selectedProject.Id;
 
         if (_selectedProject is null)
         {
-            SelectedProjectTitle = "프로젝트를 추가해보세요";
-            ActiveSessionPeriodText = string.Empty;
-            TimerStatusText = message;
-            FocusStatusText = string.Empty;
-            ActiveProjectWallClockText = "00:00:00";
-            ActiveProjectElapsedText = "00:00:00";
-            SelectedProjectTodayText = "00:00:00";
-            IsTimerActionEnabled = false;
-            TimerActionButtonText = "시작";
-            TimerActionButtonBackground = DisabledButtonBackground;
-            TimerActionButtonForeground = DefaultButtonForeground;
-            RegisteredProgramRows.Clear();
+            Timer.SelectedProjectTitle = "프로젝트를 추가해보세요";
+            Timer.ActiveSessionPeriodText = string.Empty;
+            Timer.TimerStatusText = message;
+            Timer.FocusStatusText = string.Empty;
+            Timer.ActiveProjectWallClockText = "00:00:00";
+            Timer.ActiveProjectElapsedText = "00:00:00";
+            Timer.SelectedProjectTodayText = "00:00:00";
+            Timer.IsTimerActionEnabled = false;
+            Timer.TimerActionButtonText = "시작";
+            Timer.TimerActionButtonBackground = DisabledButtonBackground;
+            Timer.TimerActionButtonForeground = DefaultButtonForeground;
+            Timer.RegisteredProgramRows.Clear();
             return;
         }
 
         bool isActiveProject = _engine.ActiveProjectId == _selectedProject.Id;
-        ProgramSortMode sortMode = SelectedProgramSortOption?.Mode ?? ProgramSortMode.MostUsed;
+        ProgramSortMode sortMode = Timer.SelectedProgramSortOption?.Mode ?? ProgramSortMode.MostUsed;
         Dictionary<string, string> initialDisplayNameByProcessName = _engine
             .GetRegisteredProgramInfos(_selectedProject.Id)
             .ToDictionary(
@@ -813,11 +539,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 StringComparer.OrdinalIgnoreCase);
         IReadOnlyDictionary<string, ProcessRunState> processStates = RunningProcessCatalog.GetProcessRunStates(_currentProcessId);
 
-        RegisteredProgramRows.Clear();
+        Timer.RegisteredProgramRows.Clear();
         foreach (ProgramFocusSummary summary in _engine.GetCurrentSessionProgramSummaries(_selectedProject.Id, observedAt, sortMode))
         {
             (string statusBrush, string statusText) = GetProgramRuntimeStatus(summary.Program.ProcessName, processStates);
-            RegisteredProgramRows.Add(new RegisteredProgramRow(
+            Timer.RegisteredProgramRows.Add(new RegisteredProgramRow(
                 summary.Program.DisplayName,
                 summary.Program.ProcessName,
                 isActiveProject ? FormatDuration(summary.FocusDuration) : "00:00:00",
@@ -830,70 +556,70 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         bool anotherProjectIsRunning = _engine.IsRunning && !isActiveProject;
 
-        SelectedProjectTitle = _selectedProject.Name;
-        ActiveSessionPeriodText = _engine.ActiveStartedAt.HasValue && isActiveProject
+        Timer.SelectedProjectTitle = _selectedProject.Name;
+        Timer.ActiveSessionPeriodText = _engine.ActiveStartedAt.HasValue && isActiveProject
             ? $"시작 {FormatDateTime(_engine.ActiveStartedAt.Value)} / 종료 대기 중"
             : string.Empty;
-        ActiveProjectElapsedText = isActiveProject
+        Timer.ActiveProjectElapsedText = isActiveProject
             ? FormatDuration(_engine.GetCurrentRunDuration(_selectedProject.Id, observedAt))
             : "00:00:00";
-        ActiveProjectWallClockText = isActiveProject
+        Timer.ActiveProjectWallClockText = isActiveProject
             ? FormatDuration(_engine.GetCurrentWallClockDuration(_selectedProject.Id, observedAt))
             : "00:00:00";
-        SelectedProjectTodayText = FormatDuration(_engine.GetTodayDuration(
+        Timer.SelectedProjectTodayText = FormatDuration(_engine.GetTodayDuration(
             DateOnly.FromDateTime(observedAt.LocalDateTime.Date),
             observedAt,
             _selectedProject.Id));
 
-        FocusStatusText = isActiveProject
+        Timer.FocusStatusText = isActiveProject
             ? (_engine.ActiveFocusedProgramName is null
                 ? "등록 프로그램이 포커스될 때까지 프로젝트 타이머는 멈춰 있습니다."
                 : $"현재 포커스 프로그램: {_engine.ActiveFocusedProgramName}")
             : string.Empty;
 
-        TimerStatusText = message;
-        IsTimerActionEnabled = !anotherProjectIsRunning;
-        TimerActionButtonText = !_engine.IsRunning
+        Timer.TimerStatusText = message;
+        Timer.IsTimerActionEnabled = !anotherProjectIsRunning;
+        Timer.TimerActionButtonText = !_engine.IsRunning
             ? "시작"
             : isActiveProject
                 ? "종료"
                 : "실행 중";
-        TimerActionButtonBackground = !_engine.IsRunning
+        Timer.TimerActionButtonBackground = !_engine.IsRunning
             ? StartButtonBackground
             : isActiveProject
                 ? StopButtonBackground
                 : DisabledButtonBackground;
-        TimerActionButtonForeground = !_engine.IsRunning
+        Timer.TimerActionButtonForeground = !_engine.IsRunning
             ? StartButtonForeground
             : DefaultButtonForeground;
     }
 
     private void RefreshRecordFilters()
     {
-        Guid? selectedFilterProjectId = SelectedRecordFilter?.ProjectId;
+        Guid? selectedFilterProjectId = DailyRecord.SelectedRecordFilter?.ProjectId;
 
-        RecordFilterOptions.Clear();
-        RecordFilterOptions.Add(new RecordFilterOption(null, "<모든 프로젝트>"));
+        DailyRecord.RecordFilterOptions.Clear();
+        DailyRecord.RecordFilterOptions.Add(new RecordFilterOption(null, "<모든 프로젝트>"));
         foreach (ProjectDefinition project in _engine.Projects.OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase))
         {
-            RecordFilterOptions.Add(new RecordFilterOption(project.Id, project.Name));
+            DailyRecord.RecordFilterOptions.Add(new RecordFilterOption(project.Id, project.Name));
         }
 
-        SelectedRecordFilter = RecordFilterOptions.FirstOrDefault(option => option.ProjectId == selectedFilterProjectId)
-            ?? RecordFilterOptions[0];
+        DailyRecord.SelectedRecordFilter = DailyRecord.RecordFilterOptions.FirstOrDefault(option => option.ProjectId == selectedFilterProjectId)
+            ?? DailyRecord.RecordFilterOptions[0];
     }
 
     private void RefreshRecordArea(DateTimeOffset observedAt)
     {
-        Guid? projectFilter = SelectedRecordFilter?.ProjectId;
-        SelectedRecordFilterLabel = SelectedRecordFilter?.Label ?? "<모든 프로젝트>";
-        DisplayedRecordMonthText = FormatRecordMonth(_displayedRecordMonth);
+        Guid? projectFilter = DailyRecord.SelectedRecordFilter?.ProjectId;
+        DailyRecord.SelectedRecordFilterLabel = DailyRecord.SelectedRecordFilter?.Label ?? "<모든 프로젝트>";
+        DailyRecord.DisplayedRecordMonthText = FormatRecordMonth(_displayedRecordMonth);
 
         DateOnly today = DateOnly.FromDateTime(observedAt.LocalDateTime.Date);
-        TodayWorkedText = FormatDuration(_engine.GetTodayDuration(today, observedAt, projectFilter));
-        RecordHeadlineText = TodayWorkedText == "00:00:00"
+        DailyRecord.TodayWorkedText = FormatDuration(_engine.GetTodayDuration(today, observedAt, projectFilter));
+        DailyRecord.RecordHeadlineText = DailyRecord.TodayWorkedText == "00:00:00"
             ? "오늘은 아직 작업 기록이 없습니다."
-            : $"오늘은 {TodayWorkedText} 작업했습니다.";
+            : $"오늘은 {DailyRecord.TodayWorkedText} 작업했습니다.";
 
         RefreshCalendar(today, _displayedRecordMonth, observedAt, projectFilter);
         RefreshRecentRecords(projectFilter);
@@ -906,7 +632,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         DateTimeOffset observedAt,
         Guid? projectFilter)
     {
-        CalendarRows.Clear();
+        DailyRecord.CalendarRows.Clear();
 
         DateOnly firstDay = new(displayedRecordMonth.Year, displayedRecordMonth.Month, 1);
         DateOnly lastDay = firstDay.AddMonths(1).AddDays(-1);
@@ -922,13 +648,13 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         for (int index = 0; index < leadingBlankCount; index++)
         {
-            CalendarRows.Add(new CalendarDayRow(null, string.Empty, string.Empty, false, false, true));
+            DailyRecord.CalendarRows.Add(new CalendarDayRow(null, string.Empty, string.Empty, false, false, true));
         }
 
         for (DateOnly date = firstDay; date <= lastDay; date = date.AddDays(1))
         {
             TimeSpan duration = summaryByDate.GetValueOrDefault(date)?.TotalDuration ?? TimeSpan.Zero;
-            CalendarRows.Add(new CalendarDayRow(
+            DailyRecord.CalendarRows.Add(new CalendarDayRow(
                 date,
                 date.Day.ToString(CultureInfo.CurrentCulture),
                 duration == TimeSpan.Zero ? string.Empty : FormatDurationShort(duration),
@@ -943,7 +669,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void RefreshRecentRecords(Guid? projectFilter)
     {
-        RecentRecordRows.Clear();
+        DailyRecord.RecentRecordRows.Clear();
 
         foreach (ProjectTimerRecord record in _engine.GetRecentRecords(12, projectFilter))
         {
@@ -952,7 +678,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 : string.Join(" / ", record.ProgramSummaries.Select(summary =>
                     $"{summary.Program.DisplayName} {FormatDuration(summary.FocusDuration)}"));
 
-            RecentRecordRows.Add(new RecentRecordRow(
+            DailyRecord.RecentRecordRows.Add(new RecentRecordRow(
                 record.ProjectName,
                 $"{FormatDateTime(record.StartedAt)} ~ {FormatDateTime(record.EndedAt)}",
                 FormatDuration(record.TotalDuration),
@@ -1087,7 +813,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         if (_hoveredCalendarDate is not { } hoveredDate)
         {
-            CalendarHoverCardVisibility = Visibility.Collapsed;
+            DailyRecord.CalendarHoverCardVisibility = Visibility.Collapsed;
             return;
         }
 
@@ -1098,25 +824,25 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        CalendarHoverTitle = FormatCalendarHoverTitle(hoveredDate);
+        DailyRecord.CalendarHoverTitle = FormatCalendarHoverTitle(hoveredDate);
         SetCalendarHoverLines(lines);
-        CalendarHoverCardVisibility = Visibility.Visible;
+        DailyRecord.CalendarHoverCardVisibility = Visibility.Visible;
     }
 
     private void HideCalendarHoverCard()
     {
         _hoveredCalendarDate = null;
-        CalendarHoverTitle = string.Empty;
-        CalendarHoverLines.Clear();
-        CalendarHoverCardVisibility = Visibility.Collapsed;
+        DailyRecord.CalendarHoverTitle = string.Empty;
+        DailyRecord.CalendarHoverLines.Clear();
+        DailyRecord.CalendarHoverCardVisibility = Visibility.Collapsed;
     }
 
     private void SetCalendarHoverLines(IEnumerable<string> lines)
     {
-        CalendarHoverLines.Clear();
+        DailyRecord.CalendarHoverLines.Clear();
         foreach (string line in lines)
         {
-            CalendarHoverLines.Add(line);
+            DailyRecord.CalendarHoverLines.Add(line);
         }
     }
 
@@ -1143,21 +869,4 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         RefreshRecordArea(DateTimeOffset.Now);
     }
 
-    private void SetProperty<T>(ref T storage, T value, [CallerMemberName] string? propertyName = null)
-    {
-        if (EqualityComparer<T>.Default.Equals(storage, value))
-        {
-            return;
-        }
-
-        storage = value;
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
-
-    private enum MainMenuTab
-    {
-        Timer,
-        DailyRecord,
-        WeeklyRecord
-    }
 }
