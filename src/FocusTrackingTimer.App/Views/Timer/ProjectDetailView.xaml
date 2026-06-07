@@ -1,0 +1,98 @@
+<UserControl x:Class="FocusTrackingTimer.App.Views.Timer.ProjectDetailView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Border Style="{StaticResource Panel}" Padding="20">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="128" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                <Button Width="96"
+                        Height="54"
+                        Background="{Binding TimerActionButtonBackground}"
+                        BorderBrush="#1F1F1F"
+                        BorderThickness="1.5"
+                        Click="TimerActionButton_Click"
+                        Content="{Binding TimerActionButtonText}"
+                        FontSize="16"
+                        Foreground="{Binding TimerActionButtonForeground}"
+                        FontWeight="SemiBold"
+                        IsEnabled="{Binding IsTimerActionEnabled}" />
+                <Button Width="96"
+                        Height="38"
+                        Margin="0,10,0,0"
+                        Background="#FFFFFF"
+                        BorderBrush="#D7D7D0"
+                        BorderThickness="1.5"
+                        Click="StopTimerButton_Click"
+                        Content="중지"
+                        IsEnabled="{Binding IsTimerStopEnabled}" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="0">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock MaxWidth="360"
+                               FontSize="22"
+                               FontWeight="SemiBold"
+                               Text="{Binding SelectedProjectTitle}"
+                               TextTrimming="CharacterEllipsis" />
+                    <Button Width="28"
+                            Height="26"
+                            Margin="8,0,0,0"
+                            VerticalAlignment="Center"
+                            Background="#FFFFFF"
+                            BorderBrush="#D7D7D0"
+                            BorderThickness="1.5"
+                            Click="EditSelectedProjectButton_Click"
+                            Content="✎"
+                            IsEnabled="{Binding IsProjectEditEnabled}" />
+                    <Button Width="28"
+                            Height="26"
+                            Margin="6,0,0,0"
+                            VerticalAlignment="Center"
+                            Background="#FFFFFF"
+                            BorderBrush="#D7D7D0"
+                            BorderThickness="1.5"
+                            Click="DeleteProjectButton_Click"
+                            Content="×"
+                            IsEnabled="{Binding IsProjectDeleteEnabled}" />
+                    <Button Width="42"
+                            Height="26"
+                            Margin="6,0,0,0"
+                            VerticalAlignment="Center"
+                            Background="#FFFFFF"
+                            BorderBrush="#D7D7D0"
+                            BorderThickness="1.5"
+                            Click="MemoSelectedProjectButton_Click"
+                            Content="메모"
+                            IsEnabled="{Binding IsProjectMemoEnabled}" />
+                </StackPanel>
+                <TextBlock Margin="0,8,0,0" Foreground="#4B4B4B" Text="{Binding ActiveSessionPeriodText}" />
+                <TextBlock Margin="0,8,0,0" Foreground="#5B5B5B" Text="{Binding FocusStatusText}" />
+                <Grid Width="520"
+                      Margin="0,16,0,0"
+                      HorizontalAlignment="Left">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150" />
+                        <ColumnDefinition Width="150" />
+                        <ColumnDefinition Width="180" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock FontSize="12" FontWeight="SemiBold" Text="경과 시간" />
+                        <TextBlock Margin="0,5,0,0" FontSize="22" FontWeight="SemiBold" Foreground="#1F1F1F" Text="{Binding ActiveProjectWallClockText}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1">
+                        <TextBlock FontSize="12" FontWeight="SemiBold" Text="집중 시간" />
+                        <TextBlock Margin="0,5,0,0" FontSize="22" FontWeight="SemiBold" Foreground="#2EAD62" Text="{Binding ActiveProjectElapsedText}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock FontSize="12" FontWeight="SemiBold" Text="오늘 누적 시간" />
+                        <TextBlock Margin="0,5,0,0" FontSize="22" FontWeight="SemiBold" Foreground="#1F1F1F" Text="{Binding SelectedProjectTodayText}" />
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>

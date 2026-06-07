@@ -24,54 +24,47 @@
                    Foreground="#5B5B5B"
                    Text="현재 실행 중인 프로그램만 표시되며, 작업 트레이의 프로그램은 감지되지 않습니다." />
 
-        <Border Grid.Row="2"
-                Padding="16"
-                Background="#FFFFFF"
-                BorderBrush="#D7D7D0"
-                BorderThickness="1.5"
-                CornerRadius="14">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <ItemsControl ItemsSource="{Binding RunningProcesses}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Margin="0,0,0,8"
-                                    Padding="12"
-                                    Background="#FFFFFF"
-                                    BorderBrush="#D7D7D0"
-                                    BorderThickness="1.5"
-                                    CornerRadius="8">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel>
-                                        <TextBlock FontWeight="SemiBold" Text="{Binding DisplayName}" />
-                                        <TextBlock Margin="0,4,0,0" Foreground="#5B5B5B" Text="{Binding ProcessName}" />
-                                    </StackPanel>
-                                    <Button Grid.Column="1"
-                                            Padding="14,7"
-                                            Margin="0,0,8,0"
-                                            Background="#FFFFFF"
-                                            BorderBrush="#D7D7D0"
-                                            BorderThickness="1.5"
-                                            Click="FocusDetectedButton_Click"
-                                            Content="보기" />
-                                    <Button Grid.Column="2"
-                                            Padding="14,7"
-                                            Background="#1F1F1F"
-                                            BorderBrush="#1F1F1F"
-                                            BorderThickness="1.5"
-                                            Click="AddDetectedButton_Click"
-                                            Content="추가"
-                                            Foreground="#FFFFFF" />
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
-        </Border>
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding RunningProcesses}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Margin="0,0,0,8"
+                                Padding="12"
+                                Background="#FFFFFF"
+                                BorderBrush="#D7D7D0"
+                                BorderThickness="1.5"
+                                CornerRadius="8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock FontWeight="SemiBold" Text="{Binding DisplayName}" />
+                                    <TextBlock Margin="0,4,0,0" Foreground="#5B5B5B" Text="{Binding ProcessName}" />
+                                </StackPanel>
+                                <Button Grid.Column="1"
+                                        Padding="14,7"
+                                        Margin="0,0,8,0"
+                                        Background="#FFFFFF"
+                                        BorderBrush="#D7D7D0"
+                                        BorderThickness="1.5"
+                                        Click="FocusDetectedButton_Click"
+                                        Content="보기" />
+                                <Button Grid.Column="2"
+                                        Padding="14,7"
+                                        Background="#1F1F1F"
+                                        BorderBrush="#1F1F1F"
+                                        BorderThickness="1.5"
+                                        Click="AddDetectedButton_Click"
+                                        Content="추가"
+                                        Foreground="#FFFFFF" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
     </Grid>
 </Window>

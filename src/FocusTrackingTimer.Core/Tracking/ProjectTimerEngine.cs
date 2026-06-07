@@ -10,6 +10,8 @@ public sealed class ProjectTimerEngine
 
     public bool IsRunning => _activeSession is not null;
 
+    public bool IsPaused => _activeSession?.IsPaused ?? false;
+
     public Guid? ActiveProjectId => _activeSession?.Project.Id;
 
     public string? ActiveProjectName => _activeSession?.Project.Name;
@@ -33,7 +35,10 @@ public sealed class ProjectTimerEngine
                 project.Id,
                 project.Name,
                 project.RegisteredProgramInfos,
-                project.IsDeleted)),
+                project.IsDeleted,
+                project.CreatedAt,
+                project.IsPinned,
+                project.Memo)),
             _completedRecords);
     }
 
@@ -57,7 +62,13 @@ public sealed class ProjectTimerEngine
                 throw new InvalidOperationException("Project ids must be unique.");
             }
 
-            ProjectDefinition project = new(projectState.Id, projectState.Name, projectState.IsDeleted);
+            ProjectDefinition project = new(
+                projectState.Id,
+                projectState.Name,
+                projectState.IsDeleted,
+                projectState.CreatedAt,
+                projectState.IsPinned,
+                projectState.Memo);
             project.ReplaceRegisteredPrograms(projectState.RegisteredPrograms);
             _projects.Add(project);
         }
@@ -76,6 +87,12 @@ public sealed class ProjectTimerEngine
     public bool TryAddProject(string name, out ProjectDefinition project)
     {
         string normalizedName = NormalizeRequiredValue(name, nameof(name));
+        if (normalizedName.Length > ProjectDefinition.MaxNameLength)
+        {
+            project = null!;
+            return false;
+        }
+
         ProjectDefinition? existingProject = _projects.FirstOrDefault(item =>
             !item.IsDeleted &&
             string.Equals(item.Name, normalizedName, StringComparison.OrdinalIgnoreCase));
@@ -94,6 +111,11 @@ public sealed class ProjectTimerEngine
     public bool TryRenameProject(Guid projectId, string name)
     {
         string normalizedName = NormalizeRequiredValue(name, nameof(name));
+        if (normalizedName.Length > ProjectDefinition.MaxNameLength)
+        {
+            return false;
+        }
+
         ProjectDefinition project = GetRequiredProject(projectId);
 
         if (_projects.Any(item =>
@@ -106,6 +128,37 @@ public sealed class ProjectTimerEngine
 
         project.Rename(normalizedName);
         return true;
+    }
+
+    public bool TrySetProjectPinned(Guid projectId, bool isPinned)
+    {
+        int index = _projects.FindIndex(item => item.Id == projectId && !item.IsDeleted);
+        if (index < 0)
+        {
+            return false;
+        }
+
+        ProjectDefinition project = _projects[index];
+        project.SetPinned(isPinned);
+        _projects.RemoveAt(index);
+
+        if (isPinned)
+        {
+            _projects.Insert(0, project);
+        }
+        else
+        {
+            int insertIndex = _projects.FindLastIndex(static item => item.IsPinned) + 1;
+            _projects.Insert(insertIndex, project);
+        }
+
+        return true;
+    }
+
+    public void UpdateProjectMemo(Guid projectId, string memo)
+    {
+        ProjectDefinition project = GetRequiredProject(projectId);
+        project.UpdateMemo(memo);
     }
 
     public bool TryRemoveProject(Guid projectId)
@@ -162,6 +215,12 @@ public sealed class ProjectTimerEngine
         return project.TryMoveProgram(processName, offset);
     }
 
+    public bool TrySetProgramPinned(Guid projectId, string processName, bool isPinned)
+    {
+        ProjectDefinition project = GetRequiredProject(projectId);
+        return project.TrySetProgramPinned(processName, isPinned);
+    }
+
     public void StartProject(Guid projectId, DateTimeOffset startedAt)
     {
         if (_activeSession is not null)
@@ -171,6 +230,18 @@ public sealed class ProjectTimerEngine
 
         ProjectDefinition project = GetRequiredProject(projectId);
         _activeSession = new ActiveProjectSession(project, startedAt);
+    }
+
+    public void PauseProject(DateTimeOffset pausedAt)
+    {
+        ActiveProjectSession session = _activeSession ?? throw new InvalidOperationException("No running project session.");
+        session.Pause(pausedAt);
+    }
+
+    public void ResumeProject(DateTimeOffset resumedAt)
+    {
+        ActiveProjectSession session = _activeSession ?? throw new InvalidOperationException("No running project session.");
+        session.Resume(resumedAt);
     }
 
     public ProjectTimerRecord StopProject(DateTimeOffset endedAt)
@@ -200,6 +271,12 @@ public sealed class ProjectTimerEngine
     {
         if (_activeSession is null)
         {
+            return;
+        }
+
+        if (_activeSession.IsPaused)
+        {
+            _activeSession.CloseFocusedProgram(observedAt);
             return;
         }
 
@@ -255,9 +332,7 @@ public sealed class ProjectTimerEngine
             return TimeSpan.Zero;
         }
 
-        return observedAt < _activeSession.StartedAt
-            ? TimeSpan.Zero
-            : observedAt - _activeSession.StartedAt;
+        return _activeSession.GetWallClockDuration(observedAt);
     }
 
     public IReadOnlyList<ProgramFocusSummary> GetProgramSummaries(
@@ -289,15 +364,7 @@ public sealed class ProjectTimerEngine
             AddOrUpdateSummary(summaryByProcessName, registeredProgram, TimeSpan.Zero);
         }
 
-        return sortMode switch
-        {
-            ProgramSortMode.Registered or ProgramSortMode.Manual => [.. project.RegisteredPrograms
-                .Select(program => summaryByProcessName[program.ProcessName])],
-            _ => [.. project.RegisteredPrograms
-                .Select(program => summaryByProcessName[program.ProcessName])
-                .OrderByDescending(static summary => summary.FocusDuration)
-                .ThenBy(static summary => summary.Program.DisplayName, StringComparer.CurrentCultureIgnoreCase)]
-        };
+        return BuildSortedProgramSummaries(project, summaryByProcessName, sortMode);
     }
 
     public IReadOnlyList<ProgramFocusSummary> GetCurrentSessionProgramSummaries(
@@ -321,15 +388,7 @@ public sealed class ProjectTimerEngine
             AddOrUpdateSummary(summaryByProcessName, registeredProgram, TimeSpan.Zero);
         }
 
-        return sortMode switch
-        {
-            ProgramSortMode.Registered or ProgramSortMode.Manual => [.. project.RegisteredPrograms
-                .Select(program => summaryByProcessName[program.ProcessName])],
-            _ => [.. project.RegisteredPrograms
-                .Select(program => summaryByProcessName[program.ProcessName])
-                .OrderByDescending(static summary => summary.FocusDuration)
-                .ThenBy(static summary => summary.Program.DisplayName, StringComparer.CurrentCultureIgnoreCase)]
-        };
+        return BuildSortedProgramSummaries(project, summaryByProcessName, sortMode);
     }
 
     public IReadOnlyList<ProjectTimerRecord> GetRecentRecords(int count, Guid? projectId = null)
@@ -460,6 +519,30 @@ public sealed class ProjectTimerEngine
         summaries[program.ProcessName] = new ProgramFocusSummary(program, duration);
     }
 
+    private static IReadOnlyList<ProgramFocusSummary> BuildSortedProgramSummaries(
+        ProjectDefinition project,
+        Dictionary<string, ProgramFocusSummary> summaryByProcessName,
+        ProgramSortMode sortMode)
+    {
+        List<RegisteredProgramInfo> pinnedRegistrations = [.. project.RegisteredProgramInfos.Where(static item => item.IsPinned)];
+        List<RegisteredProgramInfo> unpinnedRegistrations = [.. project.RegisteredProgramInfos.Where(static item => !item.IsPinned)];
+
+        IEnumerable<RegisteredProgramInfo> sortedUnpinnedRegistrations = sortMode switch
+        {
+            ProgramSortMode.RegisteredDescending => unpinnedRegistrations.AsEnumerable().Reverse(),
+            ProgramSortMode.DisplayName => unpinnedRegistrations
+                .OrderBy(static item => item.Program.DisplayName, StringComparer.CurrentCultureIgnoreCase),
+            ProgramSortMode.MostUsed => unpinnedRegistrations
+                .OrderByDescending(item => summaryByProcessName[item.Program.ProcessName].FocusDuration)
+                .ThenBy(static item => item.Program.DisplayName, StringComparer.CurrentCultureIgnoreCase),
+            _ => unpinnedRegistrations
+        };
+
+        return [.. pinnedRegistrations
+            .Concat(sortedUnpinnedRegistrations)
+            .Select(registration => summaryByProcessName[registration.Program.ProcessName])];
+    }
+
     private static TimeSpan SumProgramFocusDuration(IEnumerable<ProgramFocusSummary> summaries)
     {
         return summaries.Aggregate(TimeSpan.Zero, static (total, summary) => total + summary.FocusDuration);
@@ -538,9 +621,15 @@ public sealed class ProjectTimerEngine
 
         public DateTimeOffset StartedAt { get; }
 
+        public bool IsPaused => PauseStartedAt is not null;
+
         public TrackedApplication? FocusedProgram { get; private set; }
 
         public DateTimeOffset? FocusStartedAt { get; private set; }
+
+        private DateTimeOffset? PauseStartedAt { get; set; }
+
+        private TimeSpan PausedDuration { get; set; }
 
         public void SetFocusedProgram(TrackedApplication? program, DateTimeOffset observedAt)
         {
@@ -562,6 +651,55 @@ public sealed class ProjectTimerEngine
 
             FocusedProgram = null;
             FocusStartedAt = null;
+        }
+
+        public void Pause(DateTimeOffset pausedAt)
+        {
+            if (pausedAt < StartedAt)
+            {
+                throw new ArgumentOutOfRangeException(nameof(pausedAt), "Pause time cannot be before start time.");
+            }
+
+            if (IsPaused)
+            {
+                return;
+            }
+
+            CloseFocusedProgram(pausedAt);
+            PauseStartedAt = pausedAt;
+        }
+
+        public void Resume(DateTimeOffset resumedAt)
+        {
+            if (PauseStartedAt is null)
+            {
+                return;
+            }
+
+            if (resumedAt < PauseStartedAt.Value)
+            {
+                throw new ArgumentOutOfRangeException(nameof(resumedAt), "Resume time cannot be before pause time.");
+            }
+
+            PausedDuration += resumedAt - PauseStartedAt.Value;
+            PauseStartedAt = null;
+        }
+
+        public TimeSpan GetWallClockDuration(DateTimeOffset observedAt)
+        {
+            if (observedAt < StartedAt)
+            {
+                return TimeSpan.Zero;
+            }
+
+            TimeSpan currentPauseDuration = PausedDuration;
+            if (PauseStartedAt is not null && observedAt > PauseStartedAt.Value)
+            {
+                currentPauseDuration += observedAt - PauseStartedAt.Value;
+            }
+
+            TimeSpan duration = observedAt - StartedAt - currentPauseDuration;
+            return duration < TimeSpan.Zero ? TimeSpan.Zero : duration;
         }
 
         public List<ProgramFocusSegment> GetFocusSegments()

@@ -33,9 +33,14 @@ public partial class MainWindow : Window
         InitializeComponent();
         DataContext = this;
 
-        Timer.ProgramSortOptions.Add(new ProgramSortOption(ProgramSortMode.MostUsed, "많이 사용한 순"));
-        Timer.ProgramSortOptions.Add(new ProgramSortOption(ProgramSortMode.Registered, "등록 순서"));
-        Timer.ProgramSortOptions.Add(new ProgramSortOption(ProgramSortMode.Manual, "사용자 지정"));
+        Timer.ProjectSortOptions.Add(new ProjectSortOption(ProjectSortMode.Created, "추가순"));
+        Timer.ProjectSortOptions.Add(new ProjectSortOption(ProjectSortMode.Name, "이름순"));
+        Timer.SelectedProjectSortOption = Timer.ProjectSortOptions[0];
+
+        Timer.ProgramSortOptions.Add(new ProgramSortOption(ProgramSortMode.Registered, "추가순"));
+        Timer.ProgramSortOptions.Add(new ProgramSortOption(ProgramSortMode.RegisteredDescending, "추가역순"));
+        Timer.ProgramSortOptions.Add(new ProgramSortOption(ProgramSortMode.DisplayName, "이름순"));
+        Timer.ProgramSortOptions.Add(new ProgramSortOption(ProgramSortMode.MostUsed, "집중 시간순"));
         Timer.SelectedProgramSortOption = Timer.ProgramSortOptions[0];
 
         _timerFeature = new TimerFeatureController(
@@ -183,14 +188,36 @@ public partial class MainWindow : Window
         _timerFeature.EditSelectedProject();
     }
 
+    internal void PinProjectRowButton_Click(object sender, RoutedEventArgs e)
+    {
+        ProjectSidebarRow? row = (sender as FrameworkElement)?.DataContext as ProjectSidebarRow;
+        _timerFeature.ToggleProjectPin(row);
+        e.Handled = true;
+    }
+
+    internal void MemoSelectedProjectButton_Click(object sender, RoutedEventArgs e)
+    {
+        _timerFeature.EditSelectedProjectMemo();
+    }
+
     internal void ProjectList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         _timerFeature.SelectProject(Timer.SelectedProjectRow);
     }
 
+    internal void RunningProjectSummary_MouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        _timerFeature.SelectActiveProject();
+    }
+
     internal void TimerActionButton_Click(object sender, RoutedEventArgs e)
     {
-        _timerFeature.ToggleTimer();
+        _timerFeature.ToggleTimerOrPause();
+    }
+
+    internal void StopTimerButton_Click(object sender, RoutedEventArgs e)
+    {
+        _timerFeature.StopTimer();
     }
 
     internal void OpenProgramManagerButton_Click(object sender, RoutedEventArgs e)
@@ -210,6 +237,12 @@ public partial class MainWindow : Window
         _timerFeature.DeleteProgram(row);
     }
 
+    internal void PinProgramButton_Click(object sender, RoutedEventArgs e)
+    {
+        RegisteredProgramRow? row = (sender as FrameworkElement)?.DataContext as RegisteredProgramRow;
+        _timerFeature.ToggleProgramPin(row);
+    }
+
     internal void FocusRegisteredProgramButton_Click(object sender, RoutedEventArgs e)
     {
         RegisteredProgramRow? row = (sender as FrameworkElement)?.DataContext as RegisteredProgramRow;
@@ -219,6 +252,11 @@ public partial class MainWindow : Window
     internal void ProgramSort_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         _timerFeature.RefreshSelectedProjectArea(DateTimeOffset.Now, Timer.TimerStatusText);
+    }
+
+    internal void ProjectSort_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        _timerFeature.RefreshProjectSidebar(DateTimeOffset.Now);
     }
 
     internal void RecordFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)

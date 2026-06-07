@@ -4,23 +4,29 @@ namespace FocusTrackingTimer.Core.Tracking;
 
 public sealed class ProjectDefinition
 {
+    public const int MaxNameLength = 20;
+
     private readonly List<RegisteredProgramInfo> _registeredPrograms = [];
 
-    public ProjectDefinition(Guid id, string name, bool isDeleted = false)
+    public ProjectDefinition(
+        Guid id,
+        string name,
+        bool isDeleted = false,
+        DateTimeOffset? createdAt = null,
+        bool isPinned = false,
+        string memo = "")
     {
         if (id == Guid.Empty)
         {
             throw new ArgumentException("Project id is required.", nameof(id));
         }
 
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new ArgumentException("Project name is required.", nameof(name));
-        }
-
         Id = id;
-        Name = name.Trim();
+        Name = NormalizeProjectName(name);
         IsDeleted = isDeleted;
+        CreatedAt = createdAt ?? DateTimeOffset.Now;
+        IsPinned = isPinned;
+        Memo = memo ?? string.Empty;
     }
 
     public Guid Id { get; }
@@ -28,6 +34,12 @@ public sealed class ProjectDefinition
     public string Name { get; private set; }
 
     public bool IsDeleted { get; private set; }
+
+    public DateTimeOffset CreatedAt { get; }
+
+    public bool IsPinned { get; private set; }
+
+    public string Memo { get; private set; }
 
     public ReadOnlyCollection<TrackedApplication> RegisteredPrograms => new(
         _registeredPrograms.Select(item => item.Program).ToList());
@@ -79,12 +91,22 @@ public sealed class ProjectDefinition
             throw new ArgumentException("Project name is required.", nameof(name));
         }
 
-        Name = name.Trim();
+        Name = NormalizeProjectName(name);
     }
 
     public void MarkDeleted()
     {
         IsDeleted = true;
+    }
+
+    public void SetPinned(bool isPinned)
+    {
+        IsPinned = isPinned;
+    }
+
+    public void UpdateMemo(string memo)
+    {
+        Memo = memo ?? string.Empty;
     }
 
     public bool TryUpdateProgram(string processName, TrackedApplication updatedApplication)
@@ -142,6 +164,30 @@ public sealed class ProjectDefinition
         return true;
     }
 
+    public bool TrySetProgramPinned(string processName, bool isPinned)
+    {
+        int index = FindProgramIndex(processName);
+        if (index < 0)
+        {
+            return false;
+        }
+
+        RegisteredProgramInfo registration = _registeredPrograms[index] with { IsPinned = isPinned };
+        _registeredPrograms.RemoveAt(index);
+
+        if (isPinned)
+        {
+            _registeredPrograms.Insert(0, registration);
+        }
+        else
+        {
+            int insertIndex = _registeredPrograms.FindLastIndex(static item => item.IsPinned) + 1;
+            _registeredPrograms.Insert(insertIndex, registration);
+        }
+
+        return true;
+    }
+
     public bool ContainsProgram(string processName)
     {
         return _registeredPrograms.Any(program =>
@@ -163,5 +209,21 @@ public sealed class ProjectDefinition
 
         return _registeredPrograms.FindIndex(program =>
             string.Equals(program.Program.ProcessName, processName.Trim(), StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string NormalizeProjectName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new ArgumentException("Project name is required.", nameof(name));
+        }
+
+        string normalizedName = name.Trim();
+        if (normalizedName.Length > MaxNameLength)
+        {
+            throw new ArgumentException($"Project name cannot exceed {MaxNameLength} characters.", nameof(name));
+        }
+
+        return normalizedName;
     }
 }

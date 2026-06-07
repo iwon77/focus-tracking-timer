@@ -17,12 +17,15 @@ public sealed class SqliteProjectTimerStoreTests
             ProjectTimerEngine engine = new();
             Assert.True(engine.TryAddProject("Work", out ProjectDefinition workProject));
             Assert.True(engine.TryAddProject("Study", out ProjectDefinition studyProject));
+            Assert.True(engine.TrySetProjectPinned(studyProject.Id, true));
+            engine.UpdateProjectMemo(studyProject.Id, "Study memo");
 
             DateTimeOffset codeRegisteredAt = new(2026, 6, 4, 9, 0, 0, TimeSpan.Zero);
             DateTimeOffset docsRegisteredAt = new(2026, 6, 4, 9, 5, 0, TimeSpan.Zero);
             Assert.True(engine.TryRegisterProgram(workProject.Id, new TrackedApplication("code", "Code"), codeRegisteredAt));
             Assert.True(engine.TryRegisterProgram(workProject.Id, new TrackedApplication("chrome", "Chrome"), docsRegisteredAt));
             Assert.True(engine.TryUpdateProgram(workProject.Id, "code", new TrackedApplication("code", "Visual Studio Code")));
+            Assert.True(engine.TrySetProgramPinned(workProject.Id, "chrome", true));
 
             DateTimeOffset startedAt = new(2026, 6, 4, 10, 0, 0, TimeSpan.Zero);
             engine.StartProject(workProject.Id, startedAt);
@@ -41,18 +44,23 @@ public sealed class SqliteProjectTimerStoreTests
                 loadedWorkProject.RegisteredPrograms,
                 registration =>
                 {
-                    Assert.Equal("code", registration.Program.ProcessName);
-                    Assert.Equal("Visual Studio Code", registration.Program.DisplayName);
-                    Assert.Equal("Code", registration.InitialDisplayName);
-                    Assert.Equal(codeRegisteredAt, registration.RegisteredAt);
-                },
-                registration =>
-                {
                     Assert.Equal("chrome", registration.Program.ProcessName);
                     Assert.Equal("Chrome", registration.Program.DisplayName);
                     Assert.Equal("Chrome", registration.InitialDisplayName);
                     Assert.Equal(docsRegisteredAt, registration.RegisteredAt);
+                    Assert.True(registration.IsPinned);
+                },
+                registration =>
+                {
+                    Assert.Equal("code", registration.Program.ProcessName);
+                    Assert.Equal("Visual Studio Code", registration.Program.DisplayName);
+                    Assert.Equal("Code", registration.InitialDisplayName);
+                    Assert.Equal(codeRegisteredAt, registration.RegisteredAt);
                 });
+
+            ProjectState loadedStudyProject = Assert.Single(loadedState.Projects, project => project.Name == "Study");
+            Assert.True(loadedStudyProject.IsPinned);
+            Assert.Equal("Study memo", loadedStudyProject.Memo);
 
             ProjectTimerRecord loadedRecord = Assert.Single(loadedState.CompletedRecords);
             Assert.Equal(record.ProjectId, loadedRecord.ProjectId);
