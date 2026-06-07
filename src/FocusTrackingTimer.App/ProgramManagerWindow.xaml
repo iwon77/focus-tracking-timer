@@ -12,7 +12,6 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
@@ -20,49 +19,12 @@
                    FontWeight="SemiBold"
                    Text="{Binding TitleText}" />
 
-        <Border Grid.Row="1"
-                Margin="0,16,0,16"
-                Padding="16"
-                Background="#FFFFFF"
-                BorderBrush="#D7D7D0"
-                BorderThickness="1.5"
-                CornerRadius="14">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="76" />
-                    <ColumnDefinition Width="76" />
-                </Grid.ColumnDefinitions>
+        <TextBlock Grid.Row="1"
+                   Margin="0,16,0,10"
+                   Foreground="#5B5B5B"
+                   Text="현재 실행 중인 프로그램만 표시되며, 작업 트레이의 프로그램은 감지되지 않습니다." />
 
-                <TextBox Padding="10,7"
-                         BorderBrush="#D7D7D0"
-                         BorderThickness="1.5"
-                         Text="{Binding ManualExecutableInput, UpdateSourceTrigger=PropertyChanged}" />
-                <Button Grid.Column="1"
-                        Margin="8,0,0,0"
-                        Background="#FFFFFF"
-                        BorderBrush="#D7D7D0"
-                        BorderThickness="1.5"
-                        Click="BrowseButton_Click"
-                        Content="파일" />
-                <Button Grid.Column="2"
-                        Margin="8,0,0,0"
-                        Background="#1F1F1F"
-                        BorderBrush="#1F1F1F"
-                        BorderThickness="1.5"
-                        Click="AddManualButton_Click"
-                        Content="등록"
-                        Foreground="#FFFFFF" />
-            </Grid>
-        </Border>
-
-        <TextBlock Grid.Row="2"
-                   Margin="0,0,0,10"
-                   FontSize="18"
-                   FontWeight="SemiBold"
-                   Text="실행 중인 프로그램" />
-
-        <Border Grid.Row="3"
+        <Border Grid.Row="2"
                 Padding="16"
                 Background="#FFFFFF"
                 BorderBrush="#D7D7D0"
@@ -82,12 +44,21 @@
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <StackPanel>
                                         <TextBlock FontWeight="SemiBold" Text="{Binding DisplayName}" />
                                         <TextBlock Margin="0,4,0,0" Foreground="#5B5B5B" Text="{Binding ProcessName}" />
                                     </StackPanel>
                                     <Button Grid.Column="1"
+                                            Padding="14,7"
+                                            Margin="0,0,8,0"
+                                            Background="#FFFFFF"
+                                            BorderBrush="#D7D7D0"
+                                            BorderThickness="1.5"
+                                            Click="FocusDetectedButton_Click"
+                                            Content="보기" />
+                                    <Button Grid.Column="2"
                                             Padding="14,7"
                                             Background="#1F1F1F"
                                             BorderBrush="#1F1F1F"

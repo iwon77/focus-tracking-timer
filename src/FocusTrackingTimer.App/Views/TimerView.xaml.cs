@@ -28,5 +28,7 @@ public partial class TimerView : UserControl
 
     private void DeleteProgramButton_Click(object sender, RoutedEventArgs e) => HostWindow.DeleteProgramButton_Click(sender, e);
 
+    private void FocusRegisteredProgramButton_Click(object sender, RoutedEventArgs e) => HostWindow.FocusRegisteredProgramButton_Click(sender, e);
+
     private void ProgramSort_SelectionChanged(object sender, SelectionChangedEventArgs e) => HostWindow.ProgramSort_SelectionChanged(sender, e);
 }

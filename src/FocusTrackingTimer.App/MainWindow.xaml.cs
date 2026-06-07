@@ -210,6 +210,12 @@ public partial class MainWindow : Window
         _timerFeature.DeleteProgram(row);
     }
 
+    internal void FocusRegisteredProgramButton_Click(object sender, RoutedEventArgs e)
+    {
+        RegisteredProgramRow? row = (sender as FrameworkElement)?.DataContext as RegisteredProgramRow;
+        _timerFeature.FocusRegisteredProgram(row);
+    }
+
     internal void ProgramSort_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         _timerFeature.RefreshSelectedProjectArea(DateTimeOffset.Now, Timer.TimerStatusText);

@@ -264,6 +264,19 @@ internal sealed class TimerFeatureController
         _refreshAll(now, "등록 프로그램을 삭제했습니다.");
     }
 
+    public void FocusRegisteredProgram(RegisteredProgramRow? row)
+    {
+        if (row is null)
+        {
+            return;
+        }
+
+        if (!WindowFocusService.TryFocusProcessMainWindow(row.ProcessName))
+        {
+            MessageBox.Show(_owner, "프로그램 창을 앞으로 가져오지 못했습니다.", "프로그램 보기");
+        }
+    }
+
     public string RefreshFocusTracking(DateTimeOffset observedAt)
     {
         if (!_engine.IsRunning)
