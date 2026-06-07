@@ -307,19 +307,31 @@ internal sealed class TimerFeatureController
     public void RefreshProjectSidebar(DateTimeOffset observedAt)
     {
         Guid? selectedProjectId = SelectedProject?.Id;
+        ProjectDefinition? activeProject = _engine.ActiveProjectId.HasValue
+            ? _engine.Projects.FirstOrDefault(item => item.Id == _engine.ActiveProjectId.Value)
+            : null;
+
+        if (activeProject is null)
+        {
+            _viewModel.RunningProjectWallClockText = "-";
+            _viewModel.RunningProjectFocusText = "-";
+        }
+        else
+        {
+            _viewModel.RunningProjectWallClockText = AppTimeFormatter.FormatDuration(
+                _engine.GetCurrentWallClockDuration(activeProject.Id, observedAt));
+            _viewModel.RunningProjectFocusText = AppTimeFormatter.FormatDuration(
+                _engine.GetCurrentRunDuration(activeProject.Id, observedAt));
+        }
 
         _viewModel.ProjectRows.Clear();
         foreach (ProjectDefinition project in _engine.Projects.OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase))
         {
             bool isActiveProject = _engine.ActiveProjectId == project.Id;
-            string timerText = isActiveProject ? AppTimeFormatter.FormatDuration(_engine.GetCurrentRunDuration(project.Id, observedAt)) : string.Empty;
-            string statusText = isActiveProject ? $"{timerText} 실행 중" : string.Empty;
-
             _viewModel.ProjectRows.Add(new ProjectSidebarRow(
                 project.Id,
                 project.Name,
-                string.Empty,
-                statusText));
+                isActiveProject));
         }
 
         if (selectedProjectId.HasValue)

@@ -12,6 +12,7 @@
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
@@ -30,9 +31,47 @@
                                Text="프로젝트 목록" />
                 </DockPanel>
 
-                <ListBox Grid.Row="1"
+                <Border Grid.Row="1"
+                        Margin="0,0,0,14"
+                        Padding="12"
+                        Background="#FFFFFF"
+                        BorderBrush="#D7D7D0"
+                        BorderThickness="1.5"
+                        CornerRadius="12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel>
+                            <TextBlock FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="#5B5B5B"
+                                       Text="경과 시간" />
+                            <TextBlock Margin="0,6,0,0"
+                                       FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Text="{Binding RunningProjectWallClockText}" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1">
+                            <TextBlock FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="#5B5B5B"
+                                       Text="집중 시간" />
+                            <TextBlock Margin="0,6,0,0"
+                                       FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Text="{Binding RunningProjectFocusText}" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <ListBox Grid.Row="2"
                          Background="Transparent"
                          BorderThickness="0"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                          HorizontalContentAlignment="Stretch"
                          ItemsSource="{Binding ProjectRows}"
                          SelectedItem="{Binding SelectedProjectRow, Mode=TwoWay}"
@@ -44,17 +83,13 @@
                                     Margin="0,0,0,10"
                                     Padding="10"
                                     Background="#FFFFFF"
-                                    BorderBrush="#D7D7D0"
+                                    BorderBrush="{Binding BorderBrush}"
                                     BorderThickness="1.5"
                                     CornerRadius="12">
-                                <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="Auto" />
-                                    </Grid.RowDefinitions>
-                                    <TextBlock FontWeight="SemiBold" Text="{Binding Name}" />
-                                    <TextBlock Grid.Row="1" Margin="0,5,0,0" Foreground="#7A3822" Text="{Binding StatusText}" />
-                                </Grid>
+                                <TextBlock VerticalAlignment="Center"
+                                           FontWeight="SemiBold"
+                                           Text="{Binding Name}"
+                                           TextTrimming="CharacterEllipsis" />
                             </Border>
                         </DataTemplate>
                     </ListBox.ItemTemplate>

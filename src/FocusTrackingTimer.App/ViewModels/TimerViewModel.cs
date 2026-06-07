@@ -10,6 +10,8 @@ public sealed class TimerViewModel : ObservableObject
     private string _activeSessionPeriodText = "작업 시작/종료 시간이 여기에 표시됩니다.";
     private string _timerStatusText = "시작 버튼을 누르면 등록 프로그램 포커스 시간만 기록합니다.";
     private string _focusStatusText = "등록 프로그램 포커스 상태가 여기에 표시됩니다.";
+    private string _runningProjectWallClockText = "-";
+    private string _runningProjectFocusText = "-";
     private string _activeProjectWallClockText = "00:00:00";
     private string _activeProjectElapsedText = "00:00:00";
     private string _selectedProjectTodayText = "00:00:00";
@@ -56,6 +58,18 @@ public sealed class TimerViewModel : ObservableObject
     {
         get => _focusStatusText;
         set => SetProperty(ref _focusStatusText, value);
+    }
+
+    public string RunningProjectWallClockText
+    {
+        get => _runningProjectWallClockText;
+        set => SetProperty(ref _runningProjectWallClockText, value);
+    }
+
+    public string RunningProjectFocusText
+    {
+        get => _runningProjectFocusText;
+        set => SetProperty(ref _runningProjectFocusText, value);
     }
 
     public string ActiveProjectElapsedText
