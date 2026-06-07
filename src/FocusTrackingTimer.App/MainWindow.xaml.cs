@@ -31,7 +31,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly DispatcherTimer _uiTimer;
     private readonly int _currentProcessId = Environment.ProcessId;
 
-    private PrototypeTab _selectedTab = PrototypeTab.Project;
+    private MainMenuTab _selectedTab = MainMenuTab.Timer;
     private DateOnly _displayedRecordMonth = new(DateTime.Now.Year, DateTime.Now.Month, 1);
     private DateOnly? _hoveredCalendarDate;
     private Dictionary<DateOnly, IReadOnlyList<string>> _calendarHoverLinesByDate = [];
@@ -82,9 +82,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         ProgramSortOptions.Add(new ProgramSortOption(ProgramSortMode.Manual, "사용자 지정"));
         SelectedProgramSortOption = ProgramSortOptions[0];
         DisplayedRecordMonthText = FormatRecordMonth(_displayedRecordMonth);
-        ProjectTabButtonControl.Content = "타이머";
-        CalendarTabButtonControl.Content = "캘린더";
-
         _uiTimer = new DispatcherTimer
         {
             Interval = TimeSpan.FromSeconds(1)
@@ -369,58 +366,58 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void ProjectTabButton_Click(object sender, RoutedEventArgs e)
     {
-        SetSelectedTab(PrototypeTab.Project);
+        SetSelectedTab(MainMenuTab.Timer);
     }
 
     private void CalendarTabButton_Click(object sender, RoutedEventArgs e)
     {
-        SetSelectedTab(PrototypeTab.Record);
+        SetSelectedTab(MainMenuTab.DailyRecord);
     }
 
     private void WeeklyTabButton_Click(object sender, RoutedEventArgs e)
     {
-        SetSelectedTab(PrototypeTab.Weekly);
+        SetSelectedTab(MainMenuTab.WeeklyRecord);
     }
 
-    private void CalendarRecordButton_Click(object sender, RoutedEventArgs e)
+    internal void CalendarRecordButton_Click(object sender, RoutedEventArgs e)
     {
         RefreshRecordViewState();
         RefreshRecordArea(DateTimeOffset.Now);
     }
 
-    private void RecentRecordButton_Click(object sender, RoutedEventArgs e)
+    internal void RecentRecordButton_Click(object sender, RoutedEventArgs e)
     {
         RefreshRecordViewState();
         RefreshRecordArea(DateTimeOffset.Now);
     }
 
-    private void PreviousRecordYearButton_Click(object sender, RoutedEventArgs e)
+    internal void PreviousRecordYearButton_Click(object sender, RoutedEventArgs e)
     {
         MoveDisplayedRecordMonth(-12);
     }
 
-    private void PreviousRecordMonthButton_Click(object sender, RoutedEventArgs e)
+    internal void PreviousRecordMonthButton_Click(object sender, RoutedEventArgs e)
     {
         MoveDisplayedRecordMonth(-1);
     }
 
-    private void NextRecordMonthButton_Click(object sender, RoutedEventArgs e)
+    internal void NextRecordMonthButton_Click(object sender, RoutedEventArgs e)
     {
         MoveDisplayedRecordMonth(1);
     }
 
-    private void NextRecordYearButton_Click(object sender, RoutedEventArgs e)
+    internal void NextRecordYearButton_Click(object sender, RoutedEventArgs e)
     {
         MoveDisplayedRecordMonth(12);
     }
 
-    private void CurrentRecordMonthButton_Click(object sender, RoutedEventArgs e)
+    internal void CurrentRecordMonthButton_Click(object sender, RoutedEventArgs e)
     {
         _displayedRecordMonth = GetCurrentRecordMonth();
         RefreshRecordArea(DateTimeOffset.Now);
     }
 
-    private void AddProjectButton_Click(object sender, RoutedEventArgs e)
+    internal void AddProjectButton_Click(object sender, RoutedEventArgs e)
     {
         string projectName = GetNextDefaultProjectName();
 
@@ -435,7 +432,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         RefreshAll(DateTimeOffset.Now, $"'{project.Name}' 프로젝트를 추가했습니다.");
     }
 
-    private void DeleteProjectButton_Click(object sender, RoutedEventArgs e)
+    internal void DeleteProjectButton_Click(object sender, RoutedEventArgs e)
     {
         if (_selectedProject is null)
         {
@@ -466,7 +463,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         RefreshAll(DateTimeOffset.Now, "프로젝트를 삭제했습니다.");
     }
 
-    private void EditSelectedProjectButton_Click(object sender, RoutedEventArgs e)
+    internal void EditSelectedProjectButton_Click(object sender, RoutedEventArgs e)
     {
         if (_selectedProject is null)
         {
@@ -502,7 +499,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         RefreshAll(DateTimeOffset.Now, "프로젝트 이름을 변경했습니다.");
     }
 
-    private void ProjectList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    internal void ProjectList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (SelectedProjectRow is null)
         {
@@ -519,7 +516,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         RefreshSelectedProjectArea(DateTimeOffset.Now, "선택한 프로젝트를 표시합니다.");
     }
 
-    private void TimerActionButton_Click(object sender, RoutedEventArgs e)
+    internal void TimerActionButton_Click(object sender, RoutedEventArgs e)
     {
         if (_selectedProject is null)
         {
@@ -544,7 +541,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
-    private void OpenProgramManagerButton_Click(object sender, RoutedEventArgs e)
+    internal void OpenProgramManagerButton_Click(object sender, RoutedEventArgs e)
     {
         if (_selectedProject is null)
         {
@@ -561,7 +558,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         RefreshAll(DateTimeOffset.Now, "등록 프로그램 변경사항을 반영했습니다.");
     }
 
-    private void EditProgramButton_Click(object sender, RoutedEventArgs e)
+    internal void EditProgramButton_Click(object sender, RoutedEventArgs e)
     {
         if (_selectedProject is null ||
             sender is not FrameworkElement { DataContext: RegisteredProgramRow row })
@@ -607,7 +604,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         RefreshAll(now, "프로그램 표시 이름을 변경했습니다.");
     }
 
-    private void DeleteProgramButton_Click(object sender, RoutedEventArgs e)
+    internal void DeleteProgramButton_Click(object sender, RoutedEventArgs e)
     {
         if (_selectedProject is null ||
             sender is not FrameworkElement { DataContext: RegisteredProgramRow row })
@@ -638,17 +635,17 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         RefreshAll(now, "등록 프로그램을 삭제했습니다.");
     }
 
-    private void ProgramSort_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    internal void ProgramSort_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         RefreshSelectedProjectArea(DateTimeOffset.Now, TimerStatusText);
     }
 
-    private void RecordFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    internal void RecordFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         RefreshRecordArea(DateTimeOffset.Now);
     }
 
-    private void CalendarDayBorder_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+    internal void CalendarDayBorder_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
     {
         if (sender is not Border { DataContext: CalendarDayRow row } ||
             row.Date is null)
@@ -670,7 +667,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         CalendarHoverCardVisibility = Visibility.Visible;
     }
 
-    private void CalendarDayBorder_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+    internal void CalendarDayBorder_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
     {
         if (sender is not Border { DataContext: CalendarDayRow row } ||
             row.Date is null ||
@@ -682,13 +679,13 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         HideCalendarHoverCard();
     }
 
-    private void SetSelectedTab(PrototypeTab tab)
+    private void SetSelectedTab(MainMenuTab tab)
     {
         _selectedTab = tab;
 
-        bool isProject = tab == PrototypeTab.Project;
-        bool isCalendar = tab == PrototypeTab.Record;
-        bool isWeekly = tab == PrototypeTab.Weekly;
+        bool isProject = tab == MainMenuTab.Timer;
+        bool isCalendar = tab == MainMenuTab.DailyRecord;
+        bool isWeekly = tab == MainMenuTab.WeeklyRecord;
         ProjectViewVisibility = isProject ? Visibility.Visible : Visibility.Collapsed;
         RecordViewVisibility = isCalendar ? Visibility.Visible : Visibility.Collapsed;
         WeeklyViewVisibility = isWeekly ? Visibility.Visible : Visibility.Collapsed;
@@ -1157,10 +1154,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
-    private enum PrototypeTab
+    private enum MainMenuTab
     {
-        Project,
-        Record,
-        Weekly
+        Timer,
+        DailyRecord,
+        WeeklyRecord
     }
 }

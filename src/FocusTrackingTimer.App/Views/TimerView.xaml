@@ -1,0 +1,240 @@
+<UserControl x:Class="FocusTrackingTimer.App.Views.TimerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="250" />
+            <ColumnDefinition Width="16" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Column="0" Style="{StaticResource Panel}" Padding="16" Background="#EFEFEB">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <DockPanel Margin="0,0,0,10" LastChildFill="True">
+                    <Button DockPanel.Dock="Right"
+                            Width="28"
+                            Height="26"
+                            Background="#1F1F1F"
+                            BorderBrush="#1F1F1F"
+                            BorderThickness="1.5"
+                            Click="AddProjectButton_Click"
+                            Content="+"
+                            Foreground="#FFFFFF" />
+                    <TextBlock VerticalAlignment="Center"
+                               FontWeight="SemiBold"
+                               Text="프로젝트 목록" />
+                </DockPanel>
+
+                <ListBox Grid.Row="1"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         HorizontalContentAlignment="Stretch"
+                         ItemsSource="{Binding ProjectRows}"
+                         SelectedItem="{Binding SelectedProjectRow, Mode=TwoWay}"
+                         SelectionChanged="ProjectList_SelectionChanged">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Border Height="58"
+                                    HorizontalAlignment="Stretch"
+                                    Margin="0,0,0,10"
+                                    Padding="10"
+                                    Background="#FFFFFF"
+                                    BorderBrush="#D7D7D0"
+                                    BorderThickness="1.5"
+                                    CornerRadius="12">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <TextBlock FontWeight="SemiBold" Text="{Binding Name}" />
+                                    <TextBlock Grid.Row="1" Margin="0,5,0,0" Foreground="#7A3822" Text="{Binding StatusText}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="16" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Border Style="{StaticResource Panel}" Padding="20">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="240" />
+                        <ColumnDefinition Width="120" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock FontSize="22" FontWeight="SemiBold" Text="{Binding SelectedProjectTitle}" />
+                            <Button Width="28"
+                                    Height="26"
+                                    Margin="8,0,0,0"
+                                    VerticalAlignment="Center"
+                                    Background="#FFFFFF"
+                                    BorderBrush="#D7D7D0"
+                                    BorderThickness="1.5"
+                                    Click="EditSelectedProjectButton_Click"
+                                    Content="✎"
+                                    IsEnabled="{Binding IsProjectEditEnabled}" />
+                            <Button Width="28"
+                                    Height="26"
+                                    Margin="6,0,0,0"
+                                    VerticalAlignment="Center"
+                                    Background="#FFFFFF"
+                                    BorderBrush="#D7D7D0"
+                                    BorderThickness="1.5"
+                                    Click="DeleteProjectButton_Click"
+                                    Content="×"
+                                    IsEnabled="{Binding IsProjectDeleteEnabled}" />
+                        </StackPanel>
+                        <TextBlock Margin="0,8,0,0" Foreground="#4B4B4B" Text="{Binding ActiveSessionPeriodText}" />
+                        <TextBlock Margin="0,8,0,0" Foreground="#5B5B5B" Text="{Binding FocusStatusText}" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock FontSize="12" FontWeight="SemiBold" Text="경과 시간" />
+                        <TextBlock Margin="0,5,0,0" FontSize="22" FontWeight="SemiBold" Text="{Binding ActiveProjectWallClockText}" />
+                        <TextBlock Margin="0,12,0,0" FontSize="12" FontWeight="SemiBold" Text="작업 시간" />
+                        <TextBlock Margin="0,5,0,0" FontSize="26" FontWeight="SemiBold" Text="{Binding ActiveProjectElapsedText}" />
+                        <TextBlock Margin="0,12,0,0" FontSize="12" FontWeight="SemiBold" Text="오늘 누적 시간" />
+                        <TextBlock Margin="0,5,0,0" FontSize="20" FontWeight="SemiBold" Foreground="#2E6D36" Text="{Binding SelectedProjectTodayText}" />
+                    </StackPanel>
+
+                    <Button Grid.Column="2"
+                            Width="96"
+                            Height="68"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Background="{Binding TimerActionButtonBackground}"
+                            BorderBrush="#1F1F1F"
+                            BorderThickness="1.5"
+                            Click="TimerActionButton_Click"
+                            Content="{Binding TimerActionButtonText}"
+                            FontSize="18"
+                            Foreground="{Binding TimerActionButtonForeground}"
+                            FontWeight="SemiBold"
+                            IsEnabled="{Binding IsTimerActionEnabled}" />
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="2" Style="{StaticResource Panel}" Padding="20">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="190" />
+                            <ColumnDefinition Width="100" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock FontSize="20" FontWeight="SemiBold" Text="등록 프로그램" />
+                            <TextBlock Margin="0,8,0,0" Foreground="#5B5B5B" Text="프로젝트 탭에서는 실행 중인 세션의 상태만 확인합니다. 종료된 프로그램별 시간은 기록 탭에서 확인합니다." />
+                        </StackPanel>
+                        <ComboBox Grid.Column="1"
+                                  Margin="0,2,10,0"
+                                  Height="34"
+                                  Padding="8,4"
+                                  BorderBrush="#D7D7D0"
+                                  BorderThickness="1.5"
+                                  DisplayMemberPath="Label"
+                                  ItemsSource="{Binding ProgramSortOptions}"
+                                  SelectedItem="{Binding SelectedProgramSortOption, Mode=TwoWay}"
+                                  SelectionChanged="ProgramSort_SelectionChanged" />
+                        <Button Grid.Column="2"
+                                Height="34"
+                                Margin="0,2,0,0"
+                                Background="#1F1F1F"
+                                BorderBrush="#1F1F1F"
+                                BorderThickness="1.5"
+                                Click="OpenProgramManagerButton_Click"
+                                Content="프로그램 추가"
+                                Foreground="#FFFFFF" />
+                    </Grid>
+
+                    <ScrollViewer Grid.Row="1" Margin="0,18,0,0" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding RegisteredProgramRows}">
+                            <ItemsControl.ItemContainerStyle>
+                                <Style TargetType="ContentPresenter">
+                                    <Setter Property="HorizontalAlignment" Value="Stretch" />
+                                </Style>
+                            </ItemsControl.ItemContainerStyle>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Height="78"
+                                            HorizontalAlignment="Stretch"
+                                            Margin="0,0,0,10"
+                                            Padding="14"
+                                            BorderBrush="#2F2F2F"
+                                            BorderThickness="1.5"
+                                            CornerRadius="8">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="#FFFFFF" />
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="#EDEDEA" />
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel>
+                                                <DockPanel LastChildFill="True">
+                                                    <Button DockPanel.Dock="Right"
+                                                            Style="{StaticResource HoverActionButton}"
+                                                            Click="DeleteProgramButton_Click"
+                                                            Content="×" />
+                                                    <Button DockPanel.Dock="Right"
+                                                            Style="{StaticResource HoverActionButton}"
+                                                            Click="EditProgramButton_Click"
+                                                            Content="✎" />
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <Ellipse Width="12"
+                                                                 Height="12"
+                                                                 Margin="0,0,10,0"
+                                                                 VerticalAlignment="Center"
+                                                                 Fill="{Binding StatusBrush}"
+                                                                 ToolTip="{Binding StatusText}" />
+                                                        <TextBlock FontSize="17" FontWeight="SemiBold" Text="{Binding DisplayName}" />
+                                                    </StackPanel>
+                                                </DockPanel>
+                                                <TextBlock Margin="0,5,0,0" Foreground="#5B5B5B" Text="{Binding ProcessName}" />
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="1"
+                                                       VerticalAlignment="Center"
+                                                       FontSize="18"
+                                                       FontWeight="SemiBold"
+                                                       Text="{Binding FocusDurationText}" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>
