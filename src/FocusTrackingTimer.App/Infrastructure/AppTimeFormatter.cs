@@ -41,6 +41,11 @@ internal static class AppTimeFormatter
         return date.ToDateTime(TimeOnly.MinValue).ToString("yyyy년 M월 d일", CultureInfo.CurrentCulture);
     }
 
+    public static string FormatProjectMetaDateTime(DateTimeOffset value)
+    {
+        return value.LocalDateTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.CurrentCulture);
+    }
+
     public static string FormatWeekRange(DateOnly weekStart, DateOnly weekEnd)
     {
         string startText = weekStart.ToDateTime(TimeOnly.MinValue).ToString("M월 d일", CultureInfo.CurrentCulture);

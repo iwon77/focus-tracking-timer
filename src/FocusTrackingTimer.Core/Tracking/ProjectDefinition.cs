@@ -1,10 +1,13 @@
 using System.Collections.ObjectModel;
 
+using System.Text;
+
 namespace FocusTrackingTimer.Core.Tracking;
 
 public sealed class ProjectDefinition
 {
     public const int MaxNameLength = 20;
+    public const int MaxMemoBytes = 500;
 
     private readonly List<RegisteredProgramInfo> _registeredPrograms = [];
 
@@ -14,19 +17,24 @@ public sealed class ProjectDefinition
         bool isDeleted = false,
         DateTimeOffset? createdAt = null,
         bool isPinned = false,
-        string memo = "")
+        string memo = "",
+        DateTimeOffset? memoUpdatedAt = null)
     {
         if (id == Guid.Empty)
         {
             throw new ArgumentException("Project id is required.", nameof(id));
         }
 
+        DateTimeOffset resolvedCreatedAt = createdAt ?? DateTimeOffset.Now;
         Id = id;
         Name = NormalizeProjectName(name);
         IsDeleted = isDeleted;
-        CreatedAt = createdAt ?? DateTimeOffset.Now;
+        CreatedAt = resolvedCreatedAt;
         IsPinned = isPinned;
-        Memo = memo ?? string.Empty;
+        Memo = NormalizeMemo(memo);
+        MemoUpdatedAt = memoUpdatedAt is null || memoUpdatedAt.Value < resolvedCreatedAt
+            ? resolvedCreatedAt
+            : memoUpdatedAt.Value;
     }
 
     public Guid Id { get; }
@@ -40,6 +48,8 @@ public sealed class ProjectDefinition
     public bool IsPinned { get; private set; }
 
     public string Memo { get; private set; }
+
+    public DateTimeOffset MemoUpdatedAt { get; private set; }
 
     public ReadOnlyCollection<TrackedApplication> RegisteredPrograms => new(
         _registeredPrograms.Select(item => item.Program).ToList());
@@ -104,9 +114,10 @@ public sealed class ProjectDefinition
         IsPinned = isPinned;
     }
 
-    public void UpdateMemo(string memo)
+    public void UpdateMemo(string memo, DateTimeOffset updatedAt)
     {
-        Memo = memo ?? string.Empty;
+        Memo = NormalizeMemo(memo);
+        MemoUpdatedAt = updatedAt < CreatedAt ? CreatedAt : updatedAt;
     }
 
     public bool TryUpdateProgram(string processName, TrackedApplication updatedApplication)
@@ -225,5 +236,16 @@ public sealed class ProjectDefinition
         }
 
         return normalizedName;
+    }
+
+    private static string NormalizeMemo(string? memo)
+    {
+        string normalizedMemo = memo ?? string.Empty;
+        if (Encoding.UTF8.GetByteCount(normalizedMemo) > MaxMemoBytes)
+        {
+            throw new ArgumentException($"Project memo cannot exceed {MaxMemoBytes} bytes.", nameof(memo));
+        }
+
+        return normalizedMemo;
     }
 }

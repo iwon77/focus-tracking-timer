@@ -18,7 +18,8 @@ public sealed class SqliteProjectTimerStoreTests
             Assert.True(engine.TryAddProject("Work", out ProjectDefinition workProject));
             Assert.True(engine.TryAddProject("Study", out ProjectDefinition studyProject));
             Assert.True(engine.TrySetProjectPinned(studyProject.Id, true));
-            engine.UpdateProjectMemo(studyProject.Id, "Study memo");
+            DateTimeOffset memoUpdatedAt = studyProject.CreatedAt.AddMinutes(5);
+            engine.UpdateProjectMemo(studyProject.Id, "Study memo", memoUpdatedAt);
 
             DateTimeOffset codeRegisteredAt = new(2026, 6, 4, 9, 0, 0, TimeSpan.Zero);
             DateTimeOffset docsRegisteredAt = new(2026, 6, 4, 9, 5, 0, TimeSpan.Zero);
@@ -61,6 +62,7 @@ public sealed class SqliteProjectTimerStoreTests
             ProjectState loadedStudyProject = Assert.Single(loadedState.Projects, project => project.Name == "Study");
             Assert.True(loadedStudyProject.IsPinned);
             Assert.Equal("Study memo", loadedStudyProject.Memo);
+            Assert.Equal(memoUpdatedAt, loadedStudyProject.MemoUpdatedAt);
 
             ProjectTimerRecord loadedRecord = Assert.Single(loadedState.CompletedRecords);
             Assert.Equal(record.ProjectId, loadedRecord.ProjectId);

@@ -38,7 +38,8 @@ public sealed class ProjectTimerEngine
                 project.IsDeleted,
                 project.CreatedAt,
                 project.IsPinned,
-                project.Memo)),
+                project.Memo,
+                project.MemoUpdatedAt)),
             _completedRecords);
     }
 
@@ -68,7 +69,8 @@ public sealed class ProjectTimerEngine
                 projectState.IsDeleted,
                 projectState.CreatedAt,
                 projectState.IsPinned,
-                projectState.Memo);
+                projectState.Memo,
+                projectState.MemoUpdatedAt);
             project.ReplaceRegisteredPrograms(projectState.RegisteredPrograms);
             _projects.Add(project);
         }
@@ -155,10 +157,10 @@ public sealed class ProjectTimerEngine
         return true;
     }
 
-    public void UpdateProjectMemo(Guid projectId, string memo)
+    public void UpdateProjectMemo(Guid projectId, string memo, DateTimeOffset? updatedAt = null)
     {
         ProjectDefinition project = GetRequiredProject(projectId);
-        project.UpdateMemo(memo);
+        project.UpdateMemo(memo, updatedAt ?? DateTimeOffset.Now);
     }
 
     public bool TryRemoveProject(Guid projectId)

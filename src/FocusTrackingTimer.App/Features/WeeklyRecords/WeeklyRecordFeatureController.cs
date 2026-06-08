@@ -60,6 +60,13 @@ internal sealed class WeeklyRecordFeatureController
         List<ProjectTimerRecordSlice> orderedWeeklySlices = [.. weeklySlices
             .OrderBy(static slice => slice.StartedAt)
             .ThenBy(static slice => slice.EndedAt)];
+        Dictionary<DateOnly, (TimeSpan WallClock, TimeSpan Focus)> totalsByDate = orderedWeeklySlices
+            .GroupBy(static slice => DateOnly.FromDateTime(slice.StartedAt.LocalDateTime.Date))
+            .ToDictionary(
+                static group => group.Key,
+                static group => (
+                    group.Aggregate(TimeSpan.Zero, static (total, slice) => total + slice.WallClockDuration),
+                    group.Aggregate(TimeSpan.Zero, static (total, slice) => total + slice.TotalDuration)));
 
         EnsureSelectedDateHasRecords(orderedWeeklySlices);
 
@@ -75,23 +82,23 @@ internal sealed class WeeklyRecordFeatureController
         _viewModel.AverageDailyWallClockDurationText = AppTimeFormatter.FormatDuration(TimeSpan.FromTicks(totalWallClockDuration.Ticks / 7));
         _viewModel.AverageDailyFocusDurationText = AppTimeFormatter.FormatDuration(TimeSpan.FromTicks(totalFocusDuration.Ticks / 7));
 
-        List<ProjectTimerRecordSlice> selectedDateSlices = [.. orderedWeeklySlices.Where(slice =>
-            DateOnly.FromDateTime(slice.StartedAt.LocalDateTime.Date) == _selectedDate)];
-
         _isRefreshingRows = true;
         try
         {
             _viewModel.WeeklyRecordRows.Clear();
-            foreach (ProjectTimerRecordSlice slice in selectedDateSlices)
+            foreach (ProjectTimerRecordSlice slice in orderedWeeklySlices)
             {
                 TimeSpan wallClock = slice.WallClockDuration;
                 double focusRatio = wallClock <= TimeSpan.Zero ? 0 : slice.TotalDuration.TotalSeconds / wallClock.TotalSeconds;
                 DateOnly recordDate = DateOnly.FromDateTime(slice.StartedAt.LocalDateTime.Date);
+                (TimeSpan groupWallClock, TimeSpan groupFocus) = totalsByDate[recordDate];
 
                 _viewModel.WeeklyRecordRows.Add(new WeeklyRecordRow(
                     slice.ProjectId,
                     recordDate,
                     AppTimeFormatter.FormatGroupDate(recordDate),
+                    AppTimeFormatter.FormatDuration(groupWallClock),
+                    AppTimeFormatter.FormatDuration(groupFocus),
                     slice.StartedAt,
                     slice.EndedAt,
                     AppTimeFormatter.FormatDayLabel(recordDate),
@@ -160,6 +167,13 @@ internal sealed class WeeklyRecordFeatureController
             {
                 return matched;
             }
+        }
+
+        WeeklyRecordRow? selectedDateRow = _viewModel.WeeklyRecordRows.FirstOrDefault(row => row.RecordDate == _selectedDate);
+        if (selectedDateRow is not null)
+        {
+            _selectedRecordKey = (selectedDateRow.ProjectId, selectedDateRow.StartedAt, selectedDateRow.EndedAt);
+            return selectedDateRow;
         }
 
         WeeklyRecordRow? firstRow = _viewModel.WeeklyRecordRows.FirstOrDefault();

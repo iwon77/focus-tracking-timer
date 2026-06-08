@@ -12,8 +12,9 @@ public sealed class DailyRecordViewModel : ObservableObject
     private string _monthlyAverageWallClockDurationText = "00:00:00";
     private string _monthlyAverageFocusDurationText = "00:00:00";
     private string _selectedDailyDateText = string.Empty;
-    private string _selectedDailyTotalDurationText = "0m";
-    private string _selectedDailyFocusRatioText = "0%";
+    private string _selectedDailyRecordCountText = "0건";
+    private string _selectedDailyTotalWallClockDurationText = "00:00:00";
+    private string _selectedDailyFocusSummaryText = "00:00:00 (0%)";
     private string _selectedDailyEmptyText = "선택한 날짜의 작업 기록이 없습니다.";
     private RecordFilterOption? _selectedRecordFilter;
 
@@ -65,16 +66,22 @@ public sealed class DailyRecordViewModel : ObservableObject
         set => SetProperty(ref _selectedDailyDateText, value);
     }
 
-    public string SelectedDailyTotalDurationText
+    public string SelectedDailyRecordCountText
     {
-        get => _selectedDailyTotalDurationText;
-        set => SetProperty(ref _selectedDailyTotalDurationText, value);
+        get => _selectedDailyRecordCountText;
+        set => SetProperty(ref _selectedDailyRecordCountText, value);
     }
 
-    public string SelectedDailyFocusRatioText
+    public string SelectedDailyTotalWallClockDurationText
     {
-        get => _selectedDailyFocusRatioText;
-        set => SetProperty(ref _selectedDailyFocusRatioText, value);
+        get => _selectedDailyTotalWallClockDurationText;
+        set => SetProperty(ref _selectedDailyTotalWallClockDurationText, value);
+    }
+
+    public string SelectedDailyFocusSummaryText
+    {
+        get => _selectedDailyFocusSummaryText;
+        set => SetProperty(ref _selectedDailyFocusSummaryText, value);
     }
 
     public string SelectedDailyEmptyText

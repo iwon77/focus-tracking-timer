@@ -124,6 +124,17 @@ public partial class WeeklyRecordView : UserControl
             if (WeeklyRecordListControl.SelectedItem is not null)
             {
                 WeeklyRecordListControl.ScrollIntoView(WeeklyRecordListControl.SelectedItem);
+                Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+                {
+                    _listScrollViewer ??= FindDescendant<ScrollViewer>(WeeklyRecordListControl);
+                    if (_listScrollViewer is null)
+                    {
+                        return;
+                    }
+
+                    double targetOffset = Math.Max(0, _listScrollViewer.VerticalOffset - 42);
+                    _listScrollViewer.ScrollToVerticalOffset(targetOffset);
+                }));
             }
         }));
     }

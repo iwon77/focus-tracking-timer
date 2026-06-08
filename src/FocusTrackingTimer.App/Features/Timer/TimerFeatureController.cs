@@ -99,7 +99,11 @@ internal sealed class TimerFeatureController
             return;
         }
 
-        ProjectMemoDialog dialog = new(SelectedProject.Name, SelectedProject.CreatedAt, SelectedProject.Memo)
+        ProjectMemoDialog dialog = new(
+            SelectedProject.Name,
+            SelectedProject.CreatedAt,
+            SelectedProject.MemoUpdatedAt,
+            SelectedProject.Memo)
         {
             Owner = _owner
         };
@@ -109,7 +113,7 @@ internal sealed class TimerFeatureController
             return;
         }
 
-        _engine.UpdateProjectMemo(SelectedProject.Id, dialog.MemoText);
+        _engine.UpdateProjectMemo(SelectedProject.Id, dialog.MemoText, DateTimeOffset.Now);
         SelectedProject = _engine.Projects.FirstOrDefault(item => item.Id == SelectedProject.Id);
         _persistState();
         _refreshAll(DateTimeOffset.Now, "프로젝트 메모를 저장했습니다.");
@@ -445,25 +449,37 @@ internal sealed class TimerFeatureController
                 _engine.GetCurrentRunDuration(activeProject.Id, observedAt));
         }
 
+        _viewModel.PinnedProjectRows.Clear();
         _viewModel.ProjectRows.Clear();
         ProjectSortMode sortMode = _viewModel.SelectedProjectSortOption?.Mode ?? ProjectSortMode.Created;
         foreach (ProjectDefinition project in TimerProjectDisplayService.GetSortedProjects(_engine.Projects, sortMode))
         {
-            _viewModel.ProjectRows.Add(new ProjectSidebarRow(
+            ProjectSidebarRow row = new(
                 project.Id,
                 project.Name,
-                project.IsPinned));
+                project.IsPinned);
+
+            if (project.IsPinned)
+            {
+                _viewModel.PinnedProjectRows.Add(row);
+            }
+            else
+            {
+                _viewModel.ProjectRows.Add(row);
+            }
         }
 
         if (selectedProjectId.HasValue)
         {
-            _viewModel.SelectedProjectRow = _viewModel.ProjectRows.FirstOrDefault(item => item.ProjectId == selectedProjectId.Value);
+            _viewModel.SelectedProjectRow = _viewModel.PinnedProjectRows.FirstOrDefault(item => item.ProjectId == selectedProjectId.Value)
+                ?? _viewModel.ProjectRows.FirstOrDefault(item => item.ProjectId == selectedProjectId.Value);
             SelectedProject = _engine.Projects.FirstOrDefault(item => item.Id == selectedProjectId.Value);
         }
         else if (_engine.Projects.Count > 0)
         {
             SelectedProject = _engine.Projects[0];
-            _viewModel.SelectedProjectRow = _viewModel.ProjectRows.FirstOrDefault(item => item.ProjectId == SelectedProject.Id);
+            _viewModel.SelectedProjectRow = _viewModel.PinnedProjectRows.FirstOrDefault(item => item.ProjectId == SelectedProject.Id)
+                ?? _viewModel.ProjectRows.FirstOrDefault(item => item.ProjectId == SelectedProject.Id);
         }
         else
         {

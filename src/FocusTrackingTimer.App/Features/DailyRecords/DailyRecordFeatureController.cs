@@ -133,15 +133,18 @@ internal sealed class DailyRecordFeatureController
         for (DateOnly date = firstDay; date <= lastDay; date = date.AddDays(1))
         {
             TimeSpan duration = summaryByDate.GetValueOrDefault(date)?.TotalDuration ?? TimeSpan.Zero;
+            bool isSelected = _selectedDate == date;
             _viewModel.CalendarRows.Add(new CalendarDayRow(
                 date,
-                date.Day.ToString(CultureInfo.CurrentCulture),
+                isSelected
+                    ? AppTimeFormatter.FormatWeeklyBubbleDate(date)
+                    : date.Day.ToString(CultureInfo.CurrentCulture),
                 duration == TimeSpan.Zero ? string.Empty : AppTimeFormatter.FormatDurationShort(duration),
                 duration > TimeSpan.Zero,
                 date == today,
                 date.DayOfWeek == DayOfWeek.Sunday,
                 false,
-                _selectedDate == date,
+                isSelected,
                 GetDotSize(duration)));
         }
     }
@@ -181,17 +184,17 @@ internal sealed class DailyRecordFeatureController
     {
         DateOnly selectedDate = _selectedDate ?? DateOnly.FromDateTime(observedAt.LocalDateTime.Date);
         IReadOnlyList<ProjectTimerRecordSlice> slices = _engine.GetRecordSlices(selectedDate, selectedDate, observedAt, projectFilter);
-
-        _viewModel.SelectedDailyDateText = AppTimeFormatter.FormatCalendarDate(selectedDate);
-        _viewModel.SelectedDailyTotalDurationText = AppTimeFormatter.FormatDurationShort(
-            slices.Aggregate(TimeSpan.Zero, static (total, slice) => total + slice.TotalDuration));
-
         TimeSpan totalWallClock = slices.Aggregate(TimeSpan.Zero, static (total, slice) => total + slice.WallClockDuration);
         TimeSpan totalFocusDuration = slices.Aggregate(TimeSpan.Zero, static (total, slice) => total + slice.TotalDuration);
         double focusRatio = totalWallClock <= TimeSpan.Zero
             ? 0
             : totalFocusDuration.TotalSeconds / totalWallClock.TotalSeconds;
-        _viewModel.SelectedDailyFocusRatioText = AppTimeFormatter.FormatPercentage(focusRatio);
+
+        _viewModel.SelectedDailyDateText = AppTimeFormatter.FormatCalendarDate(selectedDate);
+        _viewModel.SelectedDailyRecordCountText = $"{slices.Count}건";
+        _viewModel.SelectedDailyTotalWallClockDurationText = AppTimeFormatter.FormatDuration(totalWallClock);
+        _viewModel.SelectedDailyFocusSummaryText =
+            $"{AppTimeFormatter.FormatDuration(totalFocusDuration)} ({AppTimeFormatter.FormatPercentage(focusRatio)})";
 
         _viewModel.SelectedDailyRecordRows.Clear();
         foreach (ProjectTimerRecordSlice slice in slices.OrderBy(static item => item.StartedAt))

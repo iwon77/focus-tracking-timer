@@ -4,6 +4,8 @@ public sealed record WeeklyRecordRow(
     Guid ProjectId,
     DateOnly RecordDate,
     string GroupDateText,
+    string GroupTotalDurationText,
+    string GroupFocusDurationText,
     DateTimeOffset StartedAt,
     DateTimeOffset EndedAt,
     string DateText,

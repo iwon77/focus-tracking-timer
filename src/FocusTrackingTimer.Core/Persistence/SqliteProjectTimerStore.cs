@@ -106,7 +106,8 @@ public sealed class SqliteProjectTimerStore
                 is_deleted INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL DEFAULT '',
                 is_pinned INTEGER NOT NULL DEFAULT 0,
-                memo TEXT NOT NULL DEFAULT ''
+                memo TEXT NOT NULL DEFAULT '',
+                memo_updated_at TEXT NOT NULL DEFAULT ''
             );
 
             CREATE TABLE IF NOT EXISTS registered_programs (
@@ -146,6 +147,7 @@ public sealed class SqliteProjectTimerStore
         EnsureColumn(connection, "projects", "created_at", "ALTER TABLE projects ADD COLUMN created_at TEXT NOT NULL DEFAULT '';");
         EnsureColumn(connection, "projects", "is_pinned", "ALTER TABLE projects ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0;");
         EnsureColumn(connection, "projects", "memo", "ALTER TABLE projects ADD COLUMN memo TEXT NOT NULL DEFAULT '';");
+        EnsureColumn(connection, "projects", "memo_updated_at", "ALTER TABLE projects ADD COLUMN memo_updated_at TEXT NOT NULL DEFAULT '';");
         EnsureColumn(connection, "registered_programs", "is_pinned", "ALTER TABLE registered_programs ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0;");
     }
 
@@ -157,7 +159,7 @@ public sealed class SqliteProjectTimerStore
         {
             projectCommand.CommandText =
                 """
-                SELECT project_id, name, is_deleted, created_at, is_pinned, memo
+                SELECT project_id, name, is_deleted, created_at, is_pinned, memo, memo_updated_at
                 FROM projects
                 ORDER BY sort_order;
                 """;
@@ -172,6 +174,7 @@ public sealed class SqliteProjectTimerStore
                     ParseOptionalDateTimeOffset(reader.GetString(3)),
                     reader.GetInt32(4) != 0,
                     reader.GetString(5),
+                    ParseOptionalDateTimeOffset(reader.GetString(6)),
                     []));
             }
         }
@@ -213,7 +216,8 @@ public sealed class SqliteProjectTimerStore
             row.IsDeleted,
             row.CreatedAt,
             row.IsPinned,
-            row.Memo))];
+            row.Memo,
+            row.MemoUpdatedAt))];
     }
 
     private static List<ProjectTimerRecord> LoadCompletedRecords(SqliteConnection connection)
@@ -289,8 +293,8 @@ public sealed class SqliteProjectTimerStore
         command.Transaction = transaction;
         command.CommandText =
             """
-            INSERT INTO projects (project_id, name, sort_order, is_deleted, created_at, is_pinned, memo)
-            VALUES ($project_id, $name, $sort_order, $is_deleted, $created_at, $is_pinned, $memo);
+            INSERT INTO projects (project_id, name, sort_order, is_deleted, created_at, is_pinned, memo, memo_updated_at)
+            VALUES ($project_id, $name, $sort_order, $is_deleted, $created_at, $is_pinned, $memo, $memo_updated_at);
             """;
         _ = command.Parameters.AddWithValue("$project_id", project.Id.ToString("D"));
         _ = command.Parameters.AddWithValue("$name", project.Name);
@@ -299,6 +303,7 @@ public sealed class SqliteProjectTimerStore
         _ = command.Parameters.AddWithValue("$created_at", FormatDateTimeOffset(project.CreatedAt));
         _ = command.Parameters.AddWithValue("$is_pinned", project.IsPinned ? 1 : 0);
         _ = command.Parameters.AddWithValue("$memo", project.Memo);
+        _ = command.Parameters.AddWithValue("$memo_updated_at", FormatDateTimeOffset(project.MemoUpdatedAt));
         _ = command.ExecuteNonQuery();
     }
 
@@ -475,6 +480,7 @@ public sealed class SqliteProjectTimerStore
         DateTimeOffset? CreatedAt,
         bool IsPinned,
         string Memo,
+        DateTimeOffset? MemoUpdatedAt,
         List<RegisteredProgramInfo> RegisteredPrograms);
 
     private sealed record CompletedRecordRow(

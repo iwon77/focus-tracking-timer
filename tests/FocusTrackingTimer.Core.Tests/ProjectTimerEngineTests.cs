@@ -302,6 +302,19 @@ public class ProjectTimerEngineTests
     }
 
     [Fact]
+    public void UpdateProjectMemoStoresMemoAndUpdatedAt()
+    {
+        ProjectTimerEngine engine = new();
+        Assert.True(engine.TryAddProject("Work", out ProjectDefinition project));
+        DateTimeOffset updatedAt = project.CreatedAt.AddMinutes(5);
+
+        engine.UpdateProjectMemo(project.Id, "Memo body", updatedAt);
+
+        Assert.Equal("Memo body", project.Memo);
+        Assert.Equal(updatedAt, project.MemoUpdatedAt);
+    }
+
+    [Fact]
     public void UpdatingDisplayNameKeepsProcessNameAndRegistrationTime()
     {
         ProjectTimerEngine engine = new();

@@ -26,7 +26,7 @@
                                FontSize="16"
                                FontWeight="SemiBold"
                                Foreground="#5B5B5B"
-                               Text="{Binding DisplayedRecordMonthText, StringFormat={}{0} 요약}" />
+                               Text="{Binding SelectedDailyDateText}" />
 
                     <StackPanel Grid.Column="1"
                                 VerticalAlignment="Center">
@@ -217,43 +217,47 @@
                         <StackPanel>
                             <UniformGrid Columns="7">
                                 <TextBlock HorizontalAlignment="Center"
-                                           FontSize="12"
+                                           FontSize="15"
                                            FontWeight="SemiBold"
                                            Foreground="#A65A5A"
                                            Text="일" />
                                 <TextBlock HorizontalAlignment="Center"
-                                           FontSize="12"
+                                           FontSize="15"
                                            FontWeight="SemiBold"
                                            Foreground="#7A7A74"
                                            Text="월" />
                                 <TextBlock HorizontalAlignment="Center"
-                                           FontSize="12"
+                                           FontSize="15"
                                            FontWeight="SemiBold"
                                            Foreground="#7A7A74"
                                            Text="화" />
                                 <TextBlock HorizontalAlignment="Center"
-                                           FontSize="12"
+                                           FontSize="15"
                                            FontWeight="SemiBold"
                                            Foreground="#7A7A74"
                                            Text="수" />
                                 <TextBlock HorizontalAlignment="Center"
-                                           FontSize="12"
+                                           FontSize="15"
                                            FontWeight="SemiBold"
                                            Foreground="#7A7A74"
                                            Text="목" />
                                 <TextBlock HorizontalAlignment="Center"
-                                           FontSize="12"
+                                           FontSize="15"
                                            FontWeight="SemiBold"
                                            Foreground="#7A7A74"
                                            Text="금" />
                                 <TextBlock HorizontalAlignment="Center"
-                                           FontSize="12"
+                                           FontSize="15"
                                            FontWeight="SemiBold"
                                            Foreground="#7A7A74"
                                            Text="토" />
                             </UniformGrid>
 
-                            <ItemsControl Margin="0,8,0,0"
+                            <Border Height="1"
+                                    Margin="6,10,6,0"
+                                    Background="#DEDCCE" />
+
+                            <ItemsControl Margin="0,10,0,0"
                                           ItemsSource="{Binding CalendarRows}">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
@@ -286,8 +290,8 @@
                                                                         CornerRadius="18">
                                                                     <Grid>
                                                                         <Grid.RowDefinitions>
-                                                                            <RowDefinition Height="28" />
-                                                                            <RowDefinition Height="18" />
+                                                                            <RowDefinition Height="36" />
+                                                                            <RowDefinition Height="6" />
                                                                             <RowDefinition Height="18" />
                                                                         </Grid.RowDefinitions>
 
@@ -309,38 +313,20 @@
                                                                             </Ellipse.Style>
                                                                         </Ellipse>
 
-                                                                        <TextBlock Grid.Row="1"
-                                                                                   HorizontalAlignment="Center"
-                                                                                   FontSize="9"
-                                                                                   FontWeight="SemiBold"
-                                                                                   Foreground="#2E6D36"
-                                                                                   Text="{Binding DurationText}">
-                                                                            <TextBlock.Style>
-                                                                                <Style TargetType="TextBlock">
-                                                                                    <Setter Property="Opacity" Value="0" />
-                                                                                    <Style.Triggers>
-                                                                                        <DataTrigger Binding="{Binding HasDuration}" Value="True">
-                                                                                            <Setter Property="Opacity" Value="1" />
-                                                                                        </DataTrigger>
-                                                                                    </Style.Triggers>
-                                                                                </Style>
-                                                                            </TextBlock.Style>
-                                                                        </TextBlock>
-
                                                                         <TextBlock Grid.Row="2"
                                                                                    HorizontalAlignment="Center"
-                                                                                   FontSize="12"
                                                                                    FontWeight="SemiBold"
                                                                                    Text="{Binding DayText}">
                                                                             <TextBlock.Style>
                                                                                 <Style TargetType="TextBlock">
                                                                                     <Setter Property="Foreground" Value="#2F2F2F" />
+                                                                                    <Setter Property="FontSize" Value="11" />
                                                                                     <Style.Triggers>
                                                                                         <DataTrigger Binding="{Binding IsSunday}" Value="True">
                                                                                             <Setter Property="Foreground" Value="#D95148" />
                                                                                         </DataTrigger>
-                                                                                        <DataTrigger Binding="{Binding IsToday}" Value="True">
-                                                                                            <Setter Property="Foreground" Value="#2E6D36" />
+                                                                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                                                            <Setter Property="FontSize" Value="12" />
                                                                                         </DataTrigger>
                                                                                     </Style.Triggers>
                                                                                 </Style>
@@ -361,7 +347,7 @@
                                                                         <Setter TargetName="CellChrome" Property="Background" Value="#E7E7E1" />
                                                                     </Trigger>
                                                                     <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                                        <Setter TargetName="CellChrome" Property="Background" Value="#FFFFFF" />
+                                                                        <Setter TargetName="CellChrome" Property="Background" Value="#E7E7E1" />
                                                                         <Setter TargetName="CellChrome" Property="BorderThickness" Value="1.5" />
                                                                     </DataTrigger>
                                                                 </ControlTemplate.Triggers>
@@ -391,9 +377,6 @@
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
-                    <TextBlock FontSize="20"
-                               FontWeight="SemiBold"
-                               Text="선택한 날짜 요약" />
                     <TextBlock Grid.Row="1"
                                Margin="0,16,0,0"
                                FontSize="18"
@@ -404,11 +387,16 @@
                                 Margin="0,12,0,0">
                         <TextBlock FontSize="16"
                                    FontWeight="SemiBold"
-                                   Text="{Binding SelectedDailyTotalDurationText, StringFormat=총 작업 시간: {0}}" />
+                                   Text="{Binding SelectedDailyRecordCountText, StringFormat=작업 건 수: {0}}" />
                         <TextBlock Margin="0,10,0,0"
                                    FontSize="16"
                                    FontWeight="SemiBold"
-                                   Text="{Binding SelectedDailyFocusRatioText, StringFormat=경과 시간 대비 집중 시간: {0}}" />
+                                   Text="{Binding SelectedDailyTotalWallClockDurationText, StringFormat=총 작업 시간: {0}}" />
+                        <TextBlock Margin="0,10,0,0"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Foreground="#2E6D36"
+                                   Text="{Binding SelectedDailyFocusSummaryText, StringFormat=총 집중 시간: {0}}" />
                     </StackPanel>
 
                     <Grid Grid.Row="3"
