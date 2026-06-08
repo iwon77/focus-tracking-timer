@@ -36,6 +36,8 @@ public sealed class TimerViewModel : ObservableObject
 
     public ObservableCollection<ProjectSidebarRow> ProjectRows { get; } = [];
 
+    public ObservableCollection<ProjectSidebarRow> PinnedProjectRows { get; } = [];
+
     public ObservableCollection<ProjectSortOption> ProjectSortOptions { get; } = [];
 
     public ObservableCollection<RegisteredProgramRow> RegisteredProgramRows { get; } = [];

@@ -32,7 +32,8 @@
             </StackPanel>
 
             <StackPanel Grid.Column="0">
-                <StackPanel Orientation="Horizontal">
+                <StackPanel
+                            Orientation="Horizontal">
                     <TextBlock MaxWidth="360"
                                FontSize="22"
                                FontWeight="SemiBold"
@@ -56,7 +57,7 @@
                             BorderBrush="#D7D7D0"
                             BorderThickness="1.5"
                             Click="DeleteProjectButton_Click"
-                            Content="×"
+                            Content="✕"
                             IsEnabled="{Binding IsProjectDeleteEnabled}" />
                     <Button Width="42"
                             Height="26"
@@ -69,8 +70,14 @@
                             Content="메모"
                             IsEnabled="{Binding IsProjectMemoEnabled}" />
                 </StackPanel>
-                <TextBlock Margin="0,8,0,0" Foreground="#4B4B4B" Text="{Binding ActiveSessionPeriodText}" />
-                <TextBlock Margin="0,8,0,0" Foreground="#5B5B5B" Text="{Binding FocusStatusText}" />
+
+                <TextBlock Margin="0,8,0,0"
+                           Foreground="#4B4B4B"
+                           Text="{Binding ActiveSessionPeriodText}" />
+                <TextBlock Margin="0,8,0,0"
+                           Foreground="#5B5B5B"
+                           Text="{Binding FocusStatusText}" />
+
                 <Grid Width="520"
                       Margin="0,16,0,0"
                       HorizontalAlignment="Left">
@@ -79,17 +86,38 @@
                         <ColumnDefinition Width="150" />
                         <ColumnDefinition Width="180" />
                     </Grid.ColumnDefinitions>
+
                     <StackPanel>
-                        <TextBlock FontSize="12" FontWeight="SemiBold" Text="경과 시간" />
-                        <TextBlock Margin="0,5,0,0" FontSize="22" FontWeight="SemiBold" Foreground="#1F1F1F" Text="{Binding ActiveProjectWallClockText}" />
+                        <TextBlock FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Text="작업 시간" />
+                        <TextBlock Margin="0,5,0,0"
+                                   FontSize="22"
+                                   FontWeight="SemiBold"
+                                   Foreground="#1F1F1F"
+                                   Text="{Binding ActiveProjectWallClockText}" />
                     </StackPanel>
+
                     <StackPanel Grid.Column="1">
-                        <TextBlock FontSize="12" FontWeight="SemiBold" Text="집중 시간" />
-                        <TextBlock Margin="0,5,0,0" FontSize="22" FontWeight="SemiBold" Foreground="#2EAD62" Text="{Binding ActiveProjectElapsedText}" />
+                        <TextBlock FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Text="집중 시간" />
+                        <TextBlock Margin="0,5,0,0"
+                                   FontSize="22"
+                                   FontWeight="SemiBold"
+                                   Foreground="#2E6D36"
+                                   Text="{Binding ActiveProjectElapsedText}" />
                     </StackPanel>
+
                     <StackPanel Grid.Column="2">
-                        <TextBlock FontSize="12" FontWeight="SemiBold" Text="오늘 누적 시간" />
-                        <TextBlock Margin="0,5,0,0" FontSize="22" FontWeight="SemiBold" Foreground="#1F1F1F" Text="{Binding SelectedProjectTodayText}" />
+                        <TextBlock FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Text="오늘 누적 시간" />
+                        <TextBlock Margin="0,5,0,0"
+                                   FontSize="22"
+                                   FontWeight="SemiBold"
+                                   Foreground="#1F1F1F"
+                                   Text="{Binding SelectedProjectTodayText}" />
                     </StackPanel>
                 </Grid>
             </StackPanel>

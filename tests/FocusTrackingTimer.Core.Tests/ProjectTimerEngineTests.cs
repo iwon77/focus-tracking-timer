@@ -302,6 +302,19 @@ public class ProjectTimerEngineTests
     }
 
     [Fact]
+    public void UpdateProjectMemoStoresMemoAndUpdatedAt()
+    {
+        ProjectTimerEngine engine = new();
+        Assert.True(engine.TryAddProject("Work", out ProjectDefinition project));
+        DateTimeOffset updatedAt = project.CreatedAt.AddMinutes(5);
+
+        engine.UpdateProjectMemo(project.Id, "Memo body", updatedAt);
+
+        Assert.Equal("Memo body", project.Memo);
+        Assert.Equal(updatedAt, project.MemoUpdatedAt);
+    }
+
+    [Fact]
     public void UpdatingDisplayNameKeepsProcessNameAndRegistrationTime()
     {
         ProjectTimerEngine engine = new();
@@ -384,5 +397,59 @@ public class ProjectTimerEngineTests
                 Assert.Equal("Study", summary.ProjectName);
                 Assert.Equal(TimeSpan.FromMinutes(20), summary.TotalDuration);
             });
+    }
+
+    [Fact]
+    public void GetRecordSlicesKeepSeparateEntriesForRepeatedProjectSessionsOnTheSameDay()
+    {
+        ProjectTimerEngine engine = new();
+        Assert.True(engine.TryAddProject("Work", out ProjectDefinition project));
+        Assert.True(engine.TryRegisterProgram(project.Id, new TrackedApplication("code", "Code")));
+        DateTimeOffset baseTime = new(2026, 6, 3, 9, 0, 0, TimeZoneInfo.Local.GetUtcOffset(new DateTime(2026, 6, 3, 9, 0, 0)));
+
+        engine.StartProject(project.Id, baseTime);
+        engine.ObserveFocusedProgram("code", baseTime);
+        engine.StopProject(baseTime.AddHours(1));
+
+        engine.StartProject(project.Id, baseTime.AddHours(2));
+        engine.ObserveFocusedProgram("code", baseTime.AddHours(2));
+        engine.StopProject(baseTime.AddHours(3));
+
+        IReadOnlyList<ProjectTimerRecordSlice> slices = engine.GetRecordSlices(
+            new DateOnly(2026, 6, 3),
+            new DateOnly(2026, 6, 3),
+            baseTime.AddHours(3));
+
+        Assert.Equal(2, slices.Count);
+        Assert.All(slices, slice => Assert.Equal("Work", slice.ProjectName));
+        Assert.All(slices, slice => Assert.Equal(TimeSpan.FromHours(1), slice.TotalDuration));
+    }
+
+    [Fact]
+    public void GetRecordSlicesTrimWallClockAndFocusDurationsToTheSelectedDateRange()
+    {
+        ProjectTimerEngine engine = new();
+        Assert.True(engine.TryAddProject("Night Shift", out ProjectDefinition project));
+        Assert.True(engine.TryRegisterProgram(project.Id, new TrackedApplication("code", "Code")));
+        TimeSpan localOffset = TimeZoneInfo.Local.GetUtcOffset(new DateTime(2026, 6, 1, 23, 50, 0));
+        DateTimeOffset startedAt = new(2026, 6, 1, 23, 50, 0, localOffset);
+        DateTimeOffset endedAt = new(2026, 6, 2, 0, 20, 0, localOffset);
+
+        engine.StartProject(project.Id, startedAt);
+        engine.ObserveFocusedProgram("code", startedAt);
+        engine.StopProject(endedAt);
+
+        ProjectTimerRecordSlice slice = Assert.Single(engine.GetRecordSlices(
+            new DateOnly(2026, 6, 2),
+            new DateOnly(2026, 6, 2),
+            endedAt));
+
+        Assert.Equal(new DateTimeOffset(2026, 6, 2, 0, 0, 0, localOffset), slice.StartedAt);
+        Assert.Equal(endedAt, slice.EndedAt);
+        Assert.Equal(TimeSpan.FromMinutes(20), slice.WallClockDuration);
+        Assert.Equal(TimeSpan.FromMinutes(20), slice.TotalDuration);
+        ProgramFocusSummary summary = Assert.Single(slice.ProgramSummaries);
+        Assert.Equal("code", summary.Program.ProcessName);
+        Assert.Equal(TimeSpan.FromMinutes(20), summary.FocusDuration);
     }
 }

@@ -3,9 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="프로젝트 메모"
         Width="420"
-        Height="360"
+        Height="390"
         MinWidth="360"
-        MinHeight="300"
+        MinHeight="320"
         WindowStartupLocation="CenterOwner"
         Background="#F7F7F4">
     <Grid Margin="18">
@@ -22,6 +22,9 @@
             <TextBlock Margin="0,8,0,0"
                        Foreground="#5B5B5B"
                        Text="{Binding CreatedAtText}" />
+            <TextBlock Margin="0,4,0,0"
+                       Foreground="#5B5B5B"
+                       Text="{Binding MemoUpdatedAtText}" />
         </StackPanel>
 
         <TextBox Grid.Row="1"

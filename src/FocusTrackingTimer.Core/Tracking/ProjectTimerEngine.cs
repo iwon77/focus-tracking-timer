@@ -38,7 +38,8 @@ public sealed class ProjectTimerEngine
                 project.IsDeleted,
                 project.CreatedAt,
                 project.IsPinned,
-                project.Memo)),
+                project.Memo,
+                project.MemoUpdatedAt)),
             _completedRecords);
     }
 
@@ -68,7 +69,8 @@ public sealed class ProjectTimerEngine
                 projectState.IsDeleted,
                 projectState.CreatedAt,
                 projectState.IsPinned,
-                projectState.Memo);
+                projectState.Memo,
+                projectState.MemoUpdatedAt);
             project.ReplaceRegisteredPrograms(projectState.RegisteredPrograms);
             _projects.Add(project);
         }
@@ -155,10 +157,10 @@ public sealed class ProjectTimerEngine
         return true;
     }
 
-    public void UpdateProjectMemo(Guid projectId, string memo)
+    public void UpdateProjectMemo(Guid projectId, string memo, DateTimeOffset? updatedAt = null)
     {
         ProjectDefinition project = GetRequiredProject(projectId);
-        project.UpdateMemo(memo);
+        project.UpdateMemo(memo, updatedAt ?? DateTimeOffset.Now);
     }
 
     public bool TryRemoveProject(Guid projectId)
@@ -409,6 +411,32 @@ public sealed class ProjectTimerEngine
             .Take(count)];
     }
 
+    public IReadOnlyList<ProjectTimerRecordSlice> GetRecordSlices(
+        DateOnly fromDate,
+        DateOnly toDate,
+        DateTimeOffset observedAt,
+        Guid? projectId = null)
+    {
+        if (toDate < fromDate)
+        {
+            throw new ArgumentOutOfRangeException(nameof(toDate), "The end date must be on or after the start date.");
+        }
+
+        List<ProjectTimerRecordSlice> slices = [];
+
+        foreach (ProjectTimerRecord record in GetRecordsForSummary(projectId, observedAt))
+        {
+            if (TryBuildRecordSlice(record, fromDate, toDate, out ProjectTimerRecordSlice? slice))
+            {
+                slices.Add(slice!);
+            }
+        }
+
+        return [.. slices
+            .OrderByDescending(static slice => slice.StartedAt)
+            .ThenByDescending(static slice => slice.EndedAt)];
+    }
+
     public IReadOnlyList<DailyDurationSummary> GetDailyDurationSummaries(
         DateOnly fromDate,
         DateOnly toDate,
@@ -548,6 +576,52 @@ public sealed class ProjectTimerEngine
         return summaries.Aggregate(TimeSpan.Zero, static (total, summary) => total + summary.FocusDuration);
     }
 
+    private static bool TryBuildRecordSlice(
+        ProjectTimerRecord record,
+        DateOnly fromDate,
+        DateOnly toDate,
+        out ProjectTimerRecordSlice? slice)
+    {
+        DateTimeOffset rangeStart = GetLocalBoundary(fromDate);
+        DateTimeOffset rangeEnd = GetLocalBoundary(toDate.AddDays(1));
+        DateTimeOffset sliceStart = record.StartedAt > rangeStart ? record.StartedAt : rangeStart;
+        DateTimeOffset sliceEnd = record.EndedAt < rangeEnd ? record.EndedAt : rangeEnd;
+
+        if (sliceEnd <= sliceStart)
+        {
+            slice = null;
+            return false;
+        }
+
+        List<ProgramFocusSegment> slicedSegments = [.. SliceFocusSegments(record.FocusSegments, sliceStart, sliceEnd)];
+        slice = new ProjectTimerRecordSlice(
+            record.ProjectId,
+            record.ProjectName,
+            sliceStart,
+            sliceEnd,
+            slicedSegments);
+        return true;
+    }
+
+    private static IEnumerable<ProgramFocusSegment> SliceFocusSegments(
+        IEnumerable<ProgramFocusSegment> focusSegments,
+        DateTimeOffset sliceStart,
+        DateTimeOffset sliceEnd)
+    {
+        foreach (ProgramFocusSegment segment in focusSegments)
+        {
+            DateTimeOffset overlappedStart = segment.StartedAt > sliceStart ? segment.StartedAt : sliceStart;
+            DateTimeOffset overlappedEnd = segment.EndedAt < sliceEnd ? segment.EndedAt : sliceEnd;
+
+            if (overlappedEnd <= overlappedStart)
+            {
+                continue;
+            }
+
+            yield return new ProgramFocusSegment(segment.Program, overlappedStart, overlappedEnd);
+        }
+    }
+
     private static IEnumerable<(DateOnly Date, TimeSpan Duration)> SplitFocusDurationsByDate(
         IEnumerable<ProgramFocusSegment> focusSegments,
         DateOnly fromDate,
@@ -576,6 +650,12 @@ public sealed class ProjectTimerEngine
                 current = sliceEnd;
             }
         }
+    }
+
+    private static DateTimeOffset GetLocalBoundary(DateOnly date)
+    {
+        DateTime localDateTime = date.ToDateTime(TimeOnly.MinValue);
+        return new DateTimeOffset(localDateTime, TimeZoneInfo.Local.GetUtcOffset(localDateTime));
     }
 
     private ProjectDefinition GetRequiredProject(Guid projectId)

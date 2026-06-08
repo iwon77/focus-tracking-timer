@@ -11,7 +11,8 @@ public sealed class ProjectState
         bool isDeleted = false,
         DateTimeOffset? createdAt = null,
         bool isPinned = false,
-        string memo = "")
+        string memo = "",
+        DateTimeOffset? memoUpdatedAt = null)
     {
         if (id == Guid.Empty)
         {
@@ -31,6 +32,7 @@ public sealed class ProjectState
         CreatedAt = createdAt ?? DateTimeOffset.Now;
         IsPinned = isPinned;
         Memo = memo ?? string.Empty;
+        MemoUpdatedAt = memoUpdatedAt ?? CreatedAt;
         RegisteredPrograms = new ReadOnlyCollection<RegisteredProgramInfo>(registeredPrograms.ToList());
     }
 
@@ -45,6 +47,8 @@ public sealed class ProjectState
     public bool IsPinned { get; }
 
     public string Memo { get; }
+
+    public DateTimeOffset MemoUpdatedAt { get; }
 
     public ReadOnlyCollection<RegisteredProgramInfo> RegisteredPrograms { get; }
 }
