@@ -385,4 +385,39 @@ public sealed class SqliteProjectTimerStoreTests
             }
         }
     }
+
+    [Fact]
+    public void LoadFocusSegmentCountReturnsPersistedSegmentTotal()
+    {
+        string tempDirectory = Path.Combine(Path.GetTempPath(), "FocusTrackingTimer.Tests", Guid.NewGuid().ToString("N"));
+        string databasePath = Path.Combine(tempDirectory, "focus-tracking-timer.db");
+
+        try
+        {
+            ProjectTimerEngine engine = new();
+            Assert.True(engine.TryAddProject("Work", out ProjectDefinition project));
+            Assert.True(engine.TryRegisterProgram(project.Id, new TrackedApplication("code", "Code")));
+            Assert.True(engine.TryRegisterProgram(project.Id, new TrackedApplication("chrome", "Chrome")));
+
+            DateTimeOffset startedAt = new(2026, 6, 8, 9, 0, 0, TimeSpan.Zero);
+            engine.StartProject(project.Id, startedAt);
+            engine.ObserveFocusedProgram("code", startedAt);
+            engine.ObserveFocusedProgram("chrome", startedAt.AddMinutes(10));
+            engine.StopProject(startedAt.AddMinutes(25));
+
+            SqliteProjectTimerStore store = new(databasePath);
+            store.SaveState(engine.CreateStateSnapshot());
+
+            Assert.Equal(2, store.LoadFocusSegmentCount());
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+
+            if (Directory.Exists(tempDirectory))
+            {
+                Directory.Delete(tempDirectory, recursive: true);
+            }
+        }
+    }
 }

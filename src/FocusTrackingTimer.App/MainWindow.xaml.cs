@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -6,6 +7,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using FocusTrackingTimer.App.Features.DailyRecords;
+using FocusTrackingTimer.App.Features.Performance;
 using FocusTrackingTimer.App.Features.Timer;
 using FocusTrackingTimer.App.Features.WeeklyRecords;
 using FocusTrackingTimer.App.ViewModels;
@@ -25,12 +27,19 @@ public partial class MainWindow : Window
     private readonly ProjectTimerEngine _engine = new();
     private readonly SqliteProjectTimerStore _store = new(BuildStorePath());
     private readonly DispatcherTimer _uiTimer;
+    private readonly PerformanceMonitorService _performanceMonitor;
+    private readonly ProcessRunStateScanService _processScanService;
     private readonly TimerFeatureController _timerFeature;
     private readonly DailyRecordFeatureController _dailyRecordFeature;
     private readonly WeeklyRecordFeatureController _weeklyRecordFeature;
+    private DateTimeOffset? _lastUiTickObservedAt;
+    private long _lastConsumedProcessScanVersion;
+    private PerformanceMonitorWindow? _performanceMonitorWindow;
 
     public MainWindow()
     {
+        _performanceMonitor = new PerformanceMonitorService(_store.DatabasePath, BuildPerformanceLogDirectory());
+        _processScanService = new ProcessRunStateScanService(Environment.ProcessId);
         InitializeComponent();
         DataContext = this;
 
@@ -50,6 +59,7 @@ public partial class MainWindow : Window
             _store,
             Timer,
             Environment.ProcessId,
+            GetLatestProcessStates,
             PersistProjectCatalog,
             AppendCompletedRecord,
             RefreshUiAfterCommand,
@@ -84,11 +94,13 @@ public partial class MainWindow : Window
         string startupMessage = "프로젝트를 추가하고 등록 프로그램을 관리해보세요.";
         bool seededWeeklySample = false;
         bool seededDailySample = false;
+        long persistedFocusSegmentCount = 0;
 
         try
         {
             IReadOnlyList<ProjectState> projectCatalog = _store.LoadProjectCatalog();
             bool hasCompletedRecords = _store.HasCompletedRecords();
+            persistedFocusSegmentCount = _store.LoadFocusSegmentCount();
             _engine.ReplaceState(new ProjectTimerEngineState(projectCatalog, []));
 
             if (projectCatalog.Count > 0 || hasCompletedRecords)
@@ -113,13 +125,16 @@ public partial class MainWindow : Window
                 MessageBoxImage.Warning);
         }
 
+        _performanceMonitor.Initialize(persistedFocusSegmentCount);
+
         if (seededWeeklySample || seededDailySample)
         {
             PersistProjectCatalog();
             FlushPendingCompletedRecords();
         }
 
-        RefreshTimerUi(DateTimeOffset.Now, startupMessage, processStates: null);
+        _processScanService.RequestRefresh();
+        RefreshTimerUi(DateTimeOffset.Now, startupMessage, GetLatestProcessStates(), allowPersistentReload: true);
         RefreshRecordFilters();
         _uiTimer.Start();
     }
@@ -135,16 +150,50 @@ public partial class MainWindow : Window
 
         PersistProjectCatalog();
         FlushPendingCompletedRecords();
+        _performanceMonitor.FlushPending();
     }
 
     private void UiTimer_Tick(object? sender, EventArgs e)
     {
         DateTimeOffset observedAt = DateTimeOffset.Now;
-        IReadOnlyDictionary<string, ProcessRunState>? processStates = _engine.IsRunning && !_engine.IsPaused
-            ? RunningProcessCatalog.GetProcessRunStates(Environment.ProcessId)
-            : null;
-        string focusMessage = _timerFeature.RefreshFocusTracking(observedAt, processStates);
-        RefreshTimerUi(observedAt, focusMessage, processStates);
+        Stopwatch tickStopwatch = Stopwatch.StartNew();
+        TimeSpan? processScanDuration = null;
+        int processScanExceptionCount = 0;
+
+        try
+        {
+            ProcessRunStateScanSnapshot latestScanSnapshot = _processScanService.GetLatestSnapshot();
+            IReadOnlyDictionary<string, ProcessRunState> processStates = latestScanSnapshot.ProcessStates;
+            if (_engine.IsRunning && !_engine.IsPaused)
+            {
+                _processScanService.RequestRefresh();
+                latestScanSnapshot = _processScanService.GetLatestSnapshot();
+                processStates = latestScanSnapshot.ProcessStates;
+
+                if (latestScanSnapshot.Version != _lastConsumedProcessScanVersion)
+                {
+                    processScanDuration = latestScanSnapshot.Elapsed;
+                    processScanExceptionCount = latestScanSnapshot.ExceptionCount;
+                    _lastConsumedProcessScanVersion = latestScanSnapshot.Version;
+                }
+            }
+
+            string focusMessage = _timerFeature.RefreshFocusTracking(observedAt, processStates);
+            RefreshTimerUi(observedAt, focusMessage, processStates, allowPersistentReload: false);
+        }
+        finally
+        {
+            tickStopwatch.Stop();
+            bool isDelayedTick = _lastUiTickObservedAt.HasValue &&
+                observedAt - _lastUiTickObservedAt.Value > _uiTimer.Interval + TimeSpan.FromMilliseconds(200);
+            _lastUiTickObservedAt = observedAt;
+            _performanceMonitor.RecordUiTick(
+                observedAt,
+                tickStopwatch.Elapsed,
+                isDelayedTick,
+                processScanDuration,
+                processScanExceptionCount);
+        }
     }
 
     private void ProjectTabButton_Click(object sender, RoutedEventArgs e)
@@ -160,6 +209,36 @@ public partial class MainWindow : Window
     private void WeeklyTabButton_Click(object sender, RoutedEventArgs e)
     {
         SetSelectedTab(MainMenuTab.WeeklyRecord);
+    }
+
+    private void OpenPerformanceMonitorButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_performanceMonitorWindow is not null)
+        {
+            if (_performanceMonitorWindow.WindowState == WindowState.Minimized)
+            {
+                _performanceMonitorWindow.WindowState = WindowState.Normal;
+            }
+
+            _performanceMonitorWindow.Activate();
+            return;
+        }
+
+        _performanceMonitorWindow = new PerformanceMonitorWindow(_performanceMonitor)
+        {
+            Owner = this
+        };
+        _performanceMonitorWindow.Closed += PerformanceMonitorWindow_Closed;
+        _performanceMonitorWindow.Show();
+    }
+
+    private void PerformanceMonitorWindow_Closed(object? sender, EventArgs e)
+    {
+        if (_performanceMonitorWindow is not null)
+        {
+            _performanceMonitorWindow.Closed -= PerformanceMonitorWindow_Closed;
+            _performanceMonitorWindow = null;
+        }
     }
 
     internal void PreviousRecordYearButton_Click(object sender, RoutedEventArgs e)
@@ -242,6 +321,7 @@ public partial class MainWindow : Window
     internal void TimerActionButton_Click(object sender, RoutedEventArgs e)
     {
         _timerFeature.ToggleTimerOrPause();
+        _processScanService.RequestRefresh();
     }
 
     internal void StopTimerButton_Click(object sender, RoutedEventArgs e)
@@ -280,7 +360,11 @@ public partial class MainWindow : Window
 
     internal void ProgramSort_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        _timerFeature.RefreshSelectedProjectArea(DateTimeOffset.Now, Timer.TimerStatusText);
+        _timerFeature.RefreshSelectedProjectArea(
+            DateTimeOffset.Now,
+            Timer.TimerStatusText,
+            GetLatestProcessStates(),
+            allowPersistentReload: true);
     }
 
     internal void ProjectSort_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -335,7 +419,7 @@ public partial class MainWindow : Window
         bool refreshRecordFilters = false,
         bool refreshRecordViews = false)
     {
-        RefreshTimerUi(observedAt, message, processStates: null);
+        RefreshTimerUi(observedAt, message, GetLatestProcessStates(), allowPersistentReload: true);
 
         if (refreshRecordFilters)
         {
@@ -351,10 +435,16 @@ public partial class MainWindow : Window
     private void RefreshTimerUi(
         DateTimeOffset observedAt,
         string message,
-        IReadOnlyDictionary<string, ProcessRunState>? processStates)
+        IReadOnlyDictionary<string, ProcessRunState>? processStates,
+        bool allowPersistentReload)
     {
         _timerFeature.RefreshProjectSidebar(observedAt);
-        _timerFeature.RefreshSelectedProjectArea(observedAt, message, processStates);
+        _timerFeature.RefreshSelectedProjectArea(observedAt, message, processStates, allowPersistentReload);
+    }
+
+    private IReadOnlyDictionary<string, ProcessRunState> GetLatestProcessStates()
+    {
+        return _processScanService.GetLatestSnapshot().ProcessStates;
     }
 
     private void RefreshRecordFilters()
@@ -398,7 +488,11 @@ public partial class MainWindow : Window
     {
         try
         {
+            DateTimeOffset observedAt = DateTimeOffset.Now;
+            Stopwatch stopwatch = Stopwatch.StartNew();
             _store.SaveProjectCatalog(_engine.CreateStateSnapshot().Projects);
+            stopwatch.Stop();
+            _performanceMonitor.RecordProjectCatalogSave(observedAt, stopwatch.Elapsed);
         }
         catch (Exception exception)
         {
@@ -415,8 +509,12 @@ public partial class MainWindow : Window
     {
         try
         {
+            DateTimeOffset observedAt = DateTimeOffset.Now;
+            Stopwatch stopwatch = Stopwatch.StartNew();
             _store.AppendCompletedRecord(record);
+            stopwatch.Stop();
             _ = _engine.ForgetCompletedRecord(record);
+            _performanceMonitor.RecordCompletedRecordSave(observedAt, record, stopwatch.Elapsed);
         }
         catch (Exception exception)
         {
@@ -538,6 +636,14 @@ public partial class MainWindow : Window
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "FocusTrackingTimer",
             "focus-tracking-timer.db");
+    }
+
+    private static string BuildPerformanceLogDirectory()
+    {
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "FocusTrackingTimer",
+            "performance");
     }
 
     private static DateOnly GetWeekStart(DateOnly date)

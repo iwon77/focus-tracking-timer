@@ -18,37 +18,55 @@
         </Grid.RowDefinitions>
 
         <Border Style="{StaticResource Panel}" Padding="8" Background="#FFFFFF">
-            <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
-                <Button x:Name="ProjectTabButtonControl"
-                        Width="120"
-                        Margin="0,0,10,0"
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="1" HorizontalAlignment="Center" Orientation="Horizontal">
+                    <Button x:Name="ProjectTabButtonControl"
+                            Width="120"
+                            Margin="0,0,10,0"
+                            Padding="10,6"
+                            Background="{Binding Menu.TimerTabBackground}"
+                            BorderBrush="#2F2F2F"
+                            BorderThickness="2"
+                            Click="ProjectTabButton_Click"
+                            Content="??대㉧"
+                            Foreground="{Binding Menu.TimerTabForeground}" />
+                    <Button x:Name="CalendarTabButtonControl"
+                            Width="120"
+                            Padding="10,6"
+                            Background="{Binding Menu.DailyRecordTabBackground}"
+                            BorderBrush="#2F2F2F"
+                            BorderThickness="2"
+                            Click="CalendarTabButton_Click"
+                            Content="?쇨컙 湲곕줉"
+                            Foreground="{Binding Menu.DailyRecordTabForeground}" />
+                    <Button x:Name="WeeklyTabButtonControl"
+                            Width="120"
+                            Margin="10,0,0,0"
+                            Padding="10,6"
+                            Background="{Binding Menu.WeeklyRecordTabBackground}"
+                            BorderBrush="#2F2F2F"
+                            BorderThickness="2"
+                            Click="WeeklyTabButton_Click"
+                            Content="二쇨컙 湲곕줉"
+                            Foreground="{Binding Menu.WeeklyRecordTabForeground}" />
+                </StackPanel>
+
+                <Button Grid.Column="2"
+                        Width="96"
+                        HorizontalAlignment="Right"
                         Padding="10,6"
-                        Background="{Binding Menu.TimerTabBackground}"
-                        BorderBrush="#2F2F2F"
-                        BorderThickness="2"
-                        Click="ProjectTabButton_Click"
-                        Content="타이머"
-                        Foreground="{Binding Menu.TimerTabForeground}" />
-                <Button x:Name="CalendarTabButtonControl"
-                        Width="120"
-                        Padding="10,6"
-                        Background="{Binding Menu.DailyRecordTabBackground}"
-                        BorderBrush="#2F2F2F"
-                        BorderThickness="2"
-                        Click="CalendarTabButton_Click"
-                        Content="일간 기록"
-                        Foreground="{Binding Menu.DailyRecordTabForeground}" />
-                <Button x:Name="WeeklyTabButtonControl"
-                        Width="120"
-                        Margin="10,0,0,0"
-                        Padding="10,6"
-                        Background="{Binding Menu.WeeklyRecordTabBackground}"
-                        BorderBrush="#2F2F2F"
-                        BorderThickness="2"
-                        Click="WeeklyTabButton_Click"
-                        Content="주간 기록"
-                        Foreground="{Binding Menu.WeeklyRecordTabForeground}" />
-            </StackPanel>
+                        Background="#FFFFFF"
+                        BorderBrush="#D7D7D0"
+                        BorderThickness="1.5"
+                        Click="OpenPerformanceMonitorButton_Click"
+                        Content="성능" />
+            </Grid>
         </Border>
 
         <Grid Grid.Row="1" Margin="0,16,0,0">
