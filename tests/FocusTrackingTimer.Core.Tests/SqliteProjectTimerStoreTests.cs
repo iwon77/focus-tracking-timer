@@ -340,4 +340,49 @@ public sealed class SqliteProjectTimerStoreTests
             }
         }
     }
+
+    [Fact]
+    public void LoadProjectCatalogAndRecentRecordPeriodCanBeQueriedWithoutLoadingFullState()
+    {
+        string tempDirectory = Path.Combine(Path.GetTempPath(), "FocusTrackingTimer.Tests", Guid.NewGuid().ToString("N"));
+        string databasePath = Path.Combine(tempDirectory, "focus-tracking-timer.db");
+
+        try
+        {
+            ProjectTimerEngine engine = new();
+            Assert.True(engine.TryAddProject("Work", out ProjectDefinition project));
+            Assert.True(engine.TryRegisterProgram(project.Id, new TrackedApplication("code", "Code")));
+
+            DateTimeOffset firstStartedAt = new(2026, 6, 7, 9, 0, 0, TimeSpan.Zero);
+            DateTimeOffset secondStartedAt = firstStartedAt.AddHours(2);
+            engine.StartProject(project.Id, firstStartedAt);
+            engine.ObserveFocusedProgram("code", firstStartedAt);
+            engine.StopProject(firstStartedAt.AddMinutes(20));
+            engine.StartProject(project.Id, secondStartedAt);
+            engine.ObserveFocusedProgram("code", secondStartedAt);
+            engine.StopProject(secondStartedAt.AddMinutes(30));
+
+            SqliteProjectTimerStore store = new(databasePath);
+            store.SaveState(engine.CreateStateSnapshot());
+
+            IReadOnlyList<ProjectState> projectCatalog = store.LoadProjectCatalog();
+            (DateTimeOffset StartedAt, DateTimeOffset EndedAt)? recentRecordPeriod = store.LoadRecentRecordPeriod(project.Id);
+
+            ProjectState loadedProject = Assert.Single(projectCatalog);
+            Assert.Equal(project.Id, loadedProject.Id);
+            Assert.True(store.HasCompletedRecords());
+            Assert.NotNull(recentRecordPeriod);
+            Assert.Equal(secondStartedAt, recentRecordPeriod.Value.StartedAt);
+            Assert.Equal(secondStartedAt.AddMinutes(30), recentRecordPeriod.Value.EndedAt);
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+
+            if (Directory.Exists(tempDirectory))
+            {
+                Directory.Delete(tempDirectory, recursive: true);
+            }
+        }
+    }
 }

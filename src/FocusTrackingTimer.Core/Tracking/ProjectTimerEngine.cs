@@ -478,6 +478,12 @@ public sealed class ProjectTimerEngine
         return GetDailyDurationSummaries(today, today, observedAt, projectId)[0].TotalDuration;
     }
 
+    public bool ForgetCompletedRecord(ProjectTimerRecord record)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+        return _completedRecords.Remove(record);
+    }
+
     private ProjectTimerRecord? GetActiveRecordForSummary(DateTimeOffset observedAt, Guid? projectId)
     {
         if (_activeSession is null ||

@@ -505,4 +505,20 @@ public class ProjectTimerEngineTests
             summary => Assert.Equal(TimeSpan.Zero, summary.TotalDuration),
             summary => Assert.Equal(TimeSpan.FromMinutes(15), summary.TotalDuration));
     }
+
+    [Fact]
+    public void ForgetCompletedRecordRemovesOnlyPersistedPendingRecordFromMemory()
+    {
+        ProjectTimerEngine engine = new();
+        Assert.True(engine.TryAddProject("Work", out ProjectDefinition project));
+        Assert.True(engine.TryRegisterProgram(project.Id, new TrackedApplication("code", "Code")));
+        DateTimeOffset startedAt = new(2026, 6, 5, 9, 0, 0, TimeSpan.Zero);
+
+        engine.StartProject(project.Id, startedAt);
+        engine.ObserveFocusedProgram("code", startedAt);
+        ProjectTimerRecord record = engine.StopProject(startedAt.AddMinutes(20));
+
+        Assert.True(engine.ForgetCompletedRecord(record));
+        Assert.Empty(engine.CompletedRecords);
+    }
 }

@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Media;
 using FocusTrackingTimer.App.Infrastructure;
 using FocusTrackingTimer.App.ViewModels;
+using FocusTrackingTimer.Core.Persistence;
 using FocusTrackingTimer.Core.Tracking;
 
 namespace FocusTrackingTimer.App.Features.Timer;
@@ -10,6 +11,7 @@ internal sealed class TimerFeatureController
 {
     private readonly Window _owner;
     private readonly ProjectTimerEngine _engine;
+    private readonly SqliteProjectTimerStore _store;
     private readonly TimerViewModel _viewModel;
     private readonly int _currentProcessId;
     private readonly Action _persistProjectCatalog;
@@ -24,6 +26,7 @@ internal sealed class TimerFeatureController
     public TimerFeatureController(
         Window owner,
         ProjectTimerEngine engine,
+        SqliteProjectTimerStore store,
         TimerViewModel viewModel,
         int currentProcessId,
         Action persistProjectCatalog,
@@ -37,6 +40,7 @@ internal sealed class TimerFeatureController
     {
         _owner = owner;
         _engine = engine;
+        _store = store;
         _viewModel = viewModel;
         _currentProcessId = currentProcessId;
         _persistProjectCatalog = persistProjectCatalog;
@@ -569,17 +573,14 @@ internal sealed class TimerFeatureController
         bool anotherProjectIsRunning = _engine.IsRunning && !isActiveProject;
 
         _viewModel.SelectedProjectTitle = SelectedProject.Name;
-        _viewModel.ActiveSessionPeriodText = TimerProjectDisplayService.GetProjectPeriodText(_engine, SelectedProject, isActiveProject);
+        _viewModel.ActiveSessionPeriodText = TimerProjectDisplayService.GetProjectPeriodText(_engine, _store, SelectedProject, isActiveProject);
         _viewModel.ActiveProjectElapsedText = isActiveProject
             ? AppTimeFormatter.FormatDuration(_engine.GetCurrentRunDuration(SelectedProject.Id, observedAt))
             : "00:00:00";
         _viewModel.ActiveProjectWallClockText = isActiveProject
             ? AppTimeFormatter.FormatDuration(_engine.GetCurrentWallClockDuration(SelectedProject.Id, observedAt))
             : "00:00:00";
-        _viewModel.SelectedProjectTodayText = AppTimeFormatter.FormatDuration(_engine.GetTodayDuration(
-            DateOnly.FromDateTime(observedAt.LocalDateTime.Date),
-            observedAt,
-            SelectedProject.Id));
+        _viewModel.SelectedProjectTodayText = AppTimeFormatter.FormatDuration(GetSelectedProjectTodayDuration(observedAt));
 
         _viewModel.FocusStatusText = isActiveProject
             ? (_engine.IsPaused
@@ -605,6 +606,19 @@ internal sealed class TimerFeatureController
         _viewModel.TimerActionButtonForeground = !_engine.IsRunning
             ? _startButtonForeground
             : _defaultButtonForeground;
+    }
+
+    private TimeSpan GetSelectedProjectTodayDuration(DateTimeOffset observedAt)
+    {
+        if (SelectedProject is null)
+        {
+            return TimeSpan.Zero;
+        }
+
+        DateOnly today = DateOnly.FromDateTime(observedAt.LocalDateTime.Date);
+        TimeSpan persistedDuration = _store.LoadDailyDurationSummaries(today, today, SelectedProject.Id)[0].TotalDuration;
+        TimeSpan activeDuration = _engine.GetActiveDailyDurationSummaries(today, today, observedAt, SelectedProject.Id)[0].TotalDuration;
+        return persistedDuration + activeDuration;
     }
 
     private string GetNextDefaultProjectName()

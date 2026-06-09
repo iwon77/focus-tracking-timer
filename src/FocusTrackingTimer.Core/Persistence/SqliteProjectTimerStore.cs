@@ -29,6 +29,24 @@ public sealed class SqliteProjectTimerStore
         return new ProjectTimerEngineState(projects, completedRecords);
     }
 
+    public IReadOnlyList<ProjectState> LoadProjectCatalog()
+    {
+        using SqliteConnection connection = OpenConnection();
+        EnsureSchema(connection);
+        return LoadProjects(connection);
+    }
+
+    public bool HasCompletedRecords()
+    {
+        using SqliteConnection connection = OpenConnection();
+        EnsureSchema(connection);
+
+        using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = "SELECT 1 FROM completed_records LIMIT 1;";
+        object? result = command.ExecuteScalar();
+        return result is not null;
+    }
+
     public void SaveState(ProjectTimerEngineState state)
     {
         ArgumentNullException.ThrowIfNull(state);
@@ -118,6 +136,33 @@ public sealed class SqliteProjectTimerStore
 
         List<ProjectTimerRecord> records = LoadCompletedRecordsInRange(connection, fromDate, toDate, projectId);
         return ProjectTimerRecordSummaryBuilder.BuildDailyDurationSummaries(records, fromDate, toDate);
+    }
+
+    public (DateTimeOffset StartedAt, DateTimeOffset EndedAt)? LoadRecentRecordPeriod(Guid projectId)
+    {
+        using SqliteConnection connection = OpenConnection();
+        EnsureSchema(connection);
+
+        using SqliteCommand command = connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT started_at, ended_at
+            FROM completed_records
+            WHERE project_id = $project_id
+            ORDER BY ended_at DESC
+            LIMIT 1;
+            """;
+        _ = command.Parameters.AddWithValue("$project_id", projectId.ToString("D"));
+
+        using SqliteDataReader reader = command.ExecuteReader();
+        if (!reader.Read())
+        {
+            return null;
+        }
+
+        return (
+            ParseDateTimeOffset(reader.GetString(0)),
+            ParseDateTimeOffset(reader.GetString(1)));
     }
 
     private SqliteConnection OpenConnection()
