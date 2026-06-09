@@ -240,4 +240,104 @@ public sealed class SqliteProjectTimerStoreTests
             }
         }
     }
+
+    [Fact]
+    public void LoadRecordSlicesReturnsOnlyRecordsOverlappingTheRequestedDateRange()
+    {
+        string tempDirectory = Path.Combine(Path.GetTempPath(), "FocusTrackingTimer.Tests", Guid.NewGuid().ToString("N"));
+        string databasePath = Path.Combine(tempDirectory, "focus-tracking-timer.db");
+
+        try
+        {
+            ProjectTimerEngine engine = new();
+            Assert.True(engine.TryAddProject("Work", out ProjectDefinition project));
+            Assert.True(engine.TryRegisterProgram(project.Id, new TrackedApplication("code", "Code")));
+
+            TimeSpan localOffset = TimeZoneInfo.Local.GetUtcOffset(new DateTime(2026, 6, 1, 23, 50, 0));
+            DateTimeOffset overnightStartedAt = new(2026, 6, 1, 23, 50, 0, localOffset);
+            DateTimeOffset overnightEndedAt = new(2026, 6, 2, 0, 20, 0, localOffset);
+            DateTimeOffset daytimeStartedAt = new(2026, 6, 3, 9, 0, 0, localOffset);
+            DateTimeOffset daytimeEndedAt = daytimeStartedAt.AddMinutes(15);
+
+            engine.StartProject(project.Id, overnightStartedAt);
+            engine.ObserveFocusedProgram("code", overnightStartedAt);
+            engine.StopProject(overnightEndedAt);
+
+            engine.StartProject(project.Id, daytimeStartedAt);
+            engine.ObserveFocusedProgram("code", daytimeStartedAt);
+            engine.StopProject(daytimeEndedAt);
+
+            SqliteProjectTimerStore store = new(databasePath);
+            store.SaveState(engine.CreateStateSnapshot());
+
+            ProjectTimerRecordSlice slice = Assert.Single(store.LoadRecordSlices(
+                new DateOnly(2026, 6, 2),
+                new DateOnly(2026, 6, 2),
+                project.Id));
+
+            Assert.Equal(new DateTimeOffset(2026, 6, 2, 0, 0, 0, localOffset), slice.StartedAt);
+            Assert.Equal(overnightEndedAt, slice.EndedAt);
+            Assert.Equal(TimeSpan.FromMinutes(20), slice.WallClockDuration);
+            Assert.Equal(TimeSpan.FromMinutes(20), slice.TotalDuration);
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+
+            if (Directory.Exists(tempDirectory))
+            {
+                Directory.Delete(tempDirectory, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public void LoadDailyDurationSummariesOnlyAggregatesPersistedRecordsInTheRequestedRange()
+    {
+        string tempDirectory = Path.Combine(Path.GetTempPath(), "FocusTrackingTimer.Tests", Guid.NewGuid().ToString("N"));
+        string databasePath = Path.Combine(tempDirectory, "focus-tracking-timer.db");
+
+        try
+        {
+            ProjectTimerEngine engine = new();
+            Assert.True(engine.TryAddProject("Work", out ProjectDefinition project));
+            Assert.True(engine.TryRegisterProgram(project.Id, new TrackedApplication("code", "Code")));
+
+            TimeSpan localOffset = TimeZoneInfo.Local.GetUtcOffset(new DateTime(2026, 6, 1, 23, 50, 0));
+            DateTimeOffset overnightStartedAt = new(2026, 6, 1, 23, 50, 0, localOffset);
+            DateTimeOffset overnightEndedAt = new(2026, 6, 2, 0, 20, 0, localOffset);
+            DateTimeOffset daytimeStartedAt = new(2026, 6, 3, 9, 0, 0, localOffset);
+            DateTimeOffset daytimeEndedAt = daytimeStartedAt.AddMinutes(15);
+
+            engine.StartProject(project.Id, overnightStartedAt);
+            engine.ObserveFocusedProgram("code", overnightStartedAt);
+            engine.StopProject(overnightEndedAt);
+
+            engine.StartProject(project.Id, daytimeStartedAt);
+            engine.ObserveFocusedProgram("code", daytimeStartedAt);
+            engine.StopProject(daytimeEndedAt);
+
+            SqliteProjectTimerStore store = new(databasePath);
+            store.SaveState(engine.CreateStateSnapshot());
+
+            IReadOnlyList<DailyDurationSummary> summaries = store.LoadDailyDurationSummaries(
+                new DateOnly(2026, 6, 2),
+                new DateOnly(2026, 6, 3),
+                project.Id);
+
+            Assert.Collection(
+                summaries,
+                summary => Assert.Equal(TimeSpan.FromMinutes(20), summary.TotalDuration),
+                summary => Assert.Equal(TimeSpan.FromMinutes(15), summary.TotalDuration));
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+
+            if (Directory.Exists(tempDirectory))
+            {
+                Directory.Delete(tempDirectory, recursive: true);
+            }
+        }
+    }
 }

@@ -477,4 +477,32 @@ public class ProjectTimerEngineTests
         Assert.Equal("code", summary.Program.ProcessName);
         Assert.Equal(TimeSpan.FromMinutes(20), summary.FocusDuration);
     }
+
+    [Fact]
+    public void GetActiveDailyDurationSummariesOnlyIncludeTheRunningSession()
+    {
+        ProjectTimerEngine engine = new();
+        Assert.True(engine.TryAddProject("Work", out ProjectDefinition project));
+        Assert.True(engine.TryRegisterProgram(project.Id, new TrackedApplication("code", "Code")));
+        DateTimeOffset firstStartedAt = new(2026, 6, 3, 9, 0, 0, TimeSpan.Zero);
+        DateTimeOffset secondStartedAt = new(2026, 6, 4, 10, 0, 0, TimeSpan.Zero);
+
+        engine.StartProject(project.Id, firstStartedAt);
+        engine.ObserveFocusedProgram("code", firstStartedAt);
+        engine.StopProject(firstStartedAt.AddMinutes(30));
+
+        engine.StartProject(project.Id, secondStartedAt);
+        engine.ObserveFocusedProgram("code", secondStartedAt);
+
+        IReadOnlyList<DailyDurationSummary> summaries = engine.GetActiveDailyDurationSummaries(
+            new DateOnly(2026, 6, 3),
+            new DateOnly(2026, 6, 4),
+            secondStartedAt.AddMinutes(15),
+            project.Id);
+
+        Assert.Collection(
+            summaries,
+            summary => Assert.Equal(TimeSpan.Zero, summary.TotalDuration),
+            summary => Assert.Equal(TimeSpan.FromMinutes(15), summary.TotalDuration));
+    }
 }

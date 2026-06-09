@@ -57,8 +57,8 @@ public partial class MainWindow : Window
             DisabledButtonBackground,
             StartButtonForeground,
             DefaultButtonForeground);
-        _dailyRecordFeature = new DailyRecordFeatureController(_engine, DailyRecord);
-        _weeklyRecordFeature = new WeeklyRecordFeatureController(_engine, WeeklyRecord);
+        _dailyRecordFeature = new DailyRecordFeatureController(_engine, _store, DailyRecord);
+        _weeklyRecordFeature = new WeeklyRecordFeatureController(_engine, _store, WeeklyRecord);
 
         _uiTimer = new DispatcherTimer
         {

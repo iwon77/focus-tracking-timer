@@ -417,24 +417,23 @@ public sealed class ProjectTimerEngine
         DateTimeOffset observedAt,
         Guid? projectId = null)
     {
-        if (toDate < fromDate)
-        {
-            throw new ArgumentOutOfRangeException(nameof(toDate), "The end date must be on or after the start date.");
-        }
+        return ProjectTimerRecordSummaryBuilder.BuildRecordSlices(
+            GetRecordsForSummary(projectId, observedAt),
+            fromDate,
+            toDate);
+    }
 
-        List<ProjectTimerRecordSlice> slices = [];
-
-        foreach (ProjectTimerRecord record in GetRecordsForSummary(projectId, observedAt))
-        {
-            if (TryBuildRecordSlice(record, fromDate, toDate, out ProjectTimerRecordSlice? slice))
-            {
-                slices.Add(slice!);
-            }
-        }
-
-        return [.. slices
-            .OrderByDescending(static slice => slice.StartedAt)
-            .ThenByDescending(static slice => slice.EndedAt)];
+    public IReadOnlyList<ProjectTimerRecordSlice> GetActiveRecordSlices(
+        DateOnly fromDate,
+        DateOnly toDate,
+        DateTimeOffset observedAt,
+        Guid? projectId = null)
+    {
+        ProjectTimerRecord? activeRecord = GetActiveRecordForSummary(observedAt, projectId);
+        return ProjectTimerRecordSummaryBuilder.BuildRecordSlices(
+            activeRecord is null ? [] : [activeRecord],
+            fromDate,
+            toDate);
     }
 
     public IReadOnlyList<DailyDurationSummary> GetDailyDurationSummaries(
@@ -443,28 +442,23 @@ public sealed class ProjectTimerEngine
         DateTimeOffset observedAt,
         Guid? projectId = null)
     {
-        if (toDate < fromDate)
-        {
-            throw new ArgumentOutOfRangeException(nameof(toDate), "The end date must be on or after the start date.");
-        }
+        return ProjectTimerRecordSummaryBuilder.BuildDailyDurationSummaries(
+            GetRecordsForSummary(projectId, observedAt),
+            fromDate,
+            toDate);
+    }
 
-        Dictionary<DateOnly, TimeSpan> totalsByDate = [];
-
-        foreach (ProjectTimerRecord record in GetRecordsForSummary(projectId, observedAt))
-        {
-            foreach ((DateOnly date, TimeSpan duration) in SplitFocusDurationsByDate(record.FocusSegments, fromDate, toDate))
-            {
-                totalsByDate[date] = totalsByDate.GetValueOrDefault(date, TimeSpan.Zero) + duration;
-            }
-        }
-
-        List<DailyDurationSummary> summaries = [];
-        for (DateOnly date = fromDate; date <= toDate; date = date.AddDays(1))
-        {
-            summaries.Add(new DailyDurationSummary(date, totalsByDate.GetValueOrDefault(date, TimeSpan.Zero)));
-        }
-
-        return summaries;
+    public IReadOnlyList<DailyDurationSummary> GetActiveDailyDurationSummaries(
+        DateOnly fromDate,
+        DateOnly toDate,
+        DateTimeOffset observedAt,
+        Guid? projectId = null)
+    {
+        ProjectTimerRecord? activeRecord = GetActiveRecordForSummary(observedAt, projectId);
+        return ProjectTimerRecordSummaryBuilder.BuildDailyDurationSummaries(
+            activeRecord is null ? [] : [activeRecord],
+            fromDate,
+            toDate);
     }
 
     public IReadOnlyList<DailyProjectDurationSummary> GetDailyProjectDurationSummaries(
@@ -473,35 +467,10 @@ public sealed class ProjectTimerEngine
         DateTimeOffset observedAt,
         Guid? projectId = null)
     {
-        if (toDate < fromDate)
-        {
-            throw new ArgumentOutOfRangeException(nameof(toDate), "The end date must be on or after the start date.");
-        }
-
-        Dictionary<(DateOnly Date, Guid ProjectId), TimeSpan> totals = [];
-        Dictionary<Guid, string> projectNames = [];
-
-        foreach (ProjectTimerRecord record in GetRecordsForSummary(projectId, observedAt))
-        {
-            projectNames[record.ProjectId] = record.ProjectName;
-
-            foreach ((DateOnly date, TimeSpan duration) in SplitFocusDurationsByDate(record.FocusSegments, fromDate, toDate))
-            {
-                (DateOnly Date, Guid ProjectId) key = (date, record.ProjectId);
-                totals[key] = totals.GetValueOrDefault(key, TimeSpan.Zero) + duration;
-            }
-        }
-
-        return [.. totals
-            .Where(static pair => pair.Value > TimeSpan.Zero)
-            .OrderBy(static pair => pair.Key.Date)
-            .ThenByDescending(static pair => pair.Value)
-            .ThenBy(pair => projectNames[pair.Key.ProjectId], StringComparer.CurrentCultureIgnoreCase)
-            .Select(pair => new DailyProjectDurationSummary(
-                pair.Key.Date,
-                pair.Key.ProjectId,
-                projectNames[pair.Key.ProjectId],
-                pair.Value))];
+        return ProjectTimerRecordSummaryBuilder.BuildDailyProjectDurationSummaries(
+            GetRecordsForSummary(projectId, observedAt),
+            fromDate,
+            toDate);
     }
 
     public TimeSpan GetTodayDuration(DateOnly today, DateTimeOffset observedAt, Guid? projectId = null)
@@ -509,25 +478,30 @@ public sealed class ProjectTimerEngine
         return GetDailyDurationSummaries(today, today, observedAt, projectId)[0].TotalDuration;
     }
 
-    private IEnumerable<ProjectTimerRecord> GetRecordsForSummary(Guid? projectId, DateTimeOffset observedAt)
+    private ProjectTimerRecord? GetActiveRecordForSummary(DateTimeOffset observedAt, Guid? projectId)
     {
-        List<ProjectTimerRecord> records = [.. _completedRecords];
-
-        if (_activeSession is not null &&
-            (!projectId.HasValue || _activeSession.Project.Id == projectId.Value))
+        if (_activeSession is null ||
+            (projectId.HasValue && _activeSession.Project.Id != projectId.Value))
         {
-            DateTimeOffset summaryEndedAt = _activeSession.GetSummaryEndedAt(observedAt);
-            records.Add(new ProjectTimerRecord(
-                _activeSession.Project.Id,
-                _activeSession.Project.Name,
-                _activeSession.StartedAt,
-                summaryEndedAt,
-                _activeSession.GetFocusSegments(summaryEndedAt)));
+            return null;
         }
 
-        return projectId.HasValue
-            ? records.Where(record => record.ProjectId == projectId.Value)
-            : records;
+        DateTimeOffset summaryEndedAt = _activeSession.GetSummaryEndedAt(observedAt);
+        return new ProjectTimerRecord(
+            _activeSession.Project.Id,
+            _activeSession.Project.Name,
+            _activeSession.StartedAt,
+            summaryEndedAt,
+            _activeSession.GetFocusSegments(summaryEndedAt));
+    }
+
+    private IEnumerable<ProjectTimerRecord> GetRecordsForSummary(Guid? projectId, DateTimeOffset observedAt)
+    {
+        IEnumerable<ProjectTimerRecord> records = projectId.HasValue
+            ? _completedRecords.Where(record => record.ProjectId == projectId.Value)
+            : _completedRecords;
+        ProjectTimerRecord? activeRecord = GetActiveRecordForSummary(observedAt, projectId);
+        return activeRecord is null ? records : records.Append(activeRecord);
     }
 
     private static void AddOrUpdateSummary(
@@ -575,88 +549,6 @@ public sealed class ProjectTimerEngine
     private static TimeSpan SumProgramFocusDuration(IEnumerable<ProgramFocusSummary> summaries)
     {
         return summaries.Aggregate(TimeSpan.Zero, static (total, summary) => total + summary.FocusDuration);
-    }
-
-    private static bool TryBuildRecordSlice(
-        ProjectTimerRecord record,
-        DateOnly fromDate,
-        DateOnly toDate,
-        out ProjectTimerRecordSlice? slice)
-    {
-        DateTimeOffset rangeStart = GetLocalBoundary(fromDate);
-        DateTimeOffset rangeEnd = GetLocalBoundary(toDate.AddDays(1));
-        DateTimeOffset sliceStart = record.StartedAt > rangeStart ? record.StartedAt : rangeStart;
-        DateTimeOffset sliceEnd = record.EndedAt < rangeEnd ? record.EndedAt : rangeEnd;
-
-        if (sliceEnd <= sliceStart)
-        {
-            slice = null;
-            return false;
-        }
-
-        List<ProgramFocusSegment> slicedSegments = [.. SliceFocusSegments(record.FocusSegments, sliceStart, sliceEnd)];
-        slice = new ProjectTimerRecordSlice(
-            record.ProjectId,
-            record.ProjectName,
-            sliceStart,
-            sliceEnd,
-            slicedSegments);
-        return true;
-    }
-
-    private static IEnumerable<ProgramFocusSegment> SliceFocusSegments(
-        IEnumerable<ProgramFocusSegment> focusSegments,
-        DateTimeOffset sliceStart,
-        DateTimeOffset sliceEnd)
-    {
-        foreach (ProgramFocusSegment segment in focusSegments)
-        {
-            DateTimeOffset overlappedStart = segment.StartedAt > sliceStart ? segment.StartedAt : sliceStart;
-            DateTimeOffset overlappedEnd = segment.EndedAt < sliceEnd ? segment.EndedAt : sliceEnd;
-
-            if (overlappedEnd <= overlappedStart)
-            {
-                continue;
-            }
-
-            yield return new ProgramFocusSegment(segment.Program, overlappedStart, overlappedEnd);
-        }
-    }
-
-    private static IEnumerable<(DateOnly Date, TimeSpan Duration)> SplitFocusDurationsByDate(
-        IEnumerable<ProgramFocusSegment> focusSegments,
-        DateOnly fromDate,
-        DateOnly toDate)
-    {
-        foreach (ProgramFocusSegment segment in focusSegments)
-        {
-            if (segment.FocusDuration <= TimeSpan.Zero)
-            {
-                continue;
-            }
-
-            DateTimeOffset current = segment.StartedAt;
-            while (current < segment.EndedAt)
-            {
-                DateOnly currentDate = DateOnly.FromDateTime(current.LocalDateTime.Date);
-                DateTime nextMidnightLocal = current.LocalDateTime.Date.AddDays(1);
-                DateTimeOffset nextBoundary = new(nextMidnightLocal, TimeZoneInfo.Local.GetUtcOffset(nextMidnightLocal));
-                DateTimeOffset sliceEnd = nextBoundary < segment.EndedAt ? nextBoundary : segment.EndedAt;
-
-                if (currentDate >= fromDate && currentDate <= toDate)
-                {
-                    yield return (currentDate, sliceEnd - current);
-                }
-
-                current = sliceEnd;
-            }
-        }
-    }
-
-    private static DateTimeOffset GetLocalBoundary(DateOnly date)
-    {
-        DateTime localDateTime = date.ToDateTime(TimeOnly.MinValue);
-        return new DateTimeOffset(localDateTime, TimeZoneInfo.Local.GetUtcOffset(localDateTime));
     }
 
     private ProjectDefinition GetRequiredProject(Guid projectId)

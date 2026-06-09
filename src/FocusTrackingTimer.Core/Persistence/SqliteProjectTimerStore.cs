@@ -96,6 +96,30 @@ public sealed class SqliteProjectTimerStore
         transaction.Commit();
     }
 
+    public IReadOnlyList<ProjectTimerRecordSlice> LoadRecordSlices(
+        DateOnly fromDate,
+        DateOnly toDate,
+        Guid? projectId = null)
+    {
+        using SqliteConnection connection = OpenConnection();
+        EnsureSchema(connection);
+
+        List<ProjectTimerRecord> records = LoadCompletedRecordsInRange(connection, fromDate, toDate, projectId);
+        return ProjectTimerRecordSummaryBuilder.BuildRecordSlices(records, fromDate, toDate);
+    }
+
+    public IReadOnlyList<DailyDurationSummary> LoadDailyDurationSummaries(
+        DateOnly fromDate,
+        DateOnly toDate,
+        Guid? projectId = null)
+    {
+        using SqliteConnection connection = OpenConnection();
+        EnsureSchema(connection);
+
+        List<ProjectTimerRecord> records = LoadCompletedRecordsInRange(connection, fromDate, toDate, projectId);
+        return ProjectTimerRecordSummaryBuilder.BuildDailyDurationSummaries(records, fromDate, toDate);
+    }
+
     private SqliteConnection OpenConnection()
     {
         string? directoryPath = Path.GetDirectoryName(DatabasePath);
@@ -310,6 +334,105 @@ public sealed class SqliteProjectTimerStore
                     ParseDateTimeOffset(reader.GetString(3)),
                     ParseDateTimeOffset(reader.GetString(4))));
             }
+        }
+
+        return [.. rows.Select(row => new ProjectTimerRecord(
+            row.ProjectId,
+            row.ProjectName,
+            row.StartedAt,
+            row.EndedAt,
+            row.FocusSegments))];
+    }
+
+    private static List<ProjectTimerRecord> LoadCompletedRecordsInRange(
+        SqliteConnection connection,
+        DateOnly fromDate,
+        DateOnly toDate,
+        Guid? projectId)
+    {
+        if (toDate < fromDate)
+        {
+            throw new ArgumentOutOfRangeException(nameof(toDate), "The end date must be on or after the start date.");
+        }
+
+        DateTimeOffset rangeStart = GetLocalBoundary(fromDate);
+        DateTimeOffset rangeEnd = GetLocalBoundary(toDate.AddDays(1));
+        List<CompletedRecordRow> rows = [];
+        Dictionary<int, CompletedRecordRow> rowByRecordOrder = [];
+
+        using SqliteCommand command = connection.CreateCommand();
+        command.CommandText =
+            projectId.HasValue
+                ? """
+                  SELECT
+                      r.record_order,
+                      r.project_id,
+                      r.project_name,
+                      r.started_at,
+                      r.ended_at,
+                      s.process_name,
+                      s.display_name,
+                      s.started_at,
+                      s.ended_at
+                  FROM completed_records AS r
+                  LEFT JOIN focus_segments AS s
+                      ON s.record_order = r.record_order
+                  WHERE r.project_id = $project_id
+                    AND r.ended_at > $range_start
+                    AND r.started_at < $range_end
+                  ORDER BY r.record_order, s.segment_order;
+                  """
+                : """
+                  SELECT
+                      r.record_order,
+                      r.project_id,
+                      r.project_name,
+                      r.started_at,
+                      r.ended_at,
+                      s.process_name,
+                      s.display_name,
+                      s.started_at,
+                      s.ended_at
+                  FROM completed_records AS r
+                  LEFT JOIN focus_segments AS s
+                      ON s.record_order = r.record_order
+                  WHERE r.ended_at > $range_start
+                    AND r.started_at < $range_end
+                  ORDER BY r.record_order, s.segment_order;
+                  """;
+        _ = command.Parameters.AddWithValue("$range_start", FormatDateTimeOffset(rangeStart));
+        _ = command.Parameters.AddWithValue("$range_end", FormatDateTimeOffset(rangeEnd));
+        if (projectId.HasValue)
+        {
+            _ = command.Parameters.AddWithValue("$project_id", projectId.Value.ToString("D"));
+        }
+
+        using SqliteDataReader reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            int recordOrder = reader.GetInt32(0);
+            if (!rowByRecordOrder.TryGetValue(recordOrder, out CompletedRecordRow? row))
+            {
+                row = new CompletedRecordRow(
+                    recordOrder,
+                    ParseGuid(reader.GetString(1)),
+                    reader.GetString(2),
+                    ParseDateTimeOffset(reader.GetString(3)),
+                    ParseDateTimeOffset(reader.GetString(4)),
+                    []);
+                rowByRecordOrder[recordOrder] = row;
+                rows.Add(row);
+            }
+
+            if (reader.IsDBNull(5))
+            {
+                continue;
+            }
+
+            row.FocusSegments.Add(new ProgramFocusSegment(
+                new TrackedApplication(reader.GetString(5), reader.GetString(6)),
+                ParseDateTimeOffset(reader.GetString(7)),
+                ParseDateTimeOffset(reader.GetString(8))));
         }
 
         return [.. rows.Select(row => new ProjectTimerRecord(
@@ -579,6 +702,12 @@ public sealed class SqliteProjectTimerStore
     private static Guid ParseGuid(string value)
     {
         return Guid.ParseExact(value, "D");
+    }
+
+    private static DateTimeOffset GetLocalBoundary(DateOnly date)
+    {
+        DateTime localDateTime = date.ToDateTime(TimeOnly.MinValue);
+        return new DateTimeOffset(localDateTime, TimeZoneInfo.Local.GetUtcOffset(localDateTime));
     }
 
     private sealed record ProjectStateRow(

@@ -1,6 +1,7 @@
 using System.Globalization;
 using FocusTrackingTimer.App.Infrastructure;
 using FocusTrackingTimer.App.ViewModels;
+using FocusTrackingTimer.Core.Persistence;
 using FocusTrackingTimer.Core.Tracking;
 
 namespace FocusTrackingTimer.App.Features.DailyRecords;
@@ -8,13 +9,18 @@ namespace FocusTrackingTimer.App.Features.DailyRecords;
 internal sealed class DailyRecordFeatureController
 {
     private readonly ProjectTimerEngine _engine;
+    private readonly SqliteProjectTimerStore _store;
     private readonly DailyRecordViewModel _viewModel;
     private DateOnly _displayedRecordMonth = new(DateTime.Now.Year, DateTime.Now.Month, 1);
     private DateOnly? _selectedDate;
 
-    public DailyRecordFeatureController(ProjectTimerEngine engine, DailyRecordViewModel viewModel)
+    public DailyRecordFeatureController(
+        ProjectTimerEngine engine,
+        SqliteProjectTimerStore store,
+        DailyRecordViewModel viewModel)
     {
         _engine = engine;
+        _store = store;
         _viewModel = viewModel;
         _viewModel.DisplayedRecordMonthText = AppTimeFormatter.FormatRecordMonth(_displayedRecordMonth);
     }
@@ -55,10 +61,12 @@ internal sealed class DailyRecordFeatureController
         DateOnly today = DateOnly.FromDateTime(observedAt.LocalDateTime.Date);
         DateOnly firstDay = new(_displayedRecordMonth.Year, _displayedRecordMonth.Month, 1);
         DateOnly lastDay = firstDay.AddMonths(1).AddDays(-1);
+        IReadOnlyList<DailyDurationSummary> monthlyDailySummaries = LoadDailyDurationSummaries(firstDay, lastDay, observedAt, projectFilter);
+        IReadOnlyList<ProjectTimerRecordSlice> monthlySlices = LoadRecordSlices(firstDay, lastDay, observedAt, projectFilter);
 
-        RefreshMonthlySummary(firstDay, lastDay, observedAt, projectFilter);
+        RefreshMonthlySummary(monthlyDailySummaries, monthlySlices);
         EnsureSelectedDate(today);
-        RefreshCalendar(firstDay, lastDay, today, observedAt, projectFilter);
+        RefreshCalendar(firstDay, lastDay, today, monthlyDailySummaries);
         RefreshSelectedDateSummary(observedAt, projectFilter);
     }
 
@@ -74,14 +82,9 @@ internal sealed class DailyRecordFeatureController
     }
 
     private void RefreshMonthlySummary(
-        DateOnly firstDay,
-        DateOnly lastDay,
-        DateTimeOffset observedAt,
-        Guid? projectFilter)
+        IReadOnlyList<DailyDurationSummary> dailySummaries,
+        IReadOnlyList<ProjectTimerRecordSlice> monthlySlices)
     {
-        IReadOnlyList<DailyDurationSummary> dailySummaries = _engine.GetDailyDurationSummaries(firstDay, lastDay, observedAt, projectFilter);
-        IReadOnlyList<ProjectTimerRecordSlice> monthlySlices = _engine.GetRecordSlices(firstDay, lastDay, observedAt, projectFilter);
-
         TimeSpan monthlyFocusDuration = dailySummaries.Aggregate(TimeSpan.Zero, static (total, summary) => total + summary.TotalDuration);
         TimeSpan monthlyWallClockDuration = monthlySlices.Aggregate(TimeSpan.Zero, static (total, slice) => total + slice.WallClockDuration);
         int workedDayCount = dailySummaries.Count(static summary => summary.TotalDuration > TimeSpan.Zero);
@@ -116,13 +119,11 @@ internal sealed class DailyRecordFeatureController
         DateOnly firstDay,
         DateOnly lastDay,
         DateOnly today,
-        DateTimeOffset observedAt,
-        Guid? projectFilter)
+        IReadOnlyList<DailyDurationSummary> summaries)
     {
         _viewModel.CalendarRows.Clear();
 
         int leadingBlankCount = (int)firstDay.DayOfWeek;
-        IReadOnlyList<DailyDurationSummary> summaries = _engine.GetDailyDurationSummaries(firstDay, lastDay, observedAt, projectFilter);
         Dictionary<DateOnly, DailyDurationSummary> summaryByDate = summaries.ToDictionary(summary => summary.Date);
 
         for (int index = 0; index < leadingBlankCount; index++)
@@ -183,7 +184,7 @@ internal sealed class DailyRecordFeatureController
     private void RefreshSelectedDateSummary(DateTimeOffset observedAt, Guid? projectFilter)
     {
         DateOnly selectedDate = _selectedDate ?? DateOnly.FromDateTime(observedAt.LocalDateTime.Date);
-        IReadOnlyList<ProjectTimerRecordSlice> slices = _engine.GetRecordSlices(selectedDate, selectedDate, observedAt, projectFilter);
+        List<ProjectTimerRecordSlice> slices = LoadRecordSlices(selectedDate, selectedDate, observedAt, projectFilter);
         TimeSpan totalWallClock = slices.Aggregate(TimeSpan.Zero, static (total, slice) => total + slice.WallClockDuration);
         TimeSpan totalFocusDuration = slices.Aggregate(TimeSpan.Zero, static (total, slice) => total + slice.TotalDuration);
         double focusRatio = totalWallClock <= TimeSpan.Zero
@@ -208,5 +209,43 @@ internal sealed class DailyRecordFeatureController
         _viewModel.SelectedDailyEmptyText = slices.Count == 0
             ? "선택한 날짜의 작업 기록이 없습니다."
             : string.Empty;
+    }
+
+    private List<ProjectTimerRecordSlice> LoadRecordSlices(
+        DateOnly fromDate,
+        DateOnly toDate,
+        DateTimeOffset observedAt,
+        Guid? projectFilter)
+    {
+        List<ProjectTimerRecordSlice> slices =
+        [
+            .. _store.LoadRecordSlices(fromDate, toDate, projectFilter),
+            .. _engine.GetActiveRecordSlices(fromDate, toDate, observedAt, projectFilter)
+        ];
+        return slices;
+    }
+
+    private List<DailyDurationSummary> LoadDailyDurationSummaries(
+        DateOnly fromDate,
+        DateOnly toDate,
+        DateTimeOffset observedAt,
+        Guid? projectFilter)
+    {
+        Dictionary<DateOnly, TimeSpan> totalsByDate = _store
+            .LoadDailyDurationSummaries(fromDate, toDate, projectFilter)
+            .ToDictionary(summary => summary.Date, summary => summary.TotalDuration);
+
+        foreach (DailyDurationSummary summary in _engine.GetActiveDailyDurationSummaries(fromDate, toDate, observedAt, projectFilter))
+        {
+            totalsByDate[summary.Date] = totalsByDate.GetValueOrDefault(summary.Date, TimeSpan.Zero) + summary.TotalDuration;
+        }
+
+        List<DailyDurationSummary> summaries = [];
+        for (DateOnly date = fromDate; date <= toDate; date = date.AddDays(1))
+        {
+            summaries.Add(new DailyDurationSummary(date, totalsByDate.GetValueOrDefault(date, TimeSpan.Zero)));
+        }
+
+        return summaries;
     }
 }
