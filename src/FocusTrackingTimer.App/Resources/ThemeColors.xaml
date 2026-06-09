@@ -1,0 +1,20 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <SolidColorBrush x:Key="ThemeBaseBackgroundBrush" Color="#F1EFE8" />
+    <SolidColorBrush x:Key="ThemeSurfaceBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="ThemeLightSurfaceBrush" Color="#F1EFE8" />
+    <SolidColorBrush x:Key="ThemeHoverBorderBrush" Color="#D3D1C7" />
+    <SolidColorBrush x:Key="ThemeSecondaryBorderBrush" Color="#B4B2A9" />
+    <SolidColorBrush x:Key="ThemeActiveBrush" Color="#2C2C2A" />
+    <SolidColorBrush x:Key="ThemeActiveTextBrush" Color="#F1EFE8" />
+    <SolidColorBrush x:Key="ThemePrimaryTextBrush" Color="#444441" />
+    <SolidColorBrush x:Key="ThemeSecondaryTextBrush" Color="#5F5E5A" />
+    <SolidColorBrush x:Key="ThemeHintTextBrush" Color="#888780" />
+    <SolidColorBrush x:Key="ThemeSelectionBrush" Color="#E1F5EE" />
+    <SolidColorBrush x:Key="ThemeCalendarBarBrush" Color="#9FE1CB" />
+    <SolidColorBrush x:Key="ThemeStatusBrush" Color="#5DCAA5" />
+    <SolidColorBrush x:Key="ThemeFocusBrush" Color="#1D9E75" />
+    <SolidColorBrush x:Key="ThemeTagTextBrush" Color="#0F6E56" />
+    <SolidColorBrush x:Key="ThemeSundayBrush" Color="#D85A30" />
+    <SolidColorBrush x:Key="ThemeTransparentBrush" Color="Transparent" />
+</ResourceDictionary>

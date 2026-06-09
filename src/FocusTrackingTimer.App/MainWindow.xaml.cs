@@ -8,6 +8,7 @@ using System.Windows.Threading;
 using FocusTrackingTimer.App.Features.DailyRecords;
 using FocusTrackingTimer.App.Features.Timer;
 using FocusTrackingTimer.App.Features.WeeklyRecords;
+using FocusTrackingTimer.App.Infrastructure;
 using FocusTrackingTimer.App.ViewModels;
 using FocusTrackingTimer.Core.Persistence;
 using FocusTrackingTimer.Core.Tracking;
@@ -16,11 +17,11 @@ namespace FocusTrackingTimer.App;
 
 public partial class MainWindow : Window
 {
-    private static readonly Brush StartButtonBackground = new SolidColorBrush(Color.FromRgb(31, 31, 31));
-    private static readonly Brush StopButtonBackground = new SolidColorBrush(Color.FromRgb(245, 245, 242));
-    private static readonly Brush DisabledButtonBackground = new SolidColorBrush(Color.FromRgb(225, 225, 225));
-    private static readonly Brush StartButtonForeground = new SolidColorBrush(Color.FromRgb(255, 255, 255));
-    private static readonly Brush DefaultButtonForeground = new SolidColorBrush(Color.FromRgb(24, 24, 24));
+    private static readonly Brush StartButtonBackground = ThemeBrushes.Focus;
+    private static readonly Brush StopButtonBackground = ThemeBrushes.ActiveText;
+    private static readonly Brush DisabledButtonBackground = ThemeBrushes.HoverBorder;
+    private static readonly Brush StartButtonForeground = ThemeBrushes.ActiveText;
+    private static readonly Brush DefaultButtonForeground = ThemeBrushes.PrimaryText;
 
     private readonly ProjectTimerEngine _engine = new();
     private readonly SqliteProjectTimerStore _store = new(BuildStorePath());

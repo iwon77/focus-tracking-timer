@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <UserControl.Resources>
         <Style x:Key="ProjectListBoxStyle" TargetType="ListBox">
-            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Background" Value="{StaticResource ThemeTransparentBrush}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -13,22 +13,23 @@
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="Margin" Value="0,0,0,2" />
-            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Background" Value="{StaticResource ThemeTransparentBrush}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ListBoxItem">
                         <Border x:Name="ItemBorder"
-                                Padding="10,8"
+                                Padding="14,7"
                                 Background="{TemplateBinding Background}"
-                                CornerRadius="6">
+                                CornerRadius="0">
                             <ContentPresenter />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="ItemBorder" Property="Background" Value="#E6E6E2" />
+                                <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource ThemeSelectionBrush}" />
+                                <Setter Property="Foreground" Value="{StaticResource ThemeFocusBrush}" />
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ItemBorder" Property="Background" Value="#E6E6E2" />
+                                <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource ThemeSelectionBrush}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -37,7 +38,8 @@
         </Style>
     </UserControl.Resources>
 
-    <Border Padding="16" Background="#EFEFEB">
+    <Border Padding="0"
+            Background="{StaticResource ThemeSurfaceBrush}">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -45,12 +47,10 @@
             </Grid.RowDefinitions>
 
             <Border Grid.Row="0"
-                    Margin="0,0,0,14"
                     Padding="12"
-                    Background="#FFFFFF"
-                    BorderBrush="#D7D7D0"
-                    BorderThickness="1.5"
-                    CornerRadius="12"
+                    Background="{StaticResource ThemeSurfaceBrush}"
+                    BorderBrush="{StaticResource ThemeSecondaryBorderBrush}"
+                    BorderThickness="0,0,0,1"
                     Cursor="Hand"
                     MouseLeftButtonUp="RunningProjectSummary_MouseLeftButtonUp">
                 <Grid>
@@ -73,24 +73,24 @@
                         <StackPanel>
                             <TextBlock FontSize="12"
                                        FontWeight="SemiBold"
-                                       Foreground="#5B5B5B"
-                                       Text="작업 시간" />
+                                       Foreground="{StaticResource ThemeSecondaryTextBrush}"
+                                       Text="경과 시간" />
                             <TextBlock Margin="0,6,0,0"
                                        FontSize="18"
                                        FontWeight="SemiBold"
-                                       Foreground="#1F1F1F"
+                                       Foreground="{StaticResource ThemePrimaryTextBrush}"
                                        Text="{Binding RunningProjectWallClockText}" />
                         </StackPanel>
 
                         <StackPanel Grid.Column="1">
                             <TextBlock FontSize="12"
                                        FontWeight="SemiBold"
-                                       Foreground="#5B5B5B"
+                                       Foreground="{StaticResource ThemeSecondaryTextBrush}"
                                        Text="집중 시간" />
                             <TextBlock Margin="0,6,0,0"
                                        FontSize="18"
                                        FontWeight="SemiBold"
-                                       Foreground="#2E6D36"
+                                       Foreground="{StaticResource ThemeFocusBrush}"
                                        Text="{Binding RunningProjectFocusText}" />
                         </StackPanel>
                     </Grid>
@@ -100,13 +100,13 @@
             <ScrollViewer Grid.Row="1"
                           VerticalScrollBarVisibility="Auto">
                 <StackPanel>
-                    <TextBlock Margin="0,0,0,8"
-                               FontSize="14"
-                               FontWeight="SemiBold"
-                               Foreground="#50504A"
+                    <TextBlock Margin="14,10,14,8"
+                               FontSize="11"
+                               FontWeight="Medium"
+                               Foreground="{StaticResource ThemeSecondaryTextBrush}"
                                Text="고정 작업" />
 
-                    <ListBox Background="Transparent"
+                    <ListBox Background="{StaticResource ThemeTransparentBrush}"
                              BorderThickness="0"
                              HorizontalContentAlignment="Stretch"
                              ItemsSource="{Binding PinnedProjectRows}"
@@ -122,14 +122,14 @@
                                             Width="22"
                                             Height="22"
                                             Margin="6,0,0,0"
-                                            Background="Transparent"
+                                            Background="{StaticResource ThemeTransparentBrush}"
                                             BorderThickness="0"
                                             Click="PinProjectRowButton_Click"
                                             Content="★"
-                                            Foreground="#5B5B5B"
+                                            Foreground="{StaticResource ThemeHintTextBrush}"
                                             ToolTip="작업 고정" />
                                     <TextBlock VerticalAlignment="Center"
-                                               Foreground="#3F3F3F"
+                                               MaxWidth="150"
                                                Text="{Binding Name}"
                                                TextTrimming="CharacterEllipsis" />
                                 </DockPanel>
@@ -137,25 +137,23 @@
                         </ListBox.ItemTemplate>
                     </ListBox>
 
-                    <DockPanel Margin="0,14,0,8"
+                    <DockPanel Margin="14,14,14,8"
                                LastChildFill="True">
                         <Button DockPanel.Dock="Right"
-                                Width="28"
-                                Height="26"
-                                Background="#1F1F1F"
-                                BorderBrush="#1F1F1F"
-                                BorderThickness="1.5"
+                                Width="18"
+                                Height="18"
+                                Style="{StaticResource SecondaryButton}"
                                 Click="AddProjectButton_Click"
                                 Content="+"
-                                Foreground="#FFFFFF" />
+                                Foreground="{StaticResource ThemePrimaryTextBrush}" />
                         <TextBlock VerticalAlignment="Center"
-                                   FontSize="14"
-                                   FontWeight="SemiBold"
-                                   Foreground="#50504A"
+                                   FontSize="11"
+                                   FontWeight="Medium"
+                                   Foreground="{StaticResource ThemeSecondaryTextBrush}"
                                    Text="작업 목록" />
                     </DockPanel>
 
-                    <ListBox Background="Transparent"
+                    <ListBox Background="{StaticResource ThemeTransparentBrush}"
                              BorderThickness="0"
                              HorizontalContentAlignment="Stretch"
                              ItemsSource="{Binding ProjectRows}"
@@ -171,16 +169,16 @@
                                             Width="22"
                                             Height="22"
                                             Margin="6,0,0,0"
-                                            Background="Transparent"
+                                            Background="{StaticResource ThemeTransparentBrush}"
                                             BorderThickness="0"
                                             Click="PinProjectRowButton_Click"
                                             Content="★"
-                                            Foreground="#5B5B5B"
+                                            Foreground="{StaticResource ThemeHintTextBrush}"
                                             ToolTip="작업 고정"
                                             Opacity="0"
                                             IsEnabled="False" />
                                     <TextBlock VerticalAlignment="Center"
-                                               Foreground="#3F3F3F"
+                                               MaxWidth="150"
                                                Text="{Binding Name}"
                                                TextTrimming="CharacterEllipsis" />
                                 </DockPanel>

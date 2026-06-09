@@ -7,7 +7,7 @@
         MinWidth="680"
         MinHeight="560"
         WindowStartupLocation="CenterOwner"
-        Background="#F7F7F4">
+        Background="{StaticResource ThemeBaseBackgroundBrush}">
     <Grid Margin="18">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -21,7 +21,7 @@
 
         <TextBlock Grid.Row="1"
                    Margin="0,16,0,10"
-                   Foreground="#5B5B5B"
+                   Foreground="{StaticResource ThemeSecondaryTextBrush}"
                    Text="현재 실행 중인 프로그램만 표시되며, 작업 트레이의 프로그램은 감지되지 않습니다." />
 
         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
@@ -30,9 +30,9 @@
                     <DataTemplate>
                         <Border Margin="0,0,0,8"
                                 Padding="12"
-                                Background="#FFFFFF"
-                                BorderBrush="#D7D7D0"
-                                BorderThickness="1.5"
+                                Background="{StaticResource ThemeBaseBackgroundBrush}"
+                                BorderBrush="{StaticResource ThemeSecondaryBorderBrush}"
+                                BorderThickness="1"
                                 CornerRadius="8">
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -42,24 +42,20 @@
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
                                     <TextBlock FontWeight="SemiBold" Text="{Binding DisplayName}" />
-                                    <TextBlock Margin="0,4,0,0" Foreground="#5B5B5B" Text="{Binding ProcessName}" />
+                                    <TextBlock Margin="0,4,0,0" Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="{Binding ProcessName}" />
                                 </StackPanel>
                                 <Button Grid.Column="1"
                                         Padding="14,7"
                                         Margin="0,0,8,0"
-                                        Background="#FFFFFF"
-                                        BorderBrush="#D7D7D0"
-                                        BorderThickness="1.5"
+                                        Style="{StaticResource SecondaryButton}"
                                         Click="FocusDetectedButton_Click"
                                         Content="보기" />
                                 <Button Grid.Column="2"
                                         Padding="14,7"
-                                        Background="#1F1F1F"
-                                        BorderBrush="#1F1F1F"
-                                        BorderThickness="1.5"
+                                        Style="{StaticResource PrimaryButton}"
                                         Click="AddDetectedButton_Click"
                                         Content="추가"
-                                        Foreground="#FFFFFF" />
+                                        Foreground="{StaticResource ThemeActiveTextBrush}" />
                             </Grid>
                         </Border>
                     </DataTemplate>
