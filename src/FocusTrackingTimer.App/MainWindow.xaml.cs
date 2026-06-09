@@ -133,8 +133,11 @@ public partial class MainWindow : Window
     private void UiTimer_Tick(object? sender, EventArgs e)
     {
         DateTimeOffset observedAt = DateTimeOffset.Now;
-        string focusMessage = _timerFeature.RefreshFocusTracking(observedAt);
-        RefreshAll(observedAt, focusMessage);
+        IReadOnlyDictionary<string, ProcessRunState>? processStates = _engine.IsRunning && !_engine.IsPaused
+            ? RunningProcessCatalog.GetProcessRunStates(Environment.ProcessId)
+            : null;
+        string focusMessage = _timerFeature.RefreshFocusTracking(observedAt, processStates);
+        RefreshAll(observedAt, focusMessage, processStates);
     }
 
     private void ProjectTabButton_Click(object sender, RoutedEventArgs e)
@@ -321,8 +324,16 @@ public partial class MainWindow : Window
 
     private void RefreshAll(DateTimeOffset observedAt, string message)
     {
+        RefreshAll(observedAt, message, processStates: null);
+    }
+
+    private void RefreshAll(
+        DateTimeOffset observedAt,
+        string message,
+        IReadOnlyDictionary<string, ProcessRunState>? processStates)
+    {
         _timerFeature.RefreshProjectSidebar(observedAt);
-        _timerFeature.RefreshSelectedProjectArea(observedAt, message);
+        _timerFeature.RefreshSelectedProjectArea(observedAt, message, processStates);
 
         _dailyRecordFeature.RefreshRecordFilters();
         _dailyRecordFeature.RefreshRecordArea(observedAt);

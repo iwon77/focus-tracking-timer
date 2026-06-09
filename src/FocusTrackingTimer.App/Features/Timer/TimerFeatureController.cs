@@ -395,7 +395,9 @@ internal sealed class TimerFeatureController
         }
     }
 
-    public string RefreshFocusTracking(DateTimeOffset observedAt)
+    public string RefreshFocusTracking(
+        DateTimeOffset observedAt,
+        IReadOnlyDictionary<string, ProcessRunState>? processStates = null)
     {
         if (!_engine.IsRunning)
         {
@@ -408,8 +410,9 @@ internal sealed class TimerFeatureController
         }
 
         FocusObservation observation = ForegroundWindowTracker.GetCurrentFocusedApplication(_currentProcessId);
-        IReadOnlyDictionary<string, ProcessRunState> processStates = RunningProcessCatalog.GetProcessRunStates(_currentProcessId);
-        string? focusableProcessName = TimerProgramFocusStatus.GetFocusableObservedProcessName(observation.Application, processStates);
+        IReadOnlyDictionary<string, ProcessRunState> runtimeProcessStates = processStates
+            ?? RunningProcessCatalog.GetProcessRunStates(_currentProcessId);
+        string? focusableProcessName = TimerProgramFocusStatus.GetFocusableObservedProcessName(observation.Application, runtimeProcessStates);
         _engine.ObserveFocusedProgram(focusableProcessName, observedAt);
 
         if (observation.Application is null)
@@ -488,7 +491,10 @@ internal sealed class TimerFeatureController
         }
     }
 
-    public void RefreshSelectedProjectArea(DateTimeOffset observedAt, string message)
+    public void RefreshSelectedProjectArea(
+        DateTimeOffset observedAt,
+        string message,
+        IReadOnlyDictionary<string, ProcessRunState>? processStates = null)
     {
         _viewModel.IsProjectEditEnabled = SelectedProject is not null;
         _viewModel.IsProjectDeleteEnabled = SelectedProject is not null && _engine.ActiveProjectId != SelectedProject.Id;
@@ -520,7 +526,8 @@ internal sealed class TimerFeatureController
                 info => info.Program.ProcessName,
                 info => info.InitialDisplayName,
                 StringComparer.OrdinalIgnoreCase);
-        IReadOnlyDictionary<string, ProcessRunState> processStates = RunningProcessCatalog.GetProcessRunStates(_currentProcessId);
+        IReadOnlyDictionary<string, ProcessRunState> runtimeProcessStates = processStates
+            ?? RunningProcessCatalog.GetProcessRunStates(_currentProcessId);
         Dictionary<string, RegisteredProgramInfo> registrationByProcessName = _engine
             .GetRegisteredProgramInfos(SelectedProject.Id)
             .ToDictionary(
@@ -538,7 +545,7 @@ internal sealed class TimerFeatureController
 
         foreach (ProgramFocusSummary summary in programSummaries)
         {
-            (string statusBrush, string statusText) = TimerProgramFocusStatus.GetRuntimeStatus(summary.Program.ProcessName, processStates);
+            (string statusBrush, string statusText) = TimerProgramFocusStatus.GetRuntimeStatus(summary.Program.ProcessName, runtimeProcessStates);
             bool isPinned = registrationByProcessName.GetValueOrDefault(summary.Program.ProcessName)?.IsPinned ?? false;
             bool showsPinnedDivider = hasPinnedPrograms && !isPinned && !showedPinnedDivider;
             showedPinnedDivider |= showsPinnedDivider;
