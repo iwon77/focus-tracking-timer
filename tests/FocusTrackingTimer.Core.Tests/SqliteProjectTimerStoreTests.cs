@@ -152,4 +152,92 @@ public sealed class SqliteProjectTimerStoreTests
             }
         }
     }
+
+    [Fact]
+    public void SaveProjectCatalogUpdatesProjectsWithoutDroppingCompletedRecords()
+    {
+        string tempDirectory = Path.Combine(Path.GetTempPath(), "FocusTrackingTimer.Tests", Guid.NewGuid().ToString("N"));
+        string databasePath = Path.Combine(tempDirectory, "focus-tracking-timer.db");
+
+        try
+        {
+            ProjectTimerEngine engine = new();
+            Assert.True(engine.TryAddProject("Work", out ProjectDefinition project));
+            Assert.True(engine.TryRegisterProgram(project.Id, new TrackedApplication("code", "Code")));
+            DateTimeOffset startedAt = new(2026, 6, 6, 9, 0, 0, TimeSpan.Zero);
+
+            engine.StartProject(project.Id, startedAt);
+            engine.ObserveFocusedProgram("code", startedAt);
+            engine.StopProject(startedAt.AddMinutes(20));
+
+            SqliteProjectTimerStore store = new(databasePath);
+            store.SaveState(engine.CreateStateSnapshot());
+
+            engine.UpdateProjectMemo(project.Id, "Updated memo", startedAt.AddMinutes(30));
+            Assert.True(engine.TryRegisterProgram(project.Id, new TrackedApplication("chrome", "Chrome"), startedAt.AddMinutes(31)));
+            store.SaveProjectCatalog(engine.CreateStateSnapshot().Projects);
+
+            ProjectTimerEngineState loadedState = store.LoadState();
+
+            ProjectState loadedProject = Assert.Single(loadedState.Projects);
+            Assert.Equal("Updated memo", loadedProject.Memo);
+            Assert.Equal(2, loadedProject.RegisteredPrograms.Count);
+            Assert.Single(loadedState.CompletedRecords);
+            Assert.Equal(TimeSpan.FromMinutes(20), loadedState.CompletedRecords[0].TotalDuration);
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+
+            if (Directory.Exists(tempDirectory))
+            {
+                Directory.Delete(tempDirectory, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public void AppendCompletedRecordAddsNewRecordWithoutRewritingExistingState()
+    {
+        string tempDirectory = Path.Combine(Path.GetTempPath(), "FocusTrackingTimer.Tests", Guid.NewGuid().ToString("N"));
+        string databasePath = Path.Combine(tempDirectory, "focus-tracking-timer.db");
+
+        try
+        {
+            ProjectTimerEngine engine = new();
+            Assert.True(engine.TryAddProject("Work", out ProjectDefinition project));
+            Assert.True(engine.TryRegisterProgram(project.Id, new TrackedApplication("code", "Code")));
+
+            SqliteProjectTimerStore store = new(databasePath);
+            store.SaveProjectCatalog(engine.CreateStateSnapshot().Projects);
+
+            DateTimeOffset startedAt = new(2026, 6, 6, 10, 0, 0, TimeSpan.Zero);
+            ProjectTimerRecord record = new(
+                project.Id,
+                project.Name,
+                startedAt,
+                startedAt.AddMinutes(15),
+                [new ProgramFocusSegment(
+                    new TrackedApplication("code", "Code"),
+                    startedAt,
+                    startedAt.AddMinutes(15))]);
+
+            store.AppendCompletedRecord(record);
+            ProjectTimerEngineState loadedState = store.LoadState();
+
+            ProjectTimerRecord loadedRecord = Assert.Single(loadedState.CompletedRecords);
+            Assert.Equal(project.Id, loadedRecord.ProjectId);
+            Assert.Equal(TimeSpan.FromMinutes(15), loadedRecord.TotalDuration);
+            Assert.Single(loadedState.Projects);
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+
+            if (Directory.Exists(tempDirectory))
+            {
+                Directory.Delete(tempDirectory, recursive: true);
+            }
+        }
+    }
 }
