@@ -29,9 +29,8 @@ internal static class TimerProgramFocusStatus
             return null;
         }
 
-        return processStates.TryGetValue(observedApplication.ProcessName, out ProcessRunState? state) &&
-            state.HasFocusableWindow
-                ? observedApplication.ProcessName
-                : null;
+        return processStates.TryGetValue(observedApplication.ProcessName, out ProcessRunState? state)
+            ? (state.HasFocusableWindow ? observedApplication.ProcessName : null)
+            : observedApplication.ProcessName;
     }
 }

@@ -30,7 +30,14 @@ internal static class RunningProcessCatalog
 
     public static IReadOnlyDictionary<string, ProcessRunState> GetProcessRunStates(int currentProcessId)
     {
+        return MeasureProcessRunStates(currentProcessId).ProcessStates;
+    }
+
+    public static ProcessRunStateScanResult MeasureProcessRunStates(int currentProcessId)
+    {
+        Stopwatch stopwatch = Stopwatch.StartNew();
         Dictionary<string, ProcessRunState> processStates = new(StringComparer.OrdinalIgnoreCase);
+        int exceptionCount = 0;
 
         foreach (Process process in Process.GetProcesses())
         {
@@ -58,6 +65,7 @@ internal static class RunningProcessCatalog
             catch (Exception exception) when (
                 exception is InvalidOperationException or NotSupportedException or System.ComponentModel.Win32Exception)
             {
+                exceptionCount++;
                 continue;
             }
             finally
@@ -66,7 +74,8 @@ internal static class RunningProcessCatalog
             }
         }
 
-        return processStates;
+        stopwatch.Stop();
+        return new ProcessRunStateScanResult(processStates, stopwatch.Elapsed, exceptionCount);
     }
 
     public static IReadOnlyList<TrackedApplication> GetVisibleProcesses(int currentProcessId)
@@ -190,3 +199,8 @@ internal static class RunningProcessCatalog
 internal sealed record ProcessRunState(
     string ProcessName,
     bool HasFocusableWindow);
+
+internal sealed record ProcessRunStateScanResult(
+    IReadOnlyDictionary<string, ProcessRunState> ProcessStates,
+    TimeSpan Elapsed,
+    int ExceptionCount);

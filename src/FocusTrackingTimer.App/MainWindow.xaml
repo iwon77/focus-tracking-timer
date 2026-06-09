@@ -23,37 +23,13 @@
                 BorderThickness="1"
                 CornerRadius="8">
             <DockPanel LastChildFill="False">
-                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
-                <Button x:Name="ProjectTabButtonControl"
-                        Margin="0,0,6,0"
-                        Style="{StaticResource MenuTabButton}"
-                        Padding="18,7"
-                        Background="{Binding Menu.TimerTabBackground}"
-                        BorderBrush="{StaticResource ThemeTransparentBrush}"
-                        BorderThickness="0"
-                        Click="ProjectTabButton_Click"
-                        Content="타이머"
-                        Foreground="{Binding Menu.TimerTabForeground}" />
-                <Button x:Name="CalendarTabButtonControl"
-                        Margin="0,0,6,0"
-                        Style="{StaticResource MenuTabButton}"
-                        Padding="18,7"
-                        Background="{Binding Menu.DailyRecordTabBackground}"
-                        BorderBrush="{StaticResource ThemeTransparentBrush}"
-                        BorderThickness="0"
-                        Click="CalendarTabButton_Click"
-                        Content="일간 기록"
-                        Foreground="{Binding Menu.DailyRecordTabForeground}" />
-                <Button x:Name="WeeklyTabButtonControl"
-                        Style="{StaticResource MenuTabButton}"
-                        Padding="18,7"
-                        Background="{Binding Menu.WeeklyRecordTabBackground}"
-                        BorderBrush="{StaticResource ThemeTransparentBrush}"
-                        BorderThickness="0"
-                        Click="WeeklyTabButton_Click"
-                        Content="주간 기록"
-                        Foreground="{Binding Menu.WeeklyRecordTabForeground}" />
-                </StackPanel>
+                <Button DockPanel.Dock="Right"
+                        Width="84"
+                        Height="32"
+                        Margin="10,0,0,0"
+                        Style="{StaticResource SecondaryButton}"
+                        Click="OpenPerformanceMonitorButton_Click"
+                        Content="성능" />
 
                 <ComboBox DockPanel.Dock="Right"
                           Width="220"
@@ -72,6 +48,38 @@
                           SelectedItem="{Binding WeeklyRecord.SelectedRecordFilter, Mode=TwoWay}"
                           SelectionChanged="WeeklyRecordFilter_SelectionChanged"
                           Visibility="{Binding Menu.WeeklyRecordViewVisibility}" />
+
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                    <Button x:Name="ProjectTabButtonControl"
+                            Margin="0,0,6,0"
+                            Style="{StaticResource MenuTabButton}"
+                            Padding="18,7"
+                            Background="{Binding Menu.TimerTabBackground}"
+                            BorderBrush="{StaticResource ThemeTransparentBrush}"
+                            BorderThickness="0"
+                            Click="ProjectTabButton_Click"
+                            Content="타이머"
+                            Foreground="{Binding Menu.TimerTabForeground}" />
+                    <Button x:Name="CalendarTabButtonControl"
+                            Margin="0,0,6,0"
+                            Style="{StaticResource MenuTabButton}"
+                            Padding="18,7"
+                            Background="{Binding Menu.DailyRecordTabBackground}"
+                            BorderBrush="{StaticResource ThemeTransparentBrush}"
+                            BorderThickness="0"
+                            Click="CalendarTabButton_Click"
+                            Content="일간 기록"
+                            Foreground="{Binding Menu.DailyRecordTabForeground}" />
+                    <Button x:Name="WeeklyTabButtonControl"
+                            Style="{StaticResource MenuTabButton}"
+                            Padding="18,7"
+                            Background="{Binding Menu.WeeklyRecordTabBackground}"
+                            BorderBrush="{StaticResource ThemeTransparentBrush}"
+                            BorderThickness="0"
+                            Click="WeeklyTabButton_Click"
+                            Content="주간 기록"
+                            Foreground="{Binding Menu.WeeklyRecordTabForeground}" />
+                </StackPanel>
             </DockPanel>
         </Border>
 
