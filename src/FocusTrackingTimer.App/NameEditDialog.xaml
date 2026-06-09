@@ -6,7 +6,7 @@
         Height="180"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
-        Background="#F7F7F4">
+        Background="{StaticResource ThemeBaseBackgroundBrush}">
     <Grid Margin="18">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -20,11 +20,11 @@
 
         <Grid Grid.Row="1" Margin="0,16,0,0" VerticalAlignment="Top">
             <TextBox Padding="10,8"
-                     BorderBrush="#D5D5D0"
-                     BorderThickness="1.5"
+                     BorderBrush="{StaticResource ThemeSecondaryBorderBrush}"
+                     BorderThickness="1"
                      Text="{Binding NameValue, UpdateSourceTrigger=PropertyChanged}" />
             <TextBlock Margin="12,9,0,0"
-                       Foreground="#8B8B84"
+                       Foreground="{StaticResource ThemeHintTextBrush}"
                        IsHitTestVisible="False"
                        Text="{Binding PlaceholderText}">
                 <TextBlock.Style>
@@ -46,19 +46,15 @@
             <Button Width="78"
                     Height="34"
                     Margin="0,0,8,0"
-                    Background="#FFFFFF"
-                    BorderBrush="#D5D5D0"
-                    BorderThickness="1.5"
+                    Style="{StaticResource SecondaryButton}"
                     Click="CancelButton_Click"
                     Content="취소" />
             <Button Width="78"
                     Height="34"
-                    Background="#1F1F1F"
-                    BorderBrush="#1F1F1F"
-                    BorderThickness="1.5"
+                    Style="{StaticResource PrimaryButton}"
                     Click="SaveButton_Click"
                     Content="저장"
-                    Foreground="#FFFFFF" />
+                    Foreground="{StaticResource ThemeActiveTextBrush}" />
         </StackPanel>
     </Grid>
 </Window>

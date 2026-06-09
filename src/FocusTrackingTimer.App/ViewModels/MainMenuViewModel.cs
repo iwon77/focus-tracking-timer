@@ -6,10 +6,10 @@ namespace FocusTrackingTimer.App.ViewModels;
 
 public sealed class MainMenuViewModel : ObservableObject
 {
-    private static readonly Brush SelectedTabBackground = new SolidColorBrush(Color.FromRgb(31, 31, 31));
-    private static readonly Brush SelectedTabForeground = new SolidColorBrush(Color.FromRgb(255, 255, 255));
-    private static readonly Brush UnselectedTabBackground = new SolidColorBrush(Color.FromRgb(255, 255, 255));
-    private static readonly Brush UnselectedTabForeground = new SolidColorBrush(Color.FromRgb(24, 24, 24));
+    private static readonly Brush SelectedTabBackground = ThemeBrushes.Active;
+    private static readonly Brush SelectedTabForeground = ThemeBrushes.ActiveText;
+    private static readonly Brush UnselectedTabBackground = ThemeBrushes.Transparent;
+    private static readonly Brush UnselectedTabForeground = ThemeBrushes.SecondaryText;
 
     private MainMenuTab _selectedTab = MainMenuTab.Timer;
     private Brush _timerTabBackground = SelectedTabBackground;

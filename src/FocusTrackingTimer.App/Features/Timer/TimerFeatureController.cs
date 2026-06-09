@@ -552,7 +552,7 @@ internal sealed class TimerFeatureController
 
         foreach (ProgramFocusSummary summary in programSummaries)
         {
-            (string statusBrush, string statusText) = TimerProgramFocusStatus.GetRuntimeStatus(summary.Program.ProcessName, runtimeProcessStates);
+            (Brush statusBrush, string statusText) = TimerProgramFocusStatus.GetRuntimeStatus(summary.Program.ProcessName, runtimeProcessStates);
             bool isPinned = registrationByProcessName.GetValueOrDefault(summary.Program.ProcessName)?.IsPinned ?? false;
             bool showsPinnedDivider = hasPinnedPrograms && !isPinned && !showedPinnedDivider;
             showedPinnedDivider |= showsPinnedDivider;
