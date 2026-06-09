@@ -1,3 +1,4 @@
+using FocusTrackingTimer.Core.Persistence;
 using FocusTrackingTimer.Core.Tracking;
 
 namespace FocusTrackingTimer.App.Features.Timer;
@@ -22,6 +23,7 @@ internal static class TimerProjectDisplayService
 
     public static string GetProjectPeriodText(
         ProjectTimerEngine engine,
+        SqliteProjectTimerStore store,
         ProjectDefinition project,
         bool isActiveProject)
     {
@@ -30,10 +32,10 @@ internal static class TimerProjectDisplayService
             return $"최근 작업 일시: {FormatRecentWorkDateTime(engine.ActiveStartedAt.Value)}";
         }
 
-        IReadOnlyList<ProjectTimerRecord> recentRecords = engine.GetRecentRecords(1, project.Id);
-        return recentRecords.Count == 0
+        (DateTimeOffset StartedAt, DateTimeOffset EndedAt)? recentRecordPeriod = store.LoadRecentRecordPeriod(project.Id);
+        return recentRecordPeriod is null
             ? "최근 작업 일시: -"
-            : $"최근 작업 일시: {FormatRecentWorkDateTime(recentRecords[0].StartedAt)} ~ {FormatRecentWorkDateTime(recentRecords[0].EndedAt)}";
+            : $"최근 작업 일시: {FormatRecentWorkDateTime(recentRecordPeriod.Value.StartedAt)} ~ {FormatRecentWorkDateTime(recentRecordPeriod.Value.EndedAt)}";
     }
 
     private static string FormatRecentWorkDateTime(DateTimeOffset value)

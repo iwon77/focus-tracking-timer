@@ -90,6 +90,31 @@ public class ProjectTimerEngineTests
     }
 
     [Fact]
+    public void PausedActiveSessionDoesNotExtendRecordSlicesBeyondPauseTime()
+    {
+        ProjectTimerEngine engine = new();
+        Assert.True(engine.TryAddProject("Study", out ProjectDefinition project));
+        Assert.True(engine.TryRegisterProgram(project.Id, new TrackedApplication("code", "Code")));
+        DateTimeOffset startedAt = new(2026, 6, 3, 9, 0, 0, TimeSpan.Zero);
+        DateTimeOffset pausedAt = startedAt.AddMinutes(10);
+        DateTimeOffset observedAt = startedAt.AddMinutes(30);
+
+        engine.StartProject(project.Id, startedAt);
+        engine.ObserveFocusedProgram("code", startedAt);
+        engine.PauseProject(pausedAt);
+
+        ProjectTimerRecordSlice slice = Assert.Single(engine.GetRecordSlices(
+            new DateOnly(2026, 6, 3),
+            new DateOnly(2026, 6, 3),
+            observedAt));
+
+        Assert.Equal(startedAt, slice.StartedAt);
+        Assert.Equal(pausedAt, slice.EndedAt);
+        Assert.Equal(TimeSpan.FromMinutes(10), slice.WallClockDuration);
+        Assert.Equal(TimeSpan.FromMinutes(10), slice.TotalDuration);
+    }
+
+    [Fact]
     public void ProjectAndProgramPinStateCanBeUpdated()
     {
         ProjectTimerEngine engine = new();
@@ -451,5 +476,49 @@ public class ProjectTimerEngineTests
         ProgramFocusSummary summary = Assert.Single(slice.ProgramSummaries);
         Assert.Equal("code", summary.Program.ProcessName);
         Assert.Equal(TimeSpan.FromMinutes(20), summary.FocusDuration);
+    }
+
+    [Fact]
+    public void GetActiveDailyDurationSummariesOnlyIncludeTheRunningSession()
+    {
+        ProjectTimerEngine engine = new();
+        Assert.True(engine.TryAddProject("Work", out ProjectDefinition project));
+        Assert.True(engine.TryRegisterProgram(project.Id, new TrackedApplication("code", "Code")));
+        DateTimeOffset firstStartedAt = new(2026, 6, 3, 9, 0, 0, TimeSpan.Zero);
+        DateTimeOffset secondStartedAt = new(2026, 6, 4, 10, 0, 0, TimeSpan.Zero);
+
+        engine.StartProject(project.Id, firstStartedAt);
+        engine.ObserveFocusedProgram("code", firstStartedAt);
+        engine.StopProject(firstStartedAt.AddMinutes(30));
+
+        engine.StartProject(project.Id, secondStartedAt);
+        engine.ObserveFocusedProgram("code", secondStartedAt);
+
+        IReadOnlyList<DailyDurationSummary> summaries = engine.GetActiveDailyDurationSummaries(
+            new DateOnly(2026, 6, 3),
+            new DateOnly(2026, 6, 4),
+            secondStartedAt.AddMinutes(15),
+            project.Id);
+
+        Assert.Collection(
+            summaries,
+            summary => Assert.Equal(TimeSpan.Zero, summary.TotalDuration),
+            summary => Assert.Equal(TimeSpan.FromMinutes(15), summary.TotalDuration));
+    }
+
+    [Fact]
+    public void ForgetCompletedRecordRemovesOnlyPersistedPendingRecordFromMemory()
+    {
+        ProjectTimerEngine engine = new();
+        Assert.True(engine.TryAddProject("Work", out ProjectDefinition project));
+        Assert.True(engine.TryRegisterProgram(project.Id, new TrackedApplication("code", "Code")));
+        DateTimeOffset startedAt = new(2026, 6, 5, 9, 0, 0, TimeSpan.Zero);
+
+        engine.StartProject(project.Id, startedAt);
+        engine.ObserveFocusedProgram("code", startedAt);
+        ProjectTimerRecord record = engine.StopProject(startedAt.AddMinutes(20));
+
+        Assert.True(engine.ForgetCompletedRecord(record));
+        Assert.Empty(engine.CompletedRecords);
     }
 }

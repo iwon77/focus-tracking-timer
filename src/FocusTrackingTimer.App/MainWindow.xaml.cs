@@ -47,17 +47,19 @@ public partial class MainWindow : Window
         _timerFeature = new TimerFeatureController(
             this,
             _engine,
+            _store,
             Timer,
             Environment.ProcessId,
-            PersistState,
-            RefreshAll,
+            PersistProjectCatalog,
+            AppendCompletedRecord,
+            RefreshUiAfterCommand,
             StartButtonBackground,
             StopButtonBackground,
             DisabledButtonBackground,
             StartButtonForeground,
             DefaultButtonForeground);
-        _dailyRecordFeature = new DailyRecordFeatureController(_engine, DailyRecord);
-        _weeklyRecordFeature = new WeeklyRecordFeatureController(_engine, WeeklyRecord);
+        _dailyRecordFeature = new DailyRecordFeatureController(_engine, _store, DailyRecord);
+        _weeklyRecordFeature = new WeeklyRecordFeatureController(_engine, _store, WeeklyRecord);
 
         _uiTimer = new DispatcherTimer
         {
@@ -85,9 +87,11 @@ public partial class MainWindow : Window
 
         try
         {
-            _engine.ReplaceState(_store.LoadState());
+            IReadOnlyList<ProjectState> projectCatalog = _store.LoadProjectCatalog();
+            bool hasCompletedRecords = _store.HasCompletedRecords();
+            _engine.ReplaceState(new ProjectTimerEngineState(projectCatalog, []));
 
-            if (_engine.Projects.Count > 0 || _engine.CompletedRecords.Count > 0)
+            if (projectCatalog.Count > 0 || hasCompletedRecords)
             {
                 startupMessage = "저장한 프로젝트와 완료 기록을 불러왔습니다.";
             }
@@ -111,10 +115,12 @@ public partial class MainWindow : Window
 
         if (seededWeeklySample || seededDailySample)
         {
-            PersistState();
+            PersistProjectCatalog();
+            FlushPendingCompletedRecords();
         }
 
-        RefreshAll(DateTimeOffset.Now, startupMessage);
+        RefreshTimerUi(DateTimeOffset.Now, startupMessage, processStates: null);
+        RefreshRecordFilters();
         _uiTimer.Start();
     }
 
@@ -127,14 +133,18 @@ public partial class MainWindow : Window
             _engine.StopProject(DateTimeOffset.Now);
         }
 
-        PersistState();
+        PersistProjectCatalog();
+        FlushPendingCompletedRecords();
     }
 
     private void UiTimer_Tick(object? sender, EventArgs e)
     {
         DateTimeOffset observedAt = DateTimeOffset.Now;
-        string focusMessage = _timerFeature.RefreshFocusTracking(observedAt);
-        RefreshAll(observedAt, focusMessage);
+        IReadOnlyDictionary<string, ProcessRunState>? processStates = _engine.IsRunning && !_engine.IsPaused
+            ? RunningProcessCatalog.GetProcessRunStates(Environment.ProcessId)
+            : null;
+        string focusMessage = _timerFeature.RefreshFocusTracking(observedAt, processStates);
+        RefreshTimerUi(observedAt, focusMessage, processStates);
     }
 
     private void ProjectTabButton_Click(object sender, RoutedEventArgs e)
@@ -319,19 +329,55 @@ public partial class MainWindow : Window
         }
     }
 
-    private void RefreshAll(DateTimeOffset observedAt, string message)
+    private void RefreshUiAfterCommand(
+        DateTimeOffset observedAt,
+        string message,
+        bool refreshRecordFilters = false,
+        bool refreshRecordViews = false)
     {
-        _timerFeature.RefreshProjectSidebar(observedAt);
-        _timerFeature.RefreshSelectedProjectArea(observedAt, message);
+        RefreshTimerUi(observedAt, message, processStates: null);
 
-        _dailyRecordFeature.RefreshRecordFilters();
-        _dailyRecordFeature.RefreshRecordArea(observedAt);
+        if (refreshRecordFilters)
+        {
+            RefreshRecordFilters();
+        }
 
-        _weeklyRecordFeature.RefreshRecordFilters();
-        _weeklyRecordFeature.RefreshWeeklyRecordArea(observedAt);
+        if (refreshRecordFilters || refreshRecordViews)
+        {
+            RefreshVisibleRecordView(observedAt);
+        }
     }
 
-    private void PersistState()
+    private void RefreshTimerUi(
+        DateTimeOffset observedAt,
+        string message,
+        IReadOnlyDictionary<string, ProcessRunState>? processStates)
+    {
+        _timerFeature.RefreshProjectSidebar(observedAt);
+        _timerFeature.RefreshSelectedProjectArea(observedAt, message, processStates);
+    }
+
+    private void RefreshRecordFilters()
+    {
+        _dailyRecordFeature.RefreshRecordFilters();
+        _weeklyRecordFeature.RefreshRecordFilters();
+    }
+
+    private void RefreshVisibleRecordView(DateTimeOffset observedAt)
+    {
+        if (Menu.SelectedTab == MainMenuTab.DailyRecord)
+        {
+            _dailyRecordFeature.RefreshRecordArea(observedAt);
+            return;
+        }
+
+        if (Menu.SelectedTab == MainMenuTab.WeeklyRecord)
+        {
+            _weeklyRecordFeature.RefreshWeeklyRecordArea(observedAt);
+        }
+    }
+
+    private void PersistSnapshotState()
     {
         try
         {
@@ -348,6 +394,49 @@ public partial class MainWindow : Window
         }
     }
 
+    private void PersistProjectCatalog()
+    {
+        try
+        {
+            _store.SaveProjectCatalog(_engine.CreateStateSnapshot().Projects);
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(
+                this,
+                $"?곗씠?곕? ??ν븯吏 紐삵뻽?듬땲??{Environment.NewLine}{exception.Message}",
+                "SQLite ????ㅻ쪟",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+    }
+
+    private void AppendCompletedRecord(ProjectTimerRecord record)
+    {
+        try
+        {
+            _store.AppendCompletedRecord(record);
+            _ = _engine.ForgetCompletedRecord(record);
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(
+                this,
+                $"?곗씠?곕? ??ν븯吏 紐삵뻽?듬땲??{Environment.NewLine}{exception.Message}",
+                "SQLite ????ㅻ쪟",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+    }
+
+    private void FlushPendingCompletedRecords()
+    {
+        foreach (ProjectTimerRecord record in _engine.CompletedRecords.ToList())
+        {
+            AppendCompletedRecord(record);
+        }
+    }
+
     private bool EnsureWeeklyClickTestSeed()
     {
         DateTimeOffset now = DateTimeOffset.Now;
@@ -356,7 +445,7 @@ public partial class MainWindow : Window
 
         HashSet<DateOnly> datesWithRecords =
         [
-            .. _engine.GetRecordSlices(weekStart, weekEnd, now)
+            .. _store.LoadRecordSlices(weekStart, weekEnd)
                 .Select(slice => DateOnly.FromDateTime(slice.StartedAt.LocalDateTime.Date))
         ];
 
@@ -406,12 +495,13 @@ public partial class MainWindow : Window
             new DateOnly(month.Year, month.Month, 13)
         ];
         int[] focusMinutes = [15, 45, 90, 180, 300];
+        DateOnly monthEnd = month.AddMonths(1).AddDays(-1);
 
         HashSet<DateOnly> existingDates =
         [
-            .. _engine.CompletedRecords
-                .Where(record => string.Equals(record.ProjectName, sampleProjectName, StringComparison.OrdinalIgnoreCase))
-                .Select(record => DateOnly.FromDateTime(record.StartedAt.LocalDateTime.Date))
+            .. _store.LoadRecordSlices(month, monthEnd)
+                .Where(slice => string.Equals(slice.ProjectName, sampleProjectName, StringComparison.OrdinalIgnoreCase))
+                .Select(slice => DateOnly.FromDateTime(slice.StartedAt.LocalDateTime.Date))
         ];
 
         if (targetDates.All(existingDates.Contains))

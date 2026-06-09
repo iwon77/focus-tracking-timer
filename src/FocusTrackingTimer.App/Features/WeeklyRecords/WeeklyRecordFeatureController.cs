@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Windows;
 using FocusTrackingTimer.App.Infrastructure;
 using FocusTrackingTimer.App.ViewModels;
+using FocusTrackingTimer.Core.Persistence;
 using FocusTrackingTimer.Core.Tracking;
 
 namespace FocusTrackingTimer.App.Features.WeeklyRecords;
@@ -9,15 +10,20 @@ namespace FocusTrackingTimer.App.Features.WeeklyRecords;
 internal sealed class WeeklyRecordFeatureController
 {
     private readonly ProjectTimerEngine _engine;
+    private readonly SqliteProjectTimerStore _store;
     private readonly WeeklyRecordViewModel _viewModel;
     private DateOnly _displayedWeekStart = GetWeekStart(DateOnly.FromDateTime(DateTime.Now.Date));
     private DateOnly _selectedDate = DateOnly.FromDateTime(DateTime.Now.Date);
     private (Guid ProjectId, DateTimeOffset StartedAt, DateTimeOffset EndedAt)? _selectedRecordKey;
     private bool _isRefreshingRows;
 
-    public WeeklyRecordFeatureController(ProjectTimerEngine engine, WeeklyRecordViewModel viewModel)
+    public WeeklyRecordFeatureController(
+        ProjectTimerEngine engine,
+        SqliteProjectTimerStore store,
+        WeeklyRecordViewModel viewModel)
     {
         _engine = engine;
+        _store = store;
         _viewModel = viewModel;
     }
 
@@ -56,7 +62,7 @@ internal sealed class WeeklyRecordFeatureController
         DateOnly weekEnd = _displayedWeekStart.AddDays(6);
         AlignSelectedDateToDisplayedWeek();
 
-        IReadOnlyList<ProjectTimerRecordSlice> weeklySlices = _engine.GetRecordSlices(_displayedWeekStart, weekEnd, observedAt, projectFilter);
+        IReadOnlyList<ProjectTimerRecordSlice> weeklySlices = LoadRecordSlices(_displayedWeekStart, weekEnd, observedAt, projectFilter);
         List<ProjectTimerRecordSlice> orderedWeeklySlices = [.. weeklySlices
             .OrderBy(static slice => slice.StartedAt)
             .ThenBy(static slice => slice.EndedAt)];
@@ -219,7 +225,7 @@ internal sealed class WeeklyRecordFeatureController
     private void RefreshWeeklyDayBubbles(DateTimeOffset observedAt, Guid? projectFilter)
     {
         DateOnly weekEnd = _displayedWeekStart.AddDays(6);
-        IReadOnlyList<DailyDurationSummary> summaries = _engine.GetDailyDurationSummaries(_displayedWeekStart, weekEnd, observedAt, projectFilter);
+        IReadOnlyList<DailyDurationSummary> summaries = LoadDailyDurationSummaries(_displayedWeekStart, weekEnd, observedAt, projectFilter);
         Dictionary<DateOnly, TimeSpan> durationsByDate = summaries.ToDictionary(summary => summary.Date, summary => summary.TotalDuration);
 
         _viewModel.WeeklyDayBubbleRows.Clear();
@@ -315,5 +321,43 @@ internal sealed class WeeklyRecordFeatureController
     {
         int offset = (7 + (date.DayOfWeek - DayOfWeek.Sunday)) % 7;
         return date.AddDays(-offset);
+    }
+
+    private List<ProjectTimerRecordSlice> LoadRecordSlices(
+        DateOnly fromDate,
+        DateOnly toDate,
+        DateTimeOffset observedAt,
+        Guid? projectFilter)
+    {
+        List<ProjectTimerRecordSlice> slices =
+        [
+            .. _store.LoadRecordSlices(fromDate, toDate, projectFilter),
+            .. _engine.GetActiveRecordSlices(fromDate, toDate, observedAt, projectFilter)
+        ];
+        return slices;
+    }
+
+    private List<DailyDurationSummary> LoadDailyDurationSummaries(
+        DateOnly fromDate,
+        DateOnly toDate,
+        DateTimeOffset observedAt,
+        Guid? projectFilter)
+    {
+        Dictionary<DateOnly, TimeSpan> totalsByDate = _store
+            .LoadDailyDurationSummaries(fromDate, toDate, projectFilter)
+            .ToDictionary(summary => summary.Date, summary => summary.TotalDuration);
+
+        foreach (DailyDurationSummary summary in _engine.GetActiveDailyDurationSummaries(fromDate, toDate, observedAt, projectFilter))
+        {
+            totalsByDate[summary.Date] = totalsByDate.GetValueOrDefault(summary.Date, TimeSpan.Zero) + summary.TotalDuration;
+        }
+
+        List<DailyDurationSummary> summaries = [];
+        for (DateOnly date = fromDate; date <= toDate; date = date.AddDays(1))
+        {
+            summaries.Add(new DailyDurationSummary(date, totalsByDate.GetValueOrDefault(date, TimeSpan.Zero)));
+        }
+
+        return summaries;
     }
 }

@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Globalization;
 using FocusTrackingTimer.Core.Tracking;
 using Microsoft.Data.Sqlite;
@@ -28,6 +29,24 @@ public sealed class SqliteProjectTimerStore
         return new ProjectTimerEngineState(projects, completedRecords);
     }
 
+    public IReadOnlyList<ProjectState> LoadProjectCatalog()
+    {
+        using SqliteConnection connection = OpenConnection();
+        EnsureSchema(connection);
+        return LoadProjects(connection);
+    }
+
+    public bool HasCompletedRecords()
+    {
+        using SqliteConnection connection = OpenConnection();
+        EnsureSchema(connection);
+
+        using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = "SELECT 1 FROM completed_records LIMIT 1;";
+        object? result = command.ExecuteScalar();
+        return result is not null;
+    }
+
     public void SaveState(ProjectTimerEngineState state)
     {
         ArgumentNullException.ThrowIfNull(state);
@@ -46,16 +65,7 @@ public sealed class SqliteProjectTimerStore
             DELETE FROM projects;
             """);
 
-        for (int projectIndex = 0; projectIndex < state.Projects.Count; projectIndex++)
-        {
-            ProjectState project = state.Projects[projectIndex];
-            InsertProject(connection, transaction, project, projectIndex);
-
-            for (int programIndex = 0; programIndex < project.RegisteredPrograms.Count; programIndex++)
-            {
-                InsertRegisteredProgram(connection, transaction, project.Id, project.RegisteredPrograms[programIndex], programIndex);
-            }
-        }
+        SaveProjectCatalog(connection, transaction, state.Projects);
 
         for (int recordIndex = 0; recordIndex < state.CompletedRecords.Count; recordIndex++)
         {
@@ -69,6 +79,90 @@ public sealed class SqliteProjectTimerStore
         }
 
         transaction.Commit();
+    }
+
+    public void SaveProjectCatalog(IEnumerable<ProjectState> projects)
+    {
+        ArgumentNullException.ThrowIfNull(projects);
+
+        ReadOnlyCollection<ProjectState> projectList = new(projects.ToList());
+
+        using SqliteConnection connection = OpenConnection();
+        EnsureSchema(connection);
+        using SqliteTransaction transaction = connection.BeginTransaction();
+
+        SaveProjectCatalog(connection, transaction, projectList);
+        transaction.Commit();
+    }
+
+    public void AppendCompletedRecord(ProjectTimerRecord record)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+
+        using SqliteConnection connection = OpenConnection();
+        EnsureSchema(connection);
+        using SqliteTransaction transaction = connection.BeginTransaction();
+
+        int nextRecordOrder = GetNextRecordOrder(connection, transaction);
+        InsertCompletedRecord(connection, transaction, record, nextRecordOrder);
+
+        for (int segmentIndex = 0; segmentIndex < record.FocusSegments.Count; segmentIndex++)
+        {
+            InsertFocusSegment(connection, transaction, record.FocusSegments[segmentIndex], nextRecordOrder, segmentIndex);
+        }
+
+        transaction.Commit();
+    }
+
+    public IReadOnlyList<ProjectTimerRecordSlice> LoadRecordSlices(
+        DateOnly fromDate,
+        DateOnly toDate,
+        Guid? projectId = null)
+    {
+        using SqliteConnection connection = OpenConnection();
+        EnsureSchema(connection);
+
+        List<ProjectTimerRecord> records = LoadCompletedRecordsInRange(connection, fromDate, toDate, projectId);
+        return ProjectTimerRecordSummaryBuilder.BuildRecordSlices(records, fromDate, toDate);
+    }
+
+    public IReadOnlyList<DailyDurationSummary> LoadDailyDurationSummaries(
+        DateOnly fromDate,
+        DateOnly toDate,
+        Guid? projectId = null)
+    {
+        using SqliteConnection connection = OpenConnection();
+        EnsureSchema(connection);
+
+        List<ProjectTimerRecord> records = LoadCompletedRecordsInRange(connection, fromDate, toDate, projectId);
+        return ProjectTimerRecordSummaryBuilder.BuildDailyDurationSummaries(records, fromDate, toDate);
+    }
+
+    public (DateTimeOffset StartedAt, DateTimeOffset EndedAt)? LoadRecentRecordPeriod(Guid projectId)
+    {
+        using SqliteConnection connection = OpenConnection();
+        EnsureSchema(connection);
+
+        using SqliteCommand command = connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT started_at, ended_at
+            FROM completed_records
+            WHERE project_id = $project_id
+            ORDER BY ended_at DESC
+            LIMIT 1;
+            """;
+        _ = command.Parameters.AddWithValue("$project_id", projectId.ToString("D"));
+
+        using SqliteDataReader reader = command.ExecuteReader();
+        if (!reader.Read())
+        {
+            return null;
+        }
+
+        return (
+            ParseDateTimeOffset(reader.GetString(0)),
+            ParseDateTimeOffset(reader.GetString(1)));
     }
 
     private SqliteConnection OpenConnection()
@@ -141,6 +235,18 @@ public sealed class SqliteProjectTimerStore
                 PRIMARY KEY (record_order, segment_order),
                 FOREIGN KEY (record_order) REFERENCES completed_records(record_order) ON DELETE CASCADE
             );
+
+            CREATE INDEX IF NOT EXISTS ix_completed_records_project_started_at
+            ON completed_records (project_id, started_at);
+
+            CREATE INDEX IF NOT EXISTS ix_completed_records_started_at
+            ON completed_records (started_at);
+
+            CREATE INDEX IF NOT EXISTS ix_focus_segments_record_order_started_at
+            ON focus_segments (record_order, started_at);
+
+            CREATE INDEX IF NOT EXISTS ix_focus_segments_started_at
+            ON focus_segments (started_at);
             """);
 
         EnsureColumn(connection, "projects", "is_deleted", "ALTER TABLE projects ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0;");
@@ -283,6 +389,105 @@ public sealed class SqliteProjectTimerStore
             row.FocusSegments))];
     }
 
+    private static List<ProjectTimerRecord> LoadCompletedRecordsInRange(
+        SqliteConnection connection,
+        DateOnly fromDate,
+        DateOnly toDate,
+        Guid? projectId)
+    {
+        if (toDate < fromDate)
+        {
+            throw new ArgumentOutOfRangeException(nameof(toDate), "The end date must be on or after the start date.");
+        }
+
+        DateTimeOffset rangeStart = GetLocalBoundary(fromDate);
+        DateTimeOffset rangeEnd = GetLocalBoundary(toDate.AddDays(1));
+        List<CompletedRecordRow> rows = [];
+        Dictionary<int, CompletedRecordRow> rowByRecordOrder = [];
+
+        using SqliteCommand command = connection.CreateCommand();
+        command.CommandText =
+            projectId.HasValue
+                ? """
+                  SELECT
+                      r.record_order,
+                      r.project_id,
+                      r.project_name,
+                      r.started_at,
+                      r.ended_at,
+                      s.process_name,
+                      s.display_name,
+                      s.started_at,
+                      s.ended_at
+                  FROM completed_records AS r
+                  LEFT JOIN focus_segments AS s
+                      ON s.record_order = r.record_order
+                  WHERE r.project_id = $project_id
+                    AND r.ended_at > $range_start
+                    AND r.started_at < $range_end
+                  ORDER BY r.record_order, s.segment_order;
+                  """
+                : """
+                  SELECT
+                      r.record_order,
+                      r.project_id,
+                      r.project_name,
+                      r.started_at,
+                      r.ended_at,
+                      s.process_name,
+                      s.display_name,
+                      s.started_at,
+                      s.ended_at
+                  FROM completed_records AS r
+                  LEFT JOIN focus_segments AS s
+                      ON s.record_order = r.record_order
+                  WHERE r.ended_at > $range_start
+                    AND r.started_at < $range_end
+                  ORDER BY r.record_order, s.segment_order;
+                  """;
+        _ = command.Parameters.AddWithValue("$range_start", FormatDateTimeOffset(rangeStart));
+        _ = command.Parameters.AddWithValue("$range_end", FormatDateTimeOffset(rangeEnd));
+        if (projectId.HasValue)
+        {
+            _ = command.Parameters.AddWithValue("$project_id", projectId.Value.ToString("D"));
+        }
+
+        using SqliteDataReader reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            int recordOrder = reader.GetInt32(0);
+            if (!rowByRecordOrder.TryGetValue(recordOrder, out CompletedRecordRow? row))
+            {
+                row = new CompletedRecordRow(
+                    recordOrder,
+                    ParseGuid(reader.GetString(1)),
+                    reader.GetString(2),
+                    ParseDateTimeOffset(reader.GetString(3)),
+                    ParseDateTimeOffset(reader.GetString(4)),
+                    []);
+                rowByRecordOrder[recordOrder] = row;
+                rows.Add(row);
+            }
+
+            if (reader.IsDBNull(5))
+            {
+                continue;
+            }
+
+            row.FocusSegments.Add(new ProgramFocusSegment(
+                new TrackedApplication(reader.GetString(5), reader.GetString(6)),
+                ParseDateTimeOffset(reader.GetString(7)),
+                ParseDateTimeOffset(reader.GetString(8))));
+        }
+
+        return [.. rows.Select(row => new ProjectTimerRecord(
+            row.ProjectId,
+            row.ProjectName,
+            row.StartedAt,
+            row.EndedAt,
+            row.FocusSegments))];
+    }
+
     private static void InsertProject(
         SqliteConnection connection,
         SqliteTransaction transaction,
@@ -295,6 +500,38 @@ public sealed class SqliteProjectTimerStore
             """
             INSERT INTO projects (project_id, name, sort_order, is_deleted, created_at, is_pinned, memo, memo_updated_at)
             VALUES ($project_id, $name, $sort_order, $is_deleted, $created_at, $is_pinned, $memo, $memo_updated_at);
+            """;
+        _ = command.Parameters.AddWithValue("$project_id", project.Id.ToString("D"));
+        _ = command.Parameters.AddWithValue("$name", project.Name);
+        _ = command.Parameters.AddWithValue("$sort_order", sortOrder);
+        _ = command.Parameters.AddWithValue("$is_deleted", project.IsDeleted ? 1 : 0);
+        _ = command.Parameters.AddWithValue("$created_at", FormatDateTimeOffset(project.CreatedAt));
+        _ = command.Parameters.AddWithValue("$is_pinned", project.IsPinned ? 1 : 0);
+        _ = command.Parameters.AddWithValue("$memo", project.Memo);
+        _ = command.Parameters.AddWithValue("$memo_updated_at", FormatDateTimeOffset(project.MemoUpdatedAt));
+        _ = command.ExecuteNonQuery();
+    }
+
+    private static void UpsertProject(
+        SqliteConnection connection,
+        SqliteTransaction transaction,
+        ProjectState project,
+        int sortOrder)
+    {
+        using SqliteCommand command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText =
+            """
+            INSERT INTO projects (project_id, name, sort_order, is_deleted, created_at, is_pinned, memo, memo_updated_at)
+            VALUES ($project_id, $name, $sort_order, $is_deleted, $created_at, $is_pinned, $memo, $memo_updated_at)
+            ON CONFLICT(project_id) DO UPDATE SET
+                name = excluded.name,
+                sort_order = excluded.sort_order,
+                is_deleted = excluded.is_deleted,
+                created_at = excluded.created_at,
+                is_pinned = excluded.is_pinned,
+                memo = excluded.memo,
+                memo_updated_at = excluded.memo_updated_at;
             """;
         _ = command.Parameters.AddWithValue("$project_id", project.Id.ToString("D"));
         _ = command.Parameters.AddWithValue("$name", project.Name);
@@ -422,6 +659,45 @@ public sealed class SqliteProjectTimerStore
         _ = command.ExecuteNonQuery();
     }
 
+    private static void SaveProjectCatalog(
+        SqliteConnection connection,
+        SqliteTransaction transaction,
+        ReadOnlyCollection<ProjectState> projects)
+    {
+        for (int projectIndex = 0; projectIndex < projects.Count; projectIndex++)
+        {
+            ProjectState project = projects[projectIndex];
+            UpsertProject(connection, transaction, project, projectIndex);
+            DeleteRegisteredPrograms(connection, transaction, project.Id);
+
+            for (int programIndex = 0; programIndex < project.RegisteredPrograms.Count; programIndex++)
+            {
+                InsertRegisteredProgram(connection, transaction, project.Id, project.RegisteredPrograms[programIndex], programIndex);
+            }
+        }
+    }
+
+    private static void DeleteRegisteredPrograms(
+        SqliteConnection connection,
+        SqliteTransaction transaction,
+        Guid projectId)
+    {
+        using SqliteCommand command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = "DELETE FROM registered_programs WHERE project_id = $project_id;";
+        _ = command.Parameters.AddWithValue("$project_id", projectId.ToString("D"));
+        _ = command.ExecuteNonQuery();
+    }
+
+    private static int GetNextRecordOrder(SqliteConnection connection, SqliteTransaction transaction)
+    {
+        using SqliteCommand command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = "SELECT COALESCE(MAX(record_order) + 1, 0) FROM completed_records;";
+        object? result = command.ExecuteScalar();
+        return Convert.ToInt32(result, CultureInfo.InvariantCulture);
+    }
+
     private static void EnsureColumn(SqliteConnection connection, string tableName, string columnName, string alterSql)
     {
         bool columnExists = false;
@@ -471,6 +747,12 @@ public sealed class SqliteProjectTimerStore
     private static Guid ParseGuid(string value)
     {
         return Guid.ParseExact(value, "D");
+    }
+
+    private static DateTimeOffset GetLocalBoundary(DateOnly date)
+    {
+        DateTime localDateTime = date.ToDateTime(TimeOnly.MinValue);
+        return new DateTimeOffset(localDateTime, TimeZoneInfo.Local.GetUtcOffset(localDateTime));
     }
 
     private sealed record ProjectStateRow(
