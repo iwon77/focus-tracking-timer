@@ -516,12 +516,13 @@ public sealed class ProjectTimerEngine
         if (_activeSession is not null &&
             (!projectId.HasValue || _activeSession.Project.Id == projectId.Value))
         {
+            DateTimeOffset summaryEndedAt = _activeSession.GetSummaryEndedAt(observedAt);
             records.Add(new ProjectTimerRecord(
                 _activeSession.Project.Id,
                 _activeSession.Project.Name,
                 _activeSession.StartedAt,
-                observedAt,
-                _activeSession.GetFocusSegments(observedAt)));
+                summaryEndedAt,
+                _activeSession.GetFocusSegments(summaryEndedAt)));
         }
 
         return projectId.HasValue
@@ -780,6 +781,21 @@ public sealed class ProjectTimerEngine
 
             TimeSpan duration = observedAt - StartedAt - currentPauseDuration;
             return duration < TimeSpan.Zero ? TimeSpan.Zero : duration;
+        }
+
+        public DateTimeOffset GetSummaryEndedAt(DateTimeOffset observedAt)
+        {
+            if (observedAt < StartedAt)
+            {
+                return StartedAt;
+            }
+
+            if (PauseStartedAt is not null && observedAt > PauseStartedAt.Value)
+            {
+                return PauseStartedAt.Value;
+            }
+
+            return observedAt;
         }
 
         public List<ProgramFocusSegment> GetFocusSegments()

@@ -90,6 +90,31 @@ public class ProjectTimerEngineTests
     }
 
     [Fact]
+    public void PausedActiveSessionDoesNotExtendRecordSlicesBeyondPauseTime()
+    {
+        ProjectTimerEngine engine = new();
+        Assert.True(engine.TryAddProject("Study", out ProjectDefinition project));
+        Assert.True(engine.TryRegisterProgram(project.Id, new TrackedApplication("code", "Code")));
+        DateTimeOffset startedAt = new(2026, 6, 3, 9, 0, 0, TimeSpan.Zero);
+        DateTimeOffset pausedAt = startedAt.AddMinutes(10);
+        DateTimeOffset observedAt = startedAt.AddMinutes(30);
+
+        engine.StartProject(project.Id, startedAt);
+        engine.ObserveFocusedProgram("code", startedAt);
+        engine.PauseProject(pausedAt);
+
+        ProjectTimerRecordSlice slice = Assert.Single(engine.GetRecordSlices(
+            new DateOnly(2026, 6, 3),
+            new DateOnly(2026, 6, 3),
+            observedAt));
+
+        Assert.Equal(startedAt, slice.StartedAt);
+        Assert.Equal(pausedAt, slice.EndedAt);
+        Assert.Equal(TimeSpan.FromMinutes(10), slice.WallClockDuration);
+        Assert.Equal(TimeSpan.FromMinutes(10), slice.TotalDuration);
+    }
+
+    [Fact]
     public void ProjectAndProgramPinStateCanBeUpdated()
     {
         ProjectTimerEngine engine = new();

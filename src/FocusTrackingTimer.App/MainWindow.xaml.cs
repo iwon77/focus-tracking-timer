@@ -50,7 +50,7 @@ public partial class MainWindow : Window
             Timer,
             Environment.ProcessId,
             PersistState,
-            RefreshAll,
+            RefreshUiAfterCommand,
             StartButtonBackground,
             StopButtonBackground,
             DisabledButtonBackground,
@@ -114,7 +114,8 @@ public partial class MainWindow : Window
             PersistState();
         }
 
-        RefreshAll(DateTimeOffset.Now, startupMessage);
+        RefreshTimerUi(DateTimeOffset.Now, startupMessage, processStates: null);
+        RefreshRecordFilters();
         _uiTimer.Start();
     }
 
@@ -137,7 +138,7 @@ public partial class MainWindow : Window
             ? RunningProcessCatalog.GetProcessRunStates(Environment.ProcessId)
             : null;
         string focusMessage = _timerFeature.RefreshFocusTracking(observedAt, processStates);
-        RefreshAll(observedAt, focusMessage, processStates);
+        RefreshTimerUi(observedAt, focusMessage, processStates);
     }
 
     private void ProjectTabButton_Click(object sender, RoutedEventArgs e)
@@ -322,24 +323,52 @@ public partial class MainWindow : Window
         }
     }
 
-    private void RefreshAll(DateTimeOffset observedAt, string message)
+    private void RefreshUiAfterCommand(
+        DateTimeOffset observedAt,
+        string message,
+        bool refreshRecordFilters = false,
+        bool refreshRecordViews = false)
     {
-        RefreshAll(observedAt, message, processStates: null);
+        RefreshTimerUi(observedAt, message, processStates: null);
+
+        if (refreshRecordFilters)
+        {
+            RefreshRecordFilters();
+        }
+
+        if (refreshRecordFilters || refreshRecordViews)
+        {
+            RefreshVisibleRecordView(observedAt);
+        }
     }
 
-    private void RefreshAll(
+    private void RefreshTimerUi(
         DateTimeOffset observedAt,
         string message,
         IReadOnlyDictionary<string, ProcessRunState>? processStates)
     {
         _timerFeature.RefreshProjectSidebar(observedAt);
         _timerFeature.RefreshSelectedProjectArea(observedAt, message, processStates);
+    }
 
+    private void RefreshRecordFilters()
+    {
         _dailyRecordFeature.RefreshRecordFilters();
-        _dailyRecordFeature.RefreshRecordArea(observedAt);
-
         _weeklyRecordFeature.RefreshRecordFilters();
-        _weeklyRecordFeature.RefreshWeeklyRecordArea(observedAt);
+    }
+
+    private void RefreshVisibleRecordView(DateTimeOffset observedAt)
+    {
+        if (Menu.SelectedTab == MainMenuTab.DailyRecord)
+        {
+            _dailyRecordFeature.RefreshRecordArea(observedAt);
+            return;
+        }
+
+        if (Menu.SelectedTab == MainMenuTab.WeeklyRecord)
+        {
+            _weeklyRecordFeature.RefreshWeeklyRecordArea(observedAt);
+        }
     }
 
     private void PersistState()
