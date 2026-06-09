@@ -7,7 +7,7 @@
         MinWidth="360"
         MinHeight="320"
         WindowStartupLocation="CenterOwner"
-        Background="#F7F7F4">
+        Background="{StaticResource ThemeBaseBackgroundBrush}">
     <Grid Margin="18">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -20,10 +20,10 @@
                        FontWeight="SemiBold"
                        Text="{Binding ProjectName}" />
             <TextBlock Margin="0,8,0,0"
-                       Foreground="#5B5B5B"
+                       Foreground="{StaticResource ThemeSecondaryTextBrush}"
                        Text="{Binding CreatedAtText}" />
             <TextBlock Margin="0,4,0,0"
-                       Foreground="#5B5B5B"
+                       Foreground="{StaticResource ThemeSecondaryTextBrush}"
                        Text="{Binding MemoUpdatedAtText}" />
         </StackPanel>
 
@@ -31,8 +31,8 @@
                  Margin="0,16,0,16"
                  Padding="10"
                  AcceptsReturn="True"
-                 BorderBrush="#D5D5D0"
-                 BorderThickness="1.5"
+                 BorderBrush="{StaticResource ThemeSecondaryBorderBrush}"
+                 BorderThickness="1"
                  Text="{Binding MemoText, UpdateSourceTrigger=PropertyChanged}"
                  TextWrapping="Wrap"
                  VerticalScrollBarVisibility="Auto" />
@@ -43,19 +43,15 @@
             <Button Width="78"
                     Height="34"
                     Margin="0,0,8,0"
-                    Background="#FFFFFF"
-                    BorderBrush="#D5D5D0"
-                    BorderThickness="1.5"
+                    Style="{StaticResource SecondaryButton}"
                     Click="CancelButton_Click"
                     Content="취소" />
             <Button Width="78"
                     Height="34"
-                    Background="#1F1F1F"
-                    BorderBrush="#1F1F1F"
-                    BorderThickness="1.5"
+                    Style="{StaticResource PrimaryButton}"
                     Click="SaveButton_Click"
                     Content="저장"
-                    Foreground="#FFFFFF" />
+                    Foreground="{StaticResource ThemeActiveTextBrush}" />
         </StackPanel>
     </Grid>
 </Window>

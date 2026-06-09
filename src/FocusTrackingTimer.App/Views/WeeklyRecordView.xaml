@@ -8,244 +8,186 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="16" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
+    <Border Style="{StaticResource Panel}">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="1" />
+                <ColumnDefinition Width="280" />
+            </Grid.ColumnDefinitions>
 
-        <Border Style="{StaticResource Panel}" Padding="18">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="1.05*" />
-                    <ColumnDefinition Width="16" />
-                    <ColumnDefinition Width="0.95*" />
-                </Grid.ColumnDefinitions>
+            <Grid Grid.Column="0"
+                  Margin="16">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
 
-                <Grid Grid.Column="0"
-                      HorizontalAlignment="Stretch"
-                      VerticalAlignment="Center">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
+                <StackPanel HorizontalAlignment="Center"
+                            Orientation="Horizontal">
+                    <Button Width="44" Height="32" Style="{StaticResource SecondaryButton}" Click="PreviousWeekButton_Click" Content="&lt;" />
+                    <TextBlock Margin="14,0" VerticalAlignment="Center" FontSize="16" FontWeight="SemiBold" Text="{Binding DisplayedWeekLabelText}" />
+                    <Button Width="44" Height="32" Style="{StaticResource SecondaryButton}" Click="NextWeekButton_Click" Content="&gt;" />
+                    <Button Width="72" Height="32" Margin="8,0,0,0" Style="{StaticResource SecondaryButton}" Click="CurrentWeekButton_Click" Content="이번 주" />
+                </StackPanel>
 
-                    <StackPanel Grid.Column="0"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center">
-                        <TextBlock FontSize="18"
-                                   FontWeight="SemiBold"
-                                   Text="{Binding WeeklyRecordCountText, StringFormat=이번 주 총 작업 수: {0}}" />
-                        <TextBlock Margin="0,10,0,0"
-                                   FontSize="14"
-                                   FontWeight="SemiBold"
-                                   Text="{Binding WeekTotalWallClockDurationText, StringFormat=주간 총 작업 시간: {0}}" />
-                        <TextBlock Margin="0,10,0,0"
-                                   FontSize="14"
-                                   FontWeight="SemiBold"
-                                   Text="{Binding AverageDailyWallClockDurationText, StringFormat=일간 평균 작업 시간: {0}}" />
-                        <TextBlock Margin="0,10,0,0"
-                                   FontSize="14"
-                                   FontWeight="SemiBold"
-                                   Text="{Binding AverageDailyFocusDurationText, StringFormat=일간 평균 집중 시간: {0}}" />
-                    </StackPanel>
-
-                    <StackPanel Grid.Column="1"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center">
-                        <TextBlock HorizontalAlignment="Center"
-                                   FontSize="14"
-                                   FontWeight="SemiBold"
-                                   Foreground="#202020"
-                                   Text="주간 누적 집중 시간"
-                                   TextAlignment="Center" />
-                        <TextBlock Margin="0,6,0,0"
-                                   HorizontalAlignment="Center"
-                                   FontSize="38"
-                                   FontWeight="SemiBold"
-                                   Foreground="#2E6D36"
-                                   Text="{Binding WeekTotalFocusDurationText}"
-                                   TextAlignment="Center" />
-                    </StackPanel>
-                </Grid>
-
-                <Grid Grid.Column="2">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="8" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="10" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="12" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-
-                        <TextBlock VerticalAlignment="Center"
-                                   FontSize="15"
-                                   FontWeight="SemiBold"
-                                   Foreground="#5B5B5B"
-                                   Text="{Binding DisplayedWeekLabelText}" />
-                        <ComboBox Grid.Column="2"
-                                  Width="220"
-                                  HorizontalAlignment="Right"
-                                  Padding="8"
-                                  BorderBrush="#2F2F2F"
-                                  BorderThickness="2"
-                                  DisplayMemberPath="Label"
-                                  ItemsSource="{Binding RecordFilterOptions}"
-                                  SelectedItem="{Binding SelectedRecordFilter, Mode=TwoWay}"
-                                  SelectionChanged="WeeklyRecordFilter_SelectionChanged" />
-                    </Grid>
-
-                    <Border Grid.Row="2"
-                            Padding="8,6"
-                            Background="#F5F5F0"
-                            BorderBrush="#E0E0D8"
-                            BorderThickness="1"
-                            CornerRadius="18">
-                        <ItemsControl ItemsSource="{Binding WeeklyDayBubbleRows}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <UniformGrid Columns="7" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Button Padding="0"
-                                            Background="Transparent"
-                                            BorderThickness="0"
-                                            FocusVisualStyle="{x:Null}"
-                                            Focusable="False"
-                                            Click="WeeklySummaryDayButton_Click"
-                                            IsEnabled="{Binding HasBubble}">
-                                        <Button.Template>
-                                            <ControlTemplate TargetType="Button">
-                                                <ContentPresenter />
-                                            </ControlTemplate>
-                                        </Button.Template>
-                                        <Border Padding="3"
-                                                HorizontalAlignment="Center"
-                                                BorderBrush="#FFFFFF"
-                                                BorderThickness="0"
-                                                CornerRadius="12">
-                                            <Border.Style>
-                                                <Style TargetType="Border">
-                                                    <Setter Property="Background" Value="Transparent" />
-                                                    <Setter Property="BorderThickness" Value="0" />
+                <ItemsControl Grid.Row="1"
+                              Margin="0,18,0,16"
+                              ItemsSource="{Binding WeeklyDayBubbleRows}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="7" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Padding="0"
+                                    Background="{StaticResource ThemeTransparentBrush}"
+                                    BorderThickness="0"
+                                    FocusVisualStyle="{x:Null}"
+                                    Focusable="False"
+                                    Click="WeeklySummaryDayButton_Click"
+                                    IsEnabled="{Binding HasBubble}">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <ContentPresenter />
+                                    </ControlTemplate>
+                                </Button.Template>
+                                <Border Padding="8"
+                                        Margin="2"
+                                        CornerRadius="8">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="{StaticResource ThemeTransparentBrush}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=IsMouseOver}" Value="True">
+                                                    <Setter Property="Background" Value="{StaticResource ThemeSelectionBrush}" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                    <Setter Property="Background" Value="{StaticResource ThemeActiveBrush}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <StackPanel HorizontalAlignment="Center">
+                                        <TextBlock HorizontalAlignment="Center"
+                                                   FontWeight="SemiBold"
+                                                   Text="{Binding DayOfWeekText}">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="{StaticResource ThemeSecondaryTextBrush}" />
                                                     <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=IsMouseOver}" Value="True">
-                                                            <Setter Property="Background" Value="#E7E7E1" />
+                                                        <DataTrigger Binding="{Binding IsSunday}" Value="True">
+                                                            <Setter Property="Foreground" Value="{StaticResource ThemeSundayBrush}" />
                                                         </DataTrigger>
                                                         <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                            <Setter Property="Background" Value="#E7E7E1" />
-                                                            <Setter Property="BorderThickness" Value="1.5" />
+                                                            <Setter Property="Foreground" Value="{StaticResource ThemeActiveTextBrush}" />
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
-                                            </Border.Style>
-                                            <StackPanel HorizontalAlignment="Center">
-                                                <TextBlock HorizontalAlignment="Center"
-                                                           FontSize="10"
-                                                           FontWeight="SemiBold"
-                                                           Text="{Binding DayOfWeekText}">
-                                                    <TextBlock.Style>
-                                                        <Style TargetType="TextBlock">
-                                                            <Setter Property="Foreground" Value="#7A7A74" />
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding IsSunday}" Value="True">
-                                                                    <Setter Property="Foreground" Value="#D95148" />
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </TextBlock.Style>
-                                                </TextBlock>
-                                                <Grid Width="22" Height="22" Margin="0,3,0,3">
-                                                    <Ellipse Width="{Binding BubbleDiameter}"
-                                                             Height="{Binding BubbleDiameter}"
-                                                             HorizontalAlignment="Center"
-                                                             VerticalAlignment="Center"
-                                                             Fill="#24D060"
-                                                             Visibility="{Binding BubbleVisibility}" />
-                                                </Grid>
-                                                <TextBlock HorizontalAlignment="Center"
-                                                           FontSize="11"
-                                                           FontWeight="SemiBold"
-                                                           Text="{Binding DateText}">
-                                                    <TextBlock.Style>
-                                                        <Style TargetType="TextBlock">
-                                                            <Setter Property="Foreground" Value="#3A3A36" />
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding IsSunday}" Value="True">
-                                                                    <Setter Property="Foreground" Value="#D95148" />
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </TextBlock.Style>
-                                                </TextBlock>
-                                            </StackPanel>
-                                        </Border>
-                                    </Button>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <Grid Width="34"
+                                              Height="22"
+                                              Margin="0,8,0,8">
+                                            <Border Height="{Binding BubbleDiameter}"
+                                                    VerticalAlignment="Bottom"
+                                                    Background="{StaticResource ThemeFocusBrush}"
+                                                    CornerRadius="3"
+                                                    Visibility="{Binding BubbleVisibility}">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Opacity" Value="0" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding BubbleDiameter}" Value="8">
+                                                                <Setter Property="Opacity" Value="0.35" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding BubbleDiameter}" Value="11">
+                                                                <Setter Property="Opacity" Value="0.5" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding BubbleDiameter}" Value="14">
+                                                                <Setter Property="Opacity" Value="0.65" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding BubbleDiameter}" Value="17">
+                                                                <Setter Property="Opacity" Value="0.8" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding BubbleDiameter}" Value="20">
+                                                                <Setter Property="Opacity" Value="1" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                            </Border>
+                                        </Grid>
+                                        <TextBlock HorizontalAlignment="Center"
+                                                   FontWeight="SemiBold"
+                                                   Text="{Binding DateText}">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="{StaticResource ThemePrimaryTextBrush}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsSunday}" Value="True">
+                                                            <Setter Property="Foreground" Value="{StaticResource ThemeSundayBrush}" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                            <Setter Property="Foreground" Value="{StaticResource ThemeActiveTextBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Border>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <UniformGrid Grid.Row="2"
+                             Columns="4"
+                             Margin="0,0,0,18">
+                    <Border Margin="0,0,8,0" Padding="12" Background="{StaticResource ThemeLightSurfaceBrush}" CornerRadius="8">
+                        <StackPanel>
+                            <TextBlock Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="총 작업 수" />
+                            <TextBlock Margin="0,8,0,0" FontWeight="SemiBold" Text="{Binding WeeklyRecordCountText}" />
+                        </StackPanel>
                     </Border>
+                    <Border Margin="0,0,8,0" Padding="12" Background="{StaticResource ThemeLightSurfaceBrush}" CornerRadius="8">
+                        <StackPanel>
+                            <TextBlock Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="총 작업 시간" />
+                            <TextBlock Margin="0,8,0,0" FontWeight="SemiBold" Text="{Binding WeekTotalWallClockDurationText}" />
+                        </StackPanel>
+                    </Border>
+                    <Border Margin="0,0,8,0" Padding="12" Background="{StaticResource ThemeLightSurfaceBrush}" CornerRadius="8">
+                        <StackPanel>
+                            <TextBlock Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="누적 집중" />
+                            <TextBlock Margin="0,8,0,0" FontWeight="SemiBold" Foreground="{StaticResource ThemeFocusBrush}" Text="{Binding WeekTotalFocusDurationText}" />
+                        </StackPanel>
+                    </Border>
+                    <Border Padding="12" Background="{StaticResource ThemeLightSurfaceBrush}" CornerRadius="8">
+                        <StackPanel>
+                            <TextBlock Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="평균 집중" />
+                            <TextBlock Margin="0,8,0,0" FontWeight="SemiBold" Foreground="{StaticResource ThemeFocusBrush}" Text="{Binding AverageDailyFocusDurationText}" />
+                        </StackPanel>
+                    </Border>
+                </UniformGrid>
 
-                    <StackPanel Grid.Row="4"
-                                HorizontalAlignment="Center"
-                                Orientation="Horizontal">
-                        <Button Width="44"
-                                Height="32"
-                                Background="#FFFFFF"
-                                BorderBrush="#D7D7D0"
-                                BorderThickness="1.5"
-                                Click="PreviousWeekButton_Click"
-                                Content="&lt;" />
-                        <Button Width="72"
-                                Height="32"
-                                Margin="8,0,0,0"
-                                Background="#FFFFFF"
-                                BorderBrush="#D7D7D0"
-                                BorderThickness="1.5"
-                                Click="CurrentWeekButton_Click"
-                                Content="이번 주" />
-                        <Button Width="44"
-                                Height="32"
-                                Margin="8,0,0,0"
-                                Background="#FFFFFF"
-                                BorderBrush="#D7D7D0"
-                                BorderThickness="1.5"
-                                Click="NextWeekButton_Click"
-                                Content="&gt;" />
-                    </StackPanel>
-                </Grid>
-            </Grid>
-        </Border>
-
-        <Grid Grid.Row="2">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="1.05*" />
-                <ColumnDefinition Width="16" />
-                <ColumnDefinition Width="0.95*" />
-            </Grid.ColumnDefinitions>
-
-            <Border Style="{StaticResource Panel}" Padding="20">
-                <Grid>
+                <Grid Grid.Row="3">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
-                    <TextBlock FontSize="20" FontWeight="SemiBold" Text="주간 작업 목록" />
+                    <TextBlock FontSize="18"
+                               FontWeight="SemiBold"
+                               Text="주간 기록 리스트" />
+
                     <ListBox x:Name="WeeklyRecordListControl"
                              Grid.Row="1"
-                             Margin="0,16,0,0"
-                             Background="Transparent"
+                             Margin="0,10,0,0"
+                             Background="{StaticResource ThemeTransparentBrush}"
                              BorderThickness="0"
                              ItemsSource="{Binding WeeklyRecordRows}"
                              SelectedItem="{Binding SelectedWeeklyRecordRow, Mode=TwoWay}"
@@ -254,26 +196,18 @@
                             <GroupStyle>
                                 <GroupStyle.HeaderTemplate>
                                     <DataTemplate>
-                                        <Grid Margin="0,0,0,10">
+                                        <Grid Margin="0,14,0,6">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
 
                                             <TextBlock VerticalAlignment="Center"
-                                                       FontSize="16"
                                                        FontWeight="SemiBold"
                                                        Text="{Binding Name}" />
-
-                                            <StackPanel Grid.Column="1"
-                                                        Orientation="Horizontal"
-                                                        VerticalAlignment="Center">
-                                                <TextBlock Style="{StaticResource WeeklyDurationTextStyle}"
-                                                           Text="{Binding Items[0].GroupTotalDurationText}" />
-                                                <TextBlock Margin="8,0,0,0"
-                                                           Style="{StaticResource WeeklyDurationTextStyle}"
-                                                           Foreground="#2E6D36"
-                                                           Text="{Binding Items[0].GroupFocusDurationText}" />
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                <TextBlock Style="{StaticResource WeeklyDurationTextStyle}" Text="{Binding Items[0].GroupTotalDurationText}" />
+                                                <TextBlock Margin="8,0,0,0" Style="{StaticResource WeeklyDurationTextStyle}" Foreground="{StaticResource ThemeFocusBrush}" Text="{Binding Items[0].GroupFocusDurationText}" />
                                             </StackPanel>
                                         </Grid>
                                     </DataTemplate>
@@ -283,12 +217,25 @@
                         <ListBox.ItemContainerStyle>
                             <Style TargetType="ListBoxItem">
                                 <Setter Property="Padding" Value="0" />
-                                <Setter Property="Margin" Value="0,0,0,12" />
                                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                                 <Setter Property="Template">
                                     <Setter.Value>
                                         <ControlTemplate TargetType="ListBoxItem">
-                                            <ContentPresenter />
+                                            <Border x:Name="ItemBorder"
+                                                    Padding="8,10"
+                                                    Background="{StaticResource ThemeTransparentBrush}"
+                                                    BorderBrush="{StaticResource ThemeHoverBorderBrush}"
+                                                    BorderThickness="0,0,0,1">
+                                                <ContentPresenter />
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource ThemeSelectionBrush}" />
+                                                </Trigger>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource ThemeSelectionBrush}" />
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
                                         </ControlTemplate>
                                     </Setter.Value>
                                 </Setter>
@@ -296,136 +243,116 @@
                         </ListBox.ItemContainerStyle>
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <Border Padding="16"
-                                        Background="#F7F7F4"
-                                        BorderBrush="#D5D5D5"
-                                        BorderThickness="1.5"
-                                        CornerRadius="12">
-                                    <Border.Style>
-                                        <Style TargetType="Border">
-                                            <Setter Property="Background" Value="#F7F7F4" />
-                                            <Setter Property="BorderBrush" Value="#D5D5D5" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsSelected}" Value="True">
-                                                    <Setter Property="Background" Value="#EEF5E8" />
-                                                    <Setter Property="BorderBrush" Value="#2E6D36" />
-                                                    <Setter Property="BorderThickness" Value="2" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Border.Style>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
 
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto" />
-                                            <RowDefinition Height="Auto" />
-                                        </Grid.RowDefinitions>
-
-                                        <TextBlock Grid.Row="0"
-                                                   HorizontalAlignment="Left"
-                                                   FontSize="17"
-                                                   FontWeight="SemiBold"
-                                                   Text="{Binding ProjectName}" />
-
-                                        <StackPanel Grid.Row="1"
-                                                    Margin="0,10,0,0"
-                                                    HorizontalAlignment="Right"
-                                                    Orientation="Horizontal">
-                                            <TextBlock Style="{StaticResource WeeklyDurationTextStyle}"
-                                                       Text="{Binding TotalDurationText}" />
-                                            <TextBlock Margin="8,0,0,0"
-                                                       Style="{StaticResource WeeklyDurationTextStyle}"
-                                                       Foreground="#2E6D36"
-                                                       Text="{Binding FocusDurationText}" />
-                                        </StackPanel>
-                                    </Grid>
-                                </Border>
+                                    <Ellipse Width="8" Height="8" Margin="0,6,10,0" Fill="{StaticResource ThemeStatusBrush}" VerticalAlignment="Top" />
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock FontWeight="SemiBold" Text="{Binding ProjectName}" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Margin="0,5,0,0" Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="{Binding PeriodText}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2" Margin="12,0,0,0" HorizontalAlignment="Right">
+                                        <TextBlock HorizontalAlignment="Right" FontWeight="SemiBold" Text="{Binding TotalDurationText}" />
+                                        <TextBlock Margin="0,5,0,0" HorizontalAlignment="Right" FontWeight="SemiBold" Foreground="{StaticResource ThemeFocusBrush}" Text="{Binding FocusDurationText}" />
+                                    </StackPanel>
+                                </Grid>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
                 </Grid>
-            </Border>
+            </Grid>
 
-            <Border Grid.Column="2" Style="{StaticResource Panel}" Padding="20">
-                <Grid>
+            <Border Grid.Column="1"
+                    Style="{StaticResource Divider}" />
+
+            <Grid Grid.Column="2"
+                  Margin="16">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Border Style="{StaticResource TagBadge}">
+                    <TextBlock Foreground="{StaticResource ThemeTagTextBrush}"
+                               FontWeight="SemiBold"
+                               Text="작업 상세" />
+                </Border>
+                <TextBlock Grid.Row="1"
+                           Margin="0,12,0,0"
+                           FontSize="22"
+                           FontWeight="SemiBold"
+                           Text="{Binding SelectedRecordTitle}" />
+                <TextBlock Grid.Row="2"
+                           Margin="0,8,0,0"
+                           Foreground="{StaticResource ThemeSecondaryTextBrush}"
+                           Text="{Binding SelectedRecordSubtitle}" />
+
+                <Grid Grid.Row="3"
+                      Margin="0,16,0,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
-                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <TextBlock FontSize="20" FontWeight="SemiBold" Text="작업 상세" />
-                    <TextBlock Grid.Row="1"
-                               Margin="0,16,0,0"
-                               FontSize="22"
-                               FontWeight="SemiBold"
-                               Text="{Binding SelectedRecordTitle}" />
-                    <StackPanel Grid.Row="2" Margin="0,10,0,0">
-                        <TextBlock Foreground="#6B6B66" Text="{Binding SelectedRecordSubtitle}" />
-                        <TextBlock Margin="0,8,0,0"
-                                   FontSize="16"
-                                   FontWeight="SemiBold"
-                                   Text="{Binding SelectedRecordTotalDurationText, StringFormat=작업 시간: {0}}" />
-                        <TextBlock Margin="0,8,0,0"
-                                   FontSize="16"
-                                   FontWeight="SemiBold"
-                                   Foreground="#2E6D36"
-                                   Text="{Binding SelectedRecordFocusDurationText, StringFormat=집중 시간: {0}}" />
-                    </StackPanel>
+                    <UniformGrid Columns="2"
+                                 Margin="0,0,0,16">
+                        <Border Margin="0,0,8,0" Padding="12" Background="{StaticResource ThemeLightSurfaceBrush}" CornerRadius="8">
+                            <StackPanel>
+                                <TextBlock Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="작업 시간" />
+                                <TextBlock Margin="0,8,0,0" FontWeight="SemiBold" Text="{Binding SelectedRecordTotalDurationText}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Padding="12" Background="{StaticResource ThemeLightSurfaceBrush}" CornerRadius="8">
+                            <StackPanel>
+                                <TextBlock Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="집중 시간" />
+                                <TextBlock Margin="0,8,0,0" FontWeight="SemiBold" Foreground="{StaticResource ThemeFocusBrush}" Text="{Binding SelectedRecordFocusDurationText}" />
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
 
-                    <ScrollViewer Grid.Row="3" Margin="0,18,0,0" VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                         <ItemsControl ItemsSource="{Binding SelectedRecordProgramRows}"
                                       Visibility="{Binding SelectedRecordDetailVisibility}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Margin="0,0,0,10"
-                                            Padding="14"
-                                            Background="#FFFFFF"
-                                            BorderBrush="#D5D5D5"
-                                            BorderThickness="1.5"
-                                            CornerRadius="10">
+                                    <Border Padding="0,10"
+                                            BorderBrush="{StaticResource ThemeHoverBorderBrush}"
+                                            BorderThickness="0,0,0,1">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
 
-                                            <StackPanel Orientation="Horizontal">
-                                                <Ellipse Width="10" Height="10" Margin="0,6,10,0" Fill="#26C567" VerticalAlignment="Top" />
-                                                <StackPanel>
-                                                    <TextBlock FontSize="16"
-                                                               FontWeight="SemiBold"
-                                                               Text="{Binding DisplayName}"
-                                                               TextTrimming="CharacterEllipsis"
-                                                               TextWrapping="NoWrap" />
-                                                    <TextBlock Margin="0,6,0,0" Foreground="#6B6B66" Text="{Binding ProcessName}" />
-                                                </StackPanel>
+                                            <Ellipse Width="8" Height="8" Margin="0,6,10,0" Fill="{StaticResource ThemeStatusBrush}" VerticalAlignment="Top" />
+                                            <StackPanel Grid.Column="1">
+                                                <TextBlock FontWeight="SemiBold" Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Margin="0,5,0,0" Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="{Binding ProcessName}" />
                                             </StackPanel>
-
-                                            <TextBlock Grid.Column="1"
-                                                       Margin="12,0,0,0"
-                                                       VerticalAlignment="Top"
-                                                       FontSize="18"
-                                                       FontWeight="SemiBold"
-                                                       Foreground="#2E6D36"
-                                                       Text="{Binding DurationText}" />
+                                            <TextBlock Grid.Column="2" Margin="10,0,0,0" FontWeight="SemiBold" Foreground="{StaticResource ThemeFocusBrush}" Text="{Binding DurationText}" />
                                         </Grid>
                                     </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </ScrollViewer>
-
-                    <TextBlock Grid.Row="4"
-                               Margin="0,16,0,0"
-                               Foreground="#E66B5B"
-                               Visibility="{Binding SelectedRecordEmptyVisibility}"
-                               Text="{Binding SelectedRecordEmptyText}"
-                               TextWrapping="Wrap" />
                 </Grid>
-            </Border>
+
+                <TextBlock Grid.Row="4"
+                           Margin="0,16,0,0"
+                           Foreground="{StaticResource ThemeHintTextBrush}"
+                           Visibility="{Binding SelectedRecordEmptyVisibility}"
+                           Text="{Binding SelectedRecordEmptyText}"
+                           TextWrapping="Wrap" />
+            </Grid>
         </Grid>
-    </Grid>
+    </Border>
 </UserControl>

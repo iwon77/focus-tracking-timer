@@ -552,7 +552,7 @@ internal sealed class TimerFeatureController
 
         foreach (ProgramFocusSummary summary in programSummaries)
         {
-            (string statusBrush, string statusText) = TimerProgramFocusStatus.GetRuntimeStatus(summary.Program.ProcessName, runtimeProcessStates);
+            (Brush statusBrush, string statusText) = TimerProgramFocusStatus.GetRuntimeStatus(summary.Program.ProcessName, runtimeProcessStates);
             bool isPinned = registrationByProcessName.GetValueOrDefault(summary.Program.ProcessName)?.IsPinned ?? false;
             bool showsPinnedDivider = hasPinnedPrograms && !isPinned && !showedPinnedDivider;
             showedPinnedDivider |= showsPinnedDivider;
@@ -780,13 +780,16 @@ internal sealed class TimerFeatureController
         {
             ProgramFocusSummary summary = programSummaries[index];
             RegisteredProgramRow row = _viewModel.RegisteredProgramRows[index];
-            (string statusBrush, string statusText) = TimerProgramFocusStatus.GetRuntimeStatus(summary.Program.ProcessName, runtimeProcessStates);
+            (Brush statusBrush, string statusText) = TimerProgramFocusStatus.GetRuntimeStatus(summary.Program.ProcessName, runtimeProcessStates);
 
-            row.FocusDurationText = isActiveProject
-                ? AppTimeFormatter.FormatDuration(summary.FocusDuration)
-                : "00:00:00";
-            row.StatusBrush = statusBrush;
-            row.StatusText = statusText;
+            _viewModel.RegisteredProgramRows[index] = row with
+            {
+                FocusDurationText = isActiveProject
+                    ? AppTimeFormatter.FormatDuration(summary.FocusDuration)
+                    : "00:00:00",
+                StatusBrush = statusBrush,
+                StatusText = statusText
+            };
         }
     }
 

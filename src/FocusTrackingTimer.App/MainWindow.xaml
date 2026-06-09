@@ -6,70 +6,84 @@
         xmlns:views="clr-namespace:FocusTrackingTimer.App.Views"
         mc:Ignorable="d"
         Title="Focus Tracking Timer"
-        Width="1120"
-        Height="960"
-        MinWidth="1120"
-        MinHeight="960"
-        Background="#F7F7F4">
-    <Grid Margin="20">
+        Width="920"
+        Height="720"
+        MinWidth="820"
+        MinHeight="640"
+        Background="{StaticResource ThemeBaseBackgroundBrush}">
+    <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <Border Style="{StaticResource Panel}" Padding="8" Background="#FFFFFF">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-
-                <StackPanel Grid.Column="1" HorizontalAlignment="Center" Orientation="Horizontal">
-                    <Button x:Name="ProjectTabButtonControl"
-                            Width="120"
-                            Margin="0,0,10,0"
-                            Padding="10,6"
-                            Background="{Binding Menu.TimerTabBackground}"
-                            BorderBrush="#2F2F2F"
-                            BorderThickness="2"
-                            Click="ProjectTabButton_Click"
-                            Content="??대㉧"
-                            Foreground="{Binding Menu.TimerTabForeground}" />
-                    <Button x:Name="CalendarTabButtonControl"
-                            Width="120"
-                            Padding="10,6"
-                            Background="{Binding Menu.DailyRecordTabBackground}"
-                            BorderBrush="#2F2F2F"
-                            BorderThickness="2"
-                            Click="CalendarTabButton_Click"
-                            Content="?쇨컙 湲곕줉"
-                            Foreground="{Binding Menu.DailyRecordTabForeground}" />
-                    <Button x:Name="WeeklyTabButtonControl"
-                            Width="120"
-                            Margin="10,0,0,0"
-                            Padding="10,6"
-                            Background="{Binding Menu.WeeklyRecordTabBackground}"
-                            BorderBrush="#2F2F2F"
-                            BorderThickness="2"
-                            Click="WeeklyTabButton_Click"
-                            Content="二쇨컙 湲곕줉"
-                            Foreground="{Binding Menu.WeeklyRecordTabForeground}" />
-                </StackPanel>
-
-                <Button Grid.Column="2"
-                        Width="96"
-                        HorizontalAlignment="Right"
-                        Padding="10,6"
-                        Background="#FFFFFF"
-                        BorderBrush="#D7D7D0"
-                        BorderThickness="1.5"
+        <Border Padding="12,5"
+                Background="{StaticResource ThemeSurfaceBrush}"
+                BorderBrush="{StaticResource ThemeSecondaryBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="8">
+            <DockPanel LastChildFill="False">
+                <Button DockPanel.Dock="Right"
+                        Width="84"
+                        Height="32"
+                        Margin="10,0,0,0"
+                        Style="{StaticResource SecondaryButton}"
                         Click="OpenPerformanceMonitorButton_Click"
                         Content="성능" />
-            </Grid>
+
+                <ComboBox DockPanel.Dock="Right"
+                          Width="220"
+                          Style="{StaticResource FilterComboBox}"
+                          DisplayMemberPath="Label"
+                          ItemsSource="{Binding DailyRecord.RecordFilterOptions}"
+                          SelectedItem="{Binding DailyRecord.SelectedRecordFilter, Mode=TwoWay}"
+                          SelectionChanged="RecordFilter_SelectionChanged"
+                          Visibility="{Binding Menu.DailyRecordViewVisibility}" />
+
+                <ComboBox DockPanel.Dock="Right"
+                          Width="220"
+                          Style="{StaticResource FilterComboBox}"
+                          DisplayMemberPath="Label"
+                          ItemsSource="{Binding WeeklyRecord.RecordFilterOptions}"
+                          SelectedItem="{Binding WeeklyRecord.SelectedRecordFilter, Mode=TwoWay}"
+                          SelectionChanged="WeeklyRecordFilter_SelectionChanged"
+                          Visibility="{Binding Menu.WeeklyRecordViewVisibility}" />
+
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                    <Button x:Name="ProjectTabButtonControl"
+                            Margin="0,0,6,0"
+                            Style="{StaticResource MenuTabButton}"
+                            Padding="18,7"
+                            Background="{Binding Menu.TimerTabBackground}"
+                            BorderBrush="{StaticResource ThemeTransparentBrush}"
+                            BorderThickness="0"
+                            Click="ProjectTabButton_Click"
+                            Content="타이머"
+                            Foreground="{Binding Menu.TimerTabForeground}" />
+                    <Button x:Name="CalendarTabButtonControl"
+                            Margin="0,0,6,0"
+                            Style="{StaticResource MenuTabButton}"
+                            Padding="18,7"
+                            Background="{Binding Menu.DailyRecordTabBackground}"
+                            BorderBrush="{StaticResource ThemeTransparentBrush}"
+                            BorderThickness="0"
+                            Click="CalendarTabButton_Click"
+                            Content="일간 기록"
+                            Foreground="{Binding Menu.DailyRecordTabForeground}" />
+                    <Button x:Name="WeeklyTabButtonControl"
+                            Style="{StaticResource MenuTabButton}"
+                            Padding="18,7"
+                            Background="{Binding Menu.WeeklyRecordTabBackground}"
+                            BorderBrush="{StaticResource ThemeTransparentBrush}"
+                            BorderThickness="0"
+                            Click="WeeklyTabButton_Click"
+                            Content="주간 기록"
+                            Foreground="{Binding Menu.WeeklyRecordTabForeground}" />
+                </StackPanel>
+            </DockPanel>
         </Border>
 
-        <Grid Grid.Row="1" Margin="0,16,0,0">
+        <Grid Grid.Row="1" Margin="0,12,0,0">
             <views:TimerView DataContext="{Binding Timer}"
                              Visibility="{Binding DataContext.Menu.TimerViewVisibility, RelativeSource={RelativeSource AncestorType=Window}}" />
             <views:DailyRecordView DataContext="{Binding DailyRecord}"
