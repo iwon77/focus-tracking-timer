@@ -12,7 +12,8 @@ internal sealed class TimerFeatureController
     private readonly ProjectTimerEngine _engine;
     private readonly TimerViewModel _viewModel;
     private readonly int _currentProcessId;
-    private readonly Action _persistState;
+    private readonly Action _persistProjectCatalog;
+    private readonly Action<ProjectTimerRecord> _appendCompletedRecord;
     private readonly Action<DateTimeOffset, string, bool, bool> _refreshUiAfterCommand;
     private readonly Brush _startButtonBackground;
     private readonly Brush _stopButtonBackground;
@@ -25,7 +26,8 @@ internal sealed class TimerFeatureController
         ProjectTimerEngine engine,
         TimerViewModel viewModel,
         int currentProcessId,
-        Action persistState,
+        Action persistProjectCatalog,
+        Action<ProjectTimerRecord> appendCompletedRecord,
         Action<DateTimeOffset, string, bool, bool> refreshUiAfterCommand,
         Brush startButtonBackground,
         Brush stopButtonBackground,
@@ -37,7 +39,8 @@ internal sealed class TimerFeatureController
         _engine = engine;
         _viewModel = viewModel;
         _currentProcessId = currentProcessId;
-        _persistState = persistState;
+        _persistProjectCatalog = persistProjectCatalog;
+        _appendCompletedRecord = appendCompletedRecord;
         _refreshUiAfterCommand = refreshUiAfterCommand;
         _startButtonBackground = startButtonBackground;
         _stopButtonBackground = stopButtonBackground;
@@ -59,7 +62,7 @@ internal sealed class TimerFeatureController
         }
 
         SelectedProject = project;
-        _persistState();
+        _persistProjectCatalog();
         RefreshProjectFiltersAndVisibleRecord(DateTimeOffset.Now, $"'{project.Name}' 프로젝트를 추가했습니다.");
     }
 
@@ -88,7 +91,7 @@ internal sealed class TimerFeatureController
         }
 
         SelectedProject = _engine.Projects.FirstOrDefault(item => item.Id == project.Id);
-        _persistState();
+        _persistProjectCatalog();
         _refreshAll(DateTimeOffset.Now, isPinned ? "프로젝트를 고정했습니다." : "프로젝트 고정을 해제했습니다.");
     }
 
@@ -115,7 +118,7 @@ internal sealed class TimerFeatureController
 
         _engine.UpdateProjectMemo(SelectedProject.Id, dialog.MemoText, DateTimeOffset.Now);
         SelectedProject = _engine.Projects.FirstOrDefault(item => item.Id == SelectedProject.Id);
-        _persistState();
+        _persistProjectCatalog();
         _refreshAll(DateTimeOffset.Now, "프로젝트 메모를 저장했습니다.");
     }
 
@@ -146,7 +149,7 @@ internal sealed class TimerFeatureController
         }
 
         SelectedProject = _engine.Projects.FirstOrDefault();
-        _persistState();
+        _persistProjectCatalog();
         RefreshProjectFiltersAndVisibleRecord(DateTimeOffset.Now, "프로젝트를 삭제했습니다.");
     }
 
@@ -188,7 +191,7 @@ internal sealed class TimerFeatureController
         }
 
         SelectedProject = _engine.Projects.FirstOrDefault(item => item.Id == projectId);
-        _persistState();
+        _persistProjectCatalog();
         RefreshProjectFiltersAndVisibleRecord(DateTimeOffset.Now, "프로젝트 이름을 변경했습니다.");
     }
 
@@ -269,7 +272,8 @@ internal sealed class TimerFeatureController
 
         DateTimeOffset now = DateTimeOffset.Now;
         ProjectTimerRecord record = _engine.StopProject(now);
-        _persistState();
+        _persistProjectCatalog();
+        _appendCompletedRecord(record);
         RefreshVisibleRecord(now, $"'{record.ProjectName}' 타이머를 종료했습니다.");
     }
 
@@ -281,12 +285,11 @@ internal sealed class TimerFeatureController
             return;
         }
 
-        ProgramManagerWindow manager = new(_engine, SelectedProject, _currentProcessId, _persistState)
+        ProgramManagerWindow manager = new(_engine, SelectedProject, _currentProcessId, _persistProjectCatalog)
         {
             Owner = _owner
         };
         _ = manager.ShowDialog();
-        _persistState();
         _refreshAll(DateTimeOffset.Now, "등록 프로그램 변경사항을 반영했습니다.");
     }
 
@@ -324,7 +327,7 @@ internal sealed class TimerFeatureController
         }
 
         _ = _engine.TryUpdateProgram(SelectedProject.Id, row.ProcessName, new TrackedApplication(row.ProcessName, displayName));
-        _persistState();
+        _persistProjectCatalog();
 
         if (_engine.IsRunning && _engine.ActiveProjectId == SelectedProject.Id)
         {
@@ -361,7 +364,7 @@ internal sealed class TimerFeatureController
         }
 
         _ = _engine.TryRemoveProgram(SelectedProject.Id, row.ProcessName);
-        _persistState();
+        _persistProjectCatalog();
         RefreshVisibleRecord(now, "등록 프로그램을 삭제했습니다.");
     }
 
@@ -378,7 +381,7 @@ internal sealed class TimerFeatureController
             return;
         }
 
-        _persistState();
+        _persistProjectCatalog();
         _refreshAll(DateTimeOffset.Now, isPinned ? "등록 프로그램을 고정했습니다." : "등록 프로그램 고정을 해제했습니다.");
     }
 

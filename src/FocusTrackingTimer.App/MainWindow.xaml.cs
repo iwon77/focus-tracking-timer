@@ -49,7 +49,8 @@ public partial class MainWindow : Window
             _engine,
             Timer,
             Environment.ProcessId,
-            PersistState,
+            PersistProjectCatalog,
+            AppendCompletedRecord,
             RefreshUiAfterCommand,
             StartButtonBackground,
             StopButtonBackground,
@@ -111,7 +112,7 @@ public partial class MainWindow : Window
 
         if (seededWeeklySample || seededDailySample)
         {
-            PersistState();
+            PersistSnapshotState();
         }
 
         RefreshTimerUi(DateTimeOffset.Now, startupMessage, processStates: null);
@@ -128,7 +129,7 @@ public partial class MainWindow : Window
             _engine.StopProject(DateTimeOffset.Now);
         }
 
-        PersistState();
+        PersistSnapshotState();
     }
 
     private void UiTimer_Tick(object? sender, EventArgs e)
@@ -371,7 +372,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void PersistState()
+    private void PersistSnapshotState()
     {
         try
         {
@@ -383,6 +384,40 @@ public partial class MainWindow : Window
                 this,
                 $"데이터를 저장하지 못했습니다.{Environment.NewLine}{exception.Message}",
                 "SQLite 저장 오류",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+    }
+
+    private void PersistProjectCatalog()
+    {
+        try
+        {
+            _store.SaveProjectCatalog(_engine.CreateStateSnapshot().Projects);
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(
+                this,
+                $"?곗씠?곕? ??ν븯吏 紐삵뻽?듬땲??{Environment.NewLine}{exception.Message}",
+                "SQLite ????ㅻ쪟",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+    }
+
+    private void AppendCompletedRecord(ProjectTimerRecord record)
+    {
+        try
+        {
+            _store.AppendCompletedRecord(record);
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(
+                this,
+                $"?곗씠?곕? ??ν븯吏 紐삵뻽?듬땲??{Environment.NewLine}{exception.Message}",
+                "SQLite ????ㅻ쪟",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }
