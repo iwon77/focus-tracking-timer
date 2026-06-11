@@ -671,8 +671,8 @@ public partial class MainWindow : Window
     private static string BuildStorePath()
     {
         return Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "FocusTrackingTimer",
+            AppContext.BaseDirectory,
+            "data",
             "focus-tracking-timer.db");
     }
 
