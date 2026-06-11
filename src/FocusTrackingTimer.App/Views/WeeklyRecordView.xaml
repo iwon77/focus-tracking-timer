@@ -13,7 +13,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="508" />
                 <ColumnDefinition Width="1" />
-                <ColumnDefinition Width="*" MinWidth="384" />
+                <ColumnDefinition Width="*" MinWidth="320" />
             </Grid.ColumnDefinitions>
 
             <Grid Grid.Column="0"
@@ -270,7 +270,6 @@
                     Style="{StaticResource Divider}" />
 
             <Grid Grid.Column="2"
-                  MinWidth="384"
                   Margin="16">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -303,19 +302,19 @@
                     </Grid.RowDefinitions>
 
                     <UniformGrid Columns="2"
-                                 Width="360"
+                                 Width="288"
                                  HorizontalAlignment="Left"
                                  Margin="0,0,0,16">
                         <Border Margin="0,0,8,0" Padding="12" Background="{StaticResource ThemeLightSurfaceBrush}" CornerRadius="8">
                             <StackPanel>
                                 <TextBlock Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="작업 시간" />
-                                <TextBlock Margin="0,8,0,0" FontWeight="SemiBold" Text="{Binding SelectedRecordTotalDurationText}" />
+                                <TextBlock Margin="0,8,0,0" FontSize="18" FontWeight="SemiBold" Text="{Binding SelectedRecordTotalDurationText}" />
                             </StackPanel>
                         </Border>
                         <Border Padding="12" Background="{StaticResource ThemeLightSurfaceBrush}" CornerRadius="8">
                             <StackPanel>
                                 <TextBlock Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="집중 시간" />
-                                <TextBlock Margin="0,8,0,0" FontWeight="SemiBold" Foreground="{StaticResource ThemeFocusBrush}" Text="{Binding SelectedRecordFocusDurationText}" />
+                                <TextBlock Margin="0,8,0,0" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource ThemeFocusBrush}" Text="{Binding SelectedRecordFocusDurationText}" />
                             </StackPanel>
                         </Border>
                     </UniformGrid>

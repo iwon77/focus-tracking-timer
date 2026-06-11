@@ -6,7 +6,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="508" />
                 <ColumnDefinition Width="1" />
-                <ColumnDefinition Width="*" MinWidth="384" />
+                <ColumnDefinition Width="*" MinWidth="320" />
             </Grid.ColumnDefinitions>
 
             <Grid Grid.Column="0"
@@ -28,25 +28,32 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
 
-                    <StackPanel Margin="0,0,12,0" HorizontalAlignment="Center">
+                    <StackPanel Margin="12,0"
+                                HorizontalAlignment="Stretch">
                         <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="작업 일수" />
                         <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Margin="0,8,0,0" FontSize="22" FontWeight="SemiBold" Text="{Binding MonthlyWorkedDayCountText}" />
                     </StackPanel>
 
                     <Border Grid.Column="1" Style="{StaticResource Divider}" />
-                    <StackPanel Grid.Column="2" Margin="12,0" HorizontalAlignment="Center">
+                    <StackPanel Grid.Column="2"
+                                Margin="12,0"
+                                HorizontalAlignment="Stretch">
                         <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="월간 작업 시간" />
                         <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Margin="0,8,0,0" FontSize="22" FontWeight="SemiBold" Text="{Binding MonthlyTotalWallClockDurationText}" />
                     </StackPanel>
 
                     <Border Grid.Column="3" Style="{StaticResource Divider}" />
-                    <StackPanel Grid.Column="4" Margin="12,0" HorizontalAlignment="Center">
+                    <StackPanel Grid.Column="4"
+                                Margin="12,0"
+                                HorizontalAlignment="Stretch">
                         <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="월간 집중 시간" />
                         <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Margin="0,8,0,0" FontSize="22" FontWeight="SemiBold" Foreground="{StaticResource ThemeFocusBrush}" Text="{Binding MonthlyTotalFocusDurationText}" />
                     </StackPanel>
 
                     <Border Grid.Column="5" Style="{StaticResource Divider}" />
-                    <StackPanel Grid.Column="6" Margin="12,0,0,0" HorizontalAlignment="Center">
+                    <StackPanel Grid.Column="6"
+                                Margin="12,0"
+                                HorizontalAlignment="Stretch">
                         <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="평균 집중 시간" />
                         <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Margin="0,8,0,0" FontSize="22" FontWeight="SemiBold" Foreground="{StaticResource ThemeFocusBrush}" Text="{Binding MonthlyAverageFocusDurationText}" />
                     </StackPanel>
@@ -224,7 +231,6 @@
                     Style="{StaticResource Divider}" />
 
             <Grid Grid.Column="2"
-                  MinWidth="384"
                   Margin="16">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -237,7 +243,7 @@
                            Text="{Binding SelectedDailyDateText}" />
 
                 <UniformGrid Grid.Row="1"
-                             Width="360"
+                             Width="288"
                              HorizontalAlignment="Left"
                              Margin="0,14,0,18"
                              Columns="2"
@@ -274,7 +280,9 @@
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
-                    <TextBlock FontSize="16" FontWeight="SemiBold" Text="작업 기록" />
+                    <TextBlock FontSize="16"
+                               FontWeight="SemiBold"
+                               Text="작업 기록" />
 
                     <Grid Grid.Row="1"
                           Margin="0,8,0,0">
