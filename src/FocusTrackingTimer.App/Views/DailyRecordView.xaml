@@ -4,7 +4,7 @@
     <Border Style="{StaticResource Panel}">
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="592" />
+                <ColumnDefinition Width="508" />
                 <ColumnDefinition Width="1" />
                 <ColumnDefinition Width="*" MinWidth="384" />
             </Grid.ColumnDefinitions>
@@ -56,7 +56,7 @@
                         Style="{StaticResource Divider}" />
 
                 <Grid Grid.Row="2"
-                      Width="560"
+                      Width="448"
                       Margin="0,16,0,0"
                       HorizontalAlignment="Center"
                       VerticalAlignment="Top">

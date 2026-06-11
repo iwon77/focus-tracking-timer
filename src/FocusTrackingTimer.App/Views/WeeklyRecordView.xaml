@@ -11,7 +11,7 @@
     <Border Style="{StaticResource Panel}">
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="508" />
                 <ColumnDefinition Width="1" />
                 <ColumnDefinition Width="*" MinWidth="384" />
             </Grid.ColumnDefinitions>
