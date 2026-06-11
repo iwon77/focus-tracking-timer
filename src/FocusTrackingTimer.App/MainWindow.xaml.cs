@@ -24,17 +24,19 @@ public partial class MainWindow : Window
     private static readonly Brush DisabledButtonBackground = ThemeBrushes.HoverBorder;
     private static readonly Brush StartButtonForeground = ThemeBrushes.ActiveText;
     private static readonly Brush DefaultButtonForeground = ThemeBrushes.PrimaryText;
+    private static readonly TimeSpan FocusFallbackInterval = TimeSpan.FromSeconds(60);
 
     private readonly ProjectTimerEngine _engine = new();
     private readonly SqliteProjectTimerStore _store = new(BuildStorePath());
     private readonly DispatcherTimer _uiTimer;
     private readonly PerformanceMonitorService _performanceMonitor;
     private readonly ProcessRunStateScanService _processScanService;
+    private readonly ForegroundFocusEventService _foregroundFocusEvents = new();
     private readonly TimerFeatureController _timerFeature;
     private readonly DailyRecordFeatureController _dailyRecordFeature;
     private readonly WeeklyRecordFeatureController _weeklyRecordFeature;
     private DateTimeOffset? _lastUiTickObservedAt;
-    private long _lastConsumedProcessScanVersion;
+    private DateTimeOffset? _lastFocusFallbackObservedAt;
     private PerformanceMonitorWindow? _performanceMonitorWindow;
 
     public MainWindow()
@@ -77,6 +79,7 @@ public partial class MainWindow : Window
             Interval = TimeSpan.FromSeconds(1)
         };
         _uiTimer.Tick += UiTimer_Tick;
+        _foregroundFocusEvents.ForegroundChanged += ForegroundFocusEvents_ForegroundChanged;
 
         Loaded += OnLoaded;
         Closing += OnClosing;
@@ -135,6 +138,7 @@ public partial class MainWindow : Window
         }
 
         _processScanService.RequestRefresh();
+        _foregroundFocusEvents.Start();
         RefreshTimerUi(DateTimeOffset.Now, startupMessage, GetLatestProcessStates(), allowPersistentReload: true);
         RefreshRecordFilters();
         _uiTimer.Start();
@@ -143,6 +147,8 @@ public partial class MainWindow : Window
     private void OnClosing(object? sender, CancelEventArgs e)
     {
         _uiTimer.Stop();
+        _foregroundFocusEvents.ForegroundChanged -= ForegroundFocusEvents_ForegroundChanged;
+        _foregroundFocusEvents.Stop();
 
         if (_engine.IsRunning)
         {
@@ -158,29 +164,11 @@ public partial class MainWindow : Window
     {
         DateTimeOffset observedAt = DateTimeOffset.Now;
         Stopwatch tickStopwatch = Stopwatch.StartNew();
-        TimeSpan? processScanDuration = null;
-        int processScanExceptionCount = 0;
 
         try
         {
-            ProcessRunStateScanSnapshot latestScanSnapshot = _processScanService.GetLatestSnapshot();
-            IReadOnlyDictionary<string, ProcessRunState> processStates = latestScanSnapshot.ProcessStates;
-            if (_engine.IsRunning && !_engine.IsPaused)
-            {
-                _processScanService.RequestRefresh();
-                latestScanSnapshot = _processScanService.GetLatestSnapshot();
-                processStates = latestScanSnapshot.ProcessStates;
-
-                if (latestScanSnapshot.Version != _lastConsumedProcessScanVersion)
-                {
-                    processScanDuration = latestScanSnapshot.Elapsed;
-                    processScanExceptionCount = latestScanSnapshot.ExceptionCount;
-                    _lastConsumedProcessScanVersion = latestScanSnapshot.Version;
-                }
-            }
-
-            string focusMessage = _timerFeature.RefreshFocusTracking(observedAt, processStates);
-            RefreshTimerUi(observedAt, focusMessage, processStates, allowPersistentReload: false);
+            string message = RefreshFocusTrackingFallbackIfNeeded(observedAt);
+            RefreshTimerUi(observedAt, message, GetLatestProcessStates(), allowPersistentReload: false);
         }
         finally
         {
@@ -192,9 +180,52 @@ public partial class MainWindow : Window
                 observedAt,
                 tickStopwatch.Elapsed,
                 isDelayedTick,
-                processScanDuration,
-                processScanExceptionCount);
+                null,
+                0);
         }
+    }
+
+    private void ForegroundFocusEvents_ForegroundChanged(IntPtr foregroundWindowHandle)
+    {
+        if (!Dispatcher.CheckAccess())
+        {
+            _ = Dispatcher.BeginInvoke(() => HandleForegroundFocusChanged(foregroundWindowHandle, DateTimeOffset.Now));
+            return;
+        }
+
+        HandleForegroundFocusChanged(foregroundWindowHandle, DateTimeOffset.Now);
+    }
+
+    private void HandleForegroundFocusChanged(IntPtr foregroundWindowHandle, DateTimeOffset observedAt)
+    {
+        if (!_engine.IsRunning || _engine.IsPaused)
+        {
+            return;
+        }
+
+        _lastFocusFallbackObservedAt = observedAt;
+        string message = _timerFeature.RefreshFocusTracking(
+            observedAt,
+            foregroundWindowHandle,
+            GetLatestProcessStates());
+        RefreshTimerUi(observedAt, message, GetLatestProcessStates(), allowPersistentReload: false);
+    }
+
+    private string RefreshFocusTrackingFallbackIfNeeded(DateTimeOffset observedAt)
+    {
+        if (!_engine.IsRunning || _engine.IsPaused)
+        {
+            return Timer.TimerStatusText;
+        }
+
+        if (_lastFocusFallbackObservedAt.HasValue &&
+            observedAt - _lastFocusFallbackObservedAt.Value < FocusFallbackInterval)
+        {
+            return Timer.TimerStatusText;
+        }
+
+        _lastFocusFallbackObservedAt = observedAt;
+        return _timerFeature.RefreshFocusTracking(observedAt, GetLatestProcessStates());
     }
 
     private void ProjectTabButton_Click(object sender, RoutedEventArgs e)
@@ -322,7 +353,13 @@ public partial class MainWindow : Window
     internal void TimerActionButton_Click(object sender, RoutedEventArgs e)
     {
         _timerFeature.ToggleTimerOrPause();
-        _processScanService.RequestRefresh();
+        if (_engine.IsRunning && !_engine.IsPaused)
+        {
+            DateTimeOffset observedAt = DateTimeOffset.Now;
+            _lastFocusFallbackObservedAt = observedAt;
+            string message = _timerFeature.RefreshFocusTracking(observedAt, GetLatestProcessStates());
+            RefreshTimerUi(observedAt, message, GetLatestProcessStates(), allowPersistentReload: false);
+        }
     }
 
     internal void StopTimerButton_Click(object sender, RoutedEventArgs e)

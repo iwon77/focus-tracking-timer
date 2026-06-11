@@ -8,8 +8,11 @@ internal static class ForegroundWindowTracker
 {
     public static FocusObservation GetCurrentFocusedApplication(int currentProcessId)
     {
-        IntPtr foregroundWindowHandle = GetForegroundWindow();
+        return GetFocusedApplication(GetForegroundWindow(), currentProcessId);
+    }
 
+    public static FocusObservation GetFocusedApplication(IntPtr foregroundWindowHandle, int currentProcessId)
+    {
         if (foregroundWindowHandle == IntPtr.Zero)
         {
             return new FocusObservation(null, "활성 창을 확인하지 못해 포커스 추적을 대기 중입니다.");
