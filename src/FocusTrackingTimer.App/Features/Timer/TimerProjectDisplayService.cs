@@ -28,12 +28,12 @@ internal static class TimerProjectDisplayService
     {
         if (engine.ActiveStartedAt.HasValue && isActiveProject)
         {
-            return $"理쒓렐 ?묒뾽 ?쇱떆: {FormatRecentWorkDateTime(engine.ActiveStartedAt.Value)}";
+            return $"최근 작업 일시: {FormatRecentWorkDateTime(engine.ActiveStartedAt.Value)}";
         }
 
         return recentRecordPeriod is null
-            ? "理쒓렐 ?묒뾽 ?쇱떆: -"
-            : $"理쒓렐 ?묒뾽 ?쇱떆: {FormatRecentWorkDateTime(recentRecordPeriod.Value.StartedAt)} ~ {FormatRecentWorkDateTime(recentRecordPeriod.Value.EndedAt)}";
+            ? "최근 작업 일시: -"
+            : $"최근 작업 일시: {FormatRecentWorkDateTime(recentRecordPeriod.Value.StartedAt)} ~ {FormatRecentWorkDateTime(recentRecordPeriod.Value.EndedAt)}";
     }
 
     private static string FormatRecentWorkDateTime(DateTimeOffset value)

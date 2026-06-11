@@ -75,7 +75,7 @@ internal sealed class TimerFeatureController
 
         if (!_engine.TryAddProject(projectName, out ProjectDefinition project))
         {
-            _viewModel.TimerStatusText = "프로젝트를 추가하지 못했습니다.";
+            _viewModel.TimerStatusText = "작업을 추가하지 못했습니다.";
             return;
         }
 
@@ -83,7 +83,7 @@ internal sealed class TimerFeatureController
         MarkProjectRowsDirty();
         InvalidateProjectCaches(project.Id);
         _persistProjectCatalog();
-        RefreshProjectFiltersAndVisibleRecord(DateTimeOffset.Now, $"'{project.Name}' 프로젝트를 추가했습니다.");
+        RefreshProjectFiltersAndVisibleRecord(DateTimeOffset.Now, $"'{project.Name}' 작업을 추가했습니다.");
     }
 
     public void ToggleProjectPin(ProjectSidebarRow? row)
@@ -113,7 +113,7 @@ internal sealed class TimerFeatureController
         SetSelectedProject(_engine.Projects.FirstOrDefault(item => item.Id == project.Id));
         MarkProjectRowsDirty();
         _persistProjectCatalog();
-        _refreshAll(DateTimeOffset.Now, isPinned ? "프로젝트를 고정했습니다." : "프로젝트 고정을 해제했습니다.");
+        _refreshAll(DateTimeOffset.Now, isPinned ? "작업을 고정했습니다." : "작업 고정을 해제했습니다.");
     }
 
     public void EditSelectedProjectMemo()
@@ -140,7 +140,7 @@ internal sealed class TimerFeatureController
         _engine.UpdateProjectMemo(SelectedProject.Id, dialog.MemoText, DateTimeOffset.Now);
         SetSelectedProject(_engine.Projects.FirstOrDefault(item => item.Id == SelectedProject.Id));
         _persistProjectCatalog();
-        _refreshAll(DateTimeOffset.Now, "프로젝트 메모를 저장했습니다.");
+        _refreshAll(DateTimeOffset.Now, "작업 메모를 저장했습니다.");
     }
 
     public void DeleteSelectedProject()
@@ -152,8 +152,8 @@ internal sealed class TimerFeatureController
 
         MessageBoxResult result = MessageBox.Show(
             _owner,
-            $"'{SelectedProject.Name}' 프로젝트를 삭제하시겠습니까?",
-            "프로젝트 삭제",
+            $"'{SelectedProject.Name}' 작업을 삭제하시겠습니까?",
+            "작업 삭제",
             MessageBoxButton.OKCancel,
             MessageBoxImage.Warning);
 
@@ -165,7 +165,7 @@ internal sealed class TimerFeatureController
         Guid projectId = SelectedProject.Id;
         if (!_engine.TryRemoveProject(projectId))
         {
-            _viewModel.TimerStatusText = "실행 중인 프로젝트는 삭제할 수 없습니다.";
+            _viewModel.TimerStatusText = "실행 중인 작업은 삭제할 수 없습니다.";
             return;
         }
 
@@ -173,7 +173,7 @@ internal sealed class TimerFeatureController
         SetSelectedProject(_engine.Projects.FirstOrDefault());
         MarkProjectRowsDirty();
         _persistProjectCatalog();
-        RefreshProjectFiltersAndVisibleRecord(DateTimeOffset.Now, "프로젝트를 삭제했습니다.");
+        RefreshProjectFiltersAndVisibleRecord(DateTimeOffset.Now, "작업을 삭제했습니다.");
     }
 
     public void EditSelectedProject()
@@ -184,7 +184,7 @@ internal sealed class TimerFeatureController
         }
 
         Guid projectId = SelectedProject.Id;
-        NameEditDialog dialog = new("프로젝트 이름 수정", SelectedProject.Name)
+        NameEditDialog dialog = new("작업 이름 수정", SelectedProject.Name, maxNameLength: ProjectDefinition.MaxNameLength)
         {
             Owner = _owner
         };
@@ -197,26 +197,26 @@ internal sealed class TimerFeatureController
         string newName = dialog.NameValue.Trim();
         if (string.IsNullOrWhiteSpace(newName))
         {
-            MessageBox.Show(_owner, "프로젝트 이름은 비워둘 수 없습니다.", "프로젝트 이름 수정");
+            MessageBox.Show(_owner, "작업 이름은 비워둘 수 없습니다.", "작업 이름 수정");
             return;
         }
 
         if (newName.Length > ProjectDefinition.MaxNameLength)
         {
-            MessageBox.Show(_owner, $"프로젝트 이름은 {ProjectDefinition.MaxNameLength}자 이하로 입력해주세요.", "프로젝트 이름 수정");
+            MessageBox.Show(_owner, $"작업 이름은 {ProjectDefinition.MaxNameLength}자 이하로 입력해주세요.", "작업 이름 수정");
             return;
         }
 
         if (!_engine.TryRenameProject(projectId, newName))
         {
-            MessageBox.Show(_owner, "이미 사용 중인 프로젝트 이름입니다.", "프로젝트 이름 수정");
+            MessageBox.Show(_owner, "이미 사용 중인 작업 이름입니다.", "작업 이름 수정");
             return;
         }
 
         SetSelectedProject(_engine.Projects.FirstOrDefault(item => item.Id == projectId));
         MarkProjectRowsDirty();
         _persistProjectCatalog();
-        RefreshProjectFiltersAndVisibleRecord(DateTimeOffset.Now, "프로젝트 이름을 변경했습니다.");
+        RefreshProjectFiltersAndVisibleRecord(DateTimeOffset.Now, "작업 이름을 변경했습니다.");
     }
 
     public void SelectProject(ProjectSidebarRow? row)
@@ -233,7 +233,7 @@ internal sealed class TimerFeatureController
         }
 
         SetSelectedProject(project);
-        RefreshSelectedProjectArea(DateTimeOffset.Now, "선택한 프로젝트를 표시합니다.", allowPersistentReload: true);
+        RefreshSelectedProjectArea(DateTimeOffset.Now, "선택한 작업을 표시합니다.", allowPersistentReload: true);
     }
 
     public void SelectActiveProject()
@@ -251,14 +251,14 @@ internal sealed class TimerFeatureController
 
         SetSelectedProject(project);
         _viewModel.SelectedProjectRow = FindProjectRow(project.Id);
-        RefreshSelectedProjectArea(DateTimeOffset.Now, "실행 중인 프로젝트를 표시합니다.", allowPersistentReload: true);
+        RefreshSelectedProjectArea(DateTimeOffset.Now, "실행 중인 작업을 표시합니다.", allowPersistentReload: true);
     }
 
     public void ToggleTimerOrPause()
     {
         if (SelectedProject is null)
         {
-            _viewModel.SelectedProjectTitle = "먼저 프로젝트를 선택해주세요.";
+            _viewModel.SelectedProjectTitle = "먼저 작업을 선택해주세요.";
             return;
         }
 
@@ -306,17 +306,20 @@ internal sealed class TimerFeatureController
     {
         if (SelectedProject is null)
         {
-            _viewModel.TimerStatusText = "프로그램을 추가하려면 먼저 프로젝트를 선택해주세요.";
+            _viewModel.TimerStatusText = "프로그램을 추가하려면 먼저 작업을 선택해주세요.";
             return;
         }
 
-        ProgramManagerWindow manager = new(_engine, SelectedProject, _currentProcessId, _persistProjectCatalog)
+        ProgramManagerWindow manager = new(_engine, SelectedProject, _currentProcessId, () =>
+        {
+            _persistProjectCatalog();
+            MarkRegisteredProgramRowsDirty();
+            _refreshAll(DateTimeOffset.Now, "등록 프로그램 변경사항을 반영했습니다.");
+        })
         {
             Owner = _owner
         };
-        _ = manager.ShowDialog();
-        MarkRegisteredProgramRowsDirty();
-        _refreshAll(DateTimeOffset.Now, "등록 프로그램 변경사항을 반영했습니다.");
+        manager.Show();
     }
 
     public void EditProgram(RegisteredProgramRow? row)
@@ -520,10 +523,10 @@ internal sealed class TimerFeatureController
 
         if (SelectedProject is null)
         {
-            _viewModel.SelectedProjectTitle = "프로젝트를 추가해보세요";
+            _viewModel.SelectedProjectTitle = "작업을 추가해보세요";
             _viewModel.ActiveSessionPeriodText = "최근 작업 일시: -";
             _viewModel.TimerStatusText = message;
-            _viewModel.FocusStatusText = string.Empty;
+            _viewModel.FocusStatusText = "-";
             _viewModel.ActiveProjectWallClockText = "00:00:00";
             _viewModel.ActiveProjectElapsedText = "00:00:00";
             _viewModel.SelectedProjectTodayText = "00:00:00";
@@ -613,13 +616,9 @@ internal sealed class TimerFeatureController
         _viewModel.SelectedProjectTodayText = AppTimeFormatter.FormatDuration(
             GetSelectedProjectTodayDuration(observedAt, allowPersistentReload));
 
-        _viewModel.FocusStatusText = isActiveProject
-            ? (_engine.IsPaused
-                ? "타이머가 일시정지 중입니다."
-                : _engine.ActiveFocusedProgramName is null
-                ? "등록 프로그램이 포커스될 때까지 프로젝트 타이머는 멈춰 있습니다."
-                : $"현재 포커스 프로그램: {_engine.ActiveFocusedProgramName}")
-            : string.Empty;
+        _viewModel.FocusStatusText = isActiveProject && !_engine.IsPaused
+            ? _engine.ActiveFocusedProgramName ?? "-"
+            : "-";
 
         _viewModel.TimerStatusText = message;
         _viewModel.IsTimerActionEnabled = !anotherProjectIsRunning;
@@ -653,9 +652,7 @@ internal sealed class TimerFeatureController
             _persistedTodayDurationByProjectId.Clear();
         }
 
-        TimeSpan persistedDuration = GetPersistedTodayDuration(today, SelectedProject.Id, allowPersistentReload);
-        TimeSpan activeDuration = _engine.GetActiveDailyDurationSummaries(today, today, observedAt, SelectedProject.Id)[0].TotalDuration;
-        return persistedDuration + activeDuration;
+        return GetPersistedTodayDuration(today, SelectedProject.Id, allowPersistentReload);
     }
 
     private IReadOnlyDictionary<string, ProcessRunState> ResolveProcessStates(
@@ -854,12 +851,12 @@ internal sealed class TimerFeatureController
         int index = _engine.Projects.Count + 1;
 
         while (_engine.Projects.Any(project =>
-            string.Equals(project.Name, $"프로젝트 {index}", StringComparison.OrdinalIgnoreCase)))
+            string.Equals(project.Name, $"작업 {index}", StringComparison.OrdinalIgnoreCase)))
         {
             index++;
         }
 
-        return $"프로젝트 {index}";
+        return $"작업 {index}";
     }
 
     private void _refreshAll(DateTimeOffset observedAt, string message)

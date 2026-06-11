@@ -96,7 +96,7 @@ public partial class MainWindow : Window
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
-        string startupMessage = "프로젝트를 추가하고 등록 프로그램을 관리해보세요.";
+        string startupMessage = "작업을 추가하고 등록 프로그램을 관리해보세요.";
         bool seededWeeklySample = false;
         bool seededDailySample = false;
         long persistedFocusSegmentCount = 0;
@@ -110,7 +110,7 @@ public partial class MainWindow : Window
 
             if (projectCatalog.Count > 0 || hasCompletedRecords)
             {
-                startupMessage = "저장한 프로젝트와 완료 기록을 불러왔습니다.";
+                startupMessage = "저장한 작업과 완료 기록을 불러왔습니다.";
             }
 
             seededWeeklySample = EnsureWeeklyClickTestSeed();
@@ -668,7 +668,7 @@ public partial class MainWindow : Window
             return false;
         }
 
-        _engine.TryAddProject("클릭 테스트 프로젝트", out ProjectDefinition project);
+        _engine.TryAddProject("클릭 테스트 작업", out ProjectDefinition project);
         _engine.TryRegisterProgram(project.Id, new TrackedApplication("notepad", "notepad"), now);
 
         DateTimeOffset startedAt = CreateLocalDateTimeOffset(seedDate.Value, new TimeOnly(15, 33));

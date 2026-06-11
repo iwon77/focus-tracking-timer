@@ -22,6 +22,7 @@
             <TextBox Padding="10,8"
                      BorderBrush="{StaticResource ThemeSecondaryBorderBrush}"
                      BorderThickness="1"
+                     MaxLength="{Binding MaxNameLength}"
                      Text="{Binding NameValue, UpdateSourceTrigger=PropertyChanged}" />
             <TextBlock Margin="12,9,0,0"
                        Foreground="{StaticResource ThemeHintTextBrush}"
