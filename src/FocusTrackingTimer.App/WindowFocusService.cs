@@ -1,11 +1,33 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace FocusTrackingTimer.App;
 
 internal static class WindowFocusService
 {
     private const int RestoreWindow = 9;
+    private const int ForegroundCheckRetryCount = 5;
+    private const int ForegroundCheckDelayMilliseconds = 40;
+
+    public static bool TryFocusProcessMainWindow(int processId)
+    {
+        if (processId <= 0)
+        {
+            return false;
+        }
+
+        try
+        {
+            using Process process = Process.GetProcessById(processId);
+            return TryFocusProcessMainWindow(process);
+        }
+        catch (Exception exception) when (
+            exception is ArgumentException or InvalidOperationException or NotSupportedException or System.ComponentModel.Win32Exception)
+        {
+            return false;
+        }
+    }
 
     public static bool TryFocusProcessMainWindow(string processName)
     {
@@ -18,14 +40,10 @@ internal static class WindowFocusService
         {
             try
             {
-                IntPtr windowHandle = process.MainWindowHandle;
-                if (windowHandle == IntPtr.Zero)
+                if (TryFocusProcessMainWindow(process))
                 {
-                    continue;
+                    return true;
                 }
-
-                _ = ShowWindow(windowHandle, RestoreWindow);
-                return SetForegroundWindow(windowHandle);
             }
             catch (Exception exception) when (
                 exception is InvalidOperationException or NotSupportedException or System.ComponentModel.Win32Exception)
@@ -41,9 +59,49 @@ internal static class WindowFocusService
         return false;
     }
 
+    private static bool TryFocusProcessMainWindow(Process process)
+    {
+        IntPtr windowHandle = process.MainWindowHandle;
+        if (windowHandle == IntPtr.Zero)
+        {
+            return false;
+        }
+
+        _ = ShowWindow(windowHandle, RestoreWindow);
+        _ = SetForegroundWindow(windowHandle);
+
+        return DidProcessBecomeForeground(process.Id);
+    }
+
+    private static bool DidProcessBecomeForeground(int processId)
+    {
+        for (int attempt = 0; attempt < ForegroundCheckRetryCount; attempt++)
+        {
+            IntPtr foregroundWindowHandle = GetForegroundWindow();
+            if (foregroundWindowHandle != IntPtr.Zero)
+            {
+                _ = GetWindowThreadProcessId(foregroundWindowHandle, out uint foregroundProcessId);
+                if (foregroundProcessId == (uint)processId)
+                {
+                    return true;
+                }
+            }
+
+            Thread.Sleep(ForegroundCheckDelayMilliseconds);
+        }
+
+        return false;
+    }
+
     [DllImport("user32.dll")]
     private static extern bool ShowWindow(IntPtr windowHandle, int command);
 
     [DllImport("user32.dll")]
     private static extern bool SetForegroundWindow(IntPtr windowHandle);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr windowHandle, out uint processId);
 }

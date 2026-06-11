@@ -78,9 +78,9 @@ internal static class RunningProcessCatalog
         return new ProcessRunStateScanResult(processStates, stopwatch.Elapsed, exceptionCount);
     }
 
-    public static IReadOnlyList<TrackedApplication> GetVisibleProcesses(int currentProcessId)
+    public static IReadOnlyList<RunningProcessRow> GetVisibleProcesses(int currentProcessId)
     {
-        Dictionary<string, TrackedApplication> applications = new(StringComparer.OrdinalIgnoreCase);
+        List<RunningProcessRow> applications = [];
 
         foreach (Process process in Process.GetProcesses())
         {
@@ -93,9 +93,10 @@ internal static class RunningProcessCatalog
                     continue;
                 }
 
-                TrackedApplication application = new(process.ProcessName, process.MainWindowTitle.Trim());
-
-                _ = applications.TryAdd(application.ProcessName, application);
+                applications.Add(new RunningProcessRow(
+                    process.MainWindowTitle.Trim(),
+                    process.ProcessName,
+                    process.Id));
             }
             catch (Exception exception) when (
                 exception is InvalidOperationException or NotSupportedException or System.ComponentModel.Win32Exception)
@@ -108,8 +109,9 @@ internal static class RunningProcessCatalog
             }
         }
 
-        return [.. applications.Values
-            .OrderBy(static item => item.DisplayName, StringComparer.CurrentCultureIgnoreCase)];
+        return [.. applications
+            .OrderBy(static item => item.DisplayName, StringComparer.CurrentCultureIgnoreCase)
+            .ThenBy(static item => item.ProcessId)];
     }
 
     private static string? GetExecutablePath(Process process)

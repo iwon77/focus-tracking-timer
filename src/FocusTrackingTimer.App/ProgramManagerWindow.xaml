@@ -8,7 +8,7 @@
         MinHeight="560"
         WindowStartupLocation="CenterOwner"
         Background="{StaticResource ThemeBaseBackgroundBrush}">
-    <Grid Margin="18">
+    <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -17,50 +17,93 @@
 
         <TextBlock FontSize="22"
                    FontWeight="SemiBold"
+                   Foreground="{StaticResource ThemePrimaryTextBrush}"
                    Text="{Binding TitleText}" />
 
         <TextBlock Grid.Row="1"
-                   Margin="0,16,0,10"
+                   Margin="0,14,0,16"
                    Foreground="{StaticResource ThemeSecondaryTextBrush}"
                    Text="현재 실행 중인 프로그램만 표시되며, 작업 트레이의 프로그램은 감지되지 않습니다." />
 
-        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
-            <ItemsControl ItemsSource="{Binding RunningProcesses}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Border Margin="0,0,0,8"
-                                Padding="12"
-                                Background="{StaticResource ThemeBaseBackgroundBrush}"
-                                BorderBrush="{StaticResource ThemeSecondaryBorderBrush}"
-                                BorderThickness="1"
-                                CornerRadius="8">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <StackPanel>
-                                    <TextBlock FontWeight="SemiBold" Text="{Binding DisplayName}" />
-                                    <TextBlock Margin="0,4,0,0" Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="{Binding ProcessName}" />
-                                </StackPanel>
-                                <Button Grid.Column="1"
-                                        Padding="14,7"
-                                        Margin="0,0,8,0"
-                                        Style="{StaticResource SecondaryButton}"
-                                        Click="FocusDetectedButton_Click"
-                                        Content="보기" />
-                                <Button Grid.Column="2"
-                                        Padding="14,7"
-                                        Style="{StaticResource PrimaryButton}"
-                                        Click="AddDetectedButton_Click"
-                                        Content="추가"
-                                        Foreground="{StaticResource ThemeActiveTextBrush}" />
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+        <Border Grid.Row="2"
+                Background="{StaticResource ThemeSurfaceBrush}"
+                BorderBrush="{StaticResource ThemeSecondaryBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="12">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding RunningProcesses}">
+                    <ItemsControl.ItemContainerStyle>
+                        <Style TargetType="ContentPresenter">
+                            <Setter Property="HorizontalAlignment" Value="Stretch" />
+                        </Style>
+                    </ItemsControl.ItemContainerStyle>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Padding="20,16"
+                                    BorderBrush="{StaticResource ThemeHoverBorderBrush}"
+                                    BorderThickness="0,0,0,1">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Background" Value="{StaticResource ThemeTransparentBrush}" />
+                                        <Setter Property="CornerRadius" Value="0" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsFirst}" Value="True">
+                                                <Setter Property="CornerRadius" Value="12,12,0,0" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsLast}" Value="True">
+                                                <Setter Property="CornerRadius" Value="0,0,12,12" />
+                                                <Setter Property="BorderThickness" Value="0" />
+                                            </DataTrigger>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding IsFirst}" Value="True" />
+                                                    <Condition Binding="{Binding IsLast}" Value="True" />
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="CornerRadius" Value="12" />
+                                                <Setter Property="BorderThickness" Value="0" />
+                                            </MultiDataTrigger>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background" Value="{StaticResource ThemeSelectionBrush}" />
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Margin="0,0,20,0">
+                                        <TextBlock FontSize="15"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{StaticResource ThemePrimaryTextBrush}"
+                                                   Text="{Binding DisplayName}" />
+                                        <TextBlock Margin="0,4,0,0"
+                                                   Foreground="{StaticResource ThemeSecondaryTextBrush}"
+                                                   Text="{Binding ProcessName}" />
+                                    </StackPanel>
+
+                                    <Button Grid.Column="1"
+                                            Padding="14,7"
+                                            Margin="0,0,8,0"
+                                            Style="{StaticResource SecondaryButton}"
+                                            Click="FocusDetectedButton_Click"
+                                            Content="보기" />
+                                    <Button Grid.Column="2"
+                                            Padding="14,7"
+                                            Style="{StaticResource PrimaryButton}"
+                                            Click="AddDetectedButton_Click"
+                                            Content="추가"
+                                            Foreground="{StaticResource ThemeActiveTextBrush}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
     </Grid>
 </Window>
