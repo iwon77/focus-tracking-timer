@@ -8,6 +8,17 @@
                 <ResourceDictionary Source="Resources/ThemeColors.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
+            <Style x:Key="{x:Static SystemParameters.FocusVisualStyleKey}"
+                   TargetType="Control">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Control">
+                            <Border />
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
             <Style x:Key="Panel" TargetType="Border">
                 <Setter Property="CornerRadius" Value="8" />
                 <Setter Property="BorderBrush" Value="{StaticResource ThemeSecondaryBorderBrush}" />
