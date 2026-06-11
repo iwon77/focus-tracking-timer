@@ -16,7 +16,7 @@ public partial class ProjectMemoDialog : Window, INotifyPropertyChanged
     {
         InitializeComponent();
         ProjectName = projectName;
-        CreatedAtText = $"프로젝트 생성일: {AppTimeFormatter.FormatProjectMetaDateTime(createdAt)}";
+        CreatedAtText = $"작업 생성일: {AppTimeFormatter.FormatProjectMetaDateTime(createdAt)}";
         MemoUpdatedAtText = $"마지막 메모 수정일: {AppTimeFormatter.FormatProjectMetaDateTime(memoUpdatedAt)}";
         _memoText = memo;
         DataContext = this;

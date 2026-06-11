@@ -32,7 +32,29 @@
                 <Setter Property="BorderBrush" Value="{StaticResource ThemeSecondaryBorderBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
                 <Setter Property="Foreground" Value="{StaticResource ThemePrimaryTextBrush}" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="ButtonChrome"
+                                    Padding="{TemplateBinding Padding}"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="6">
+                                <ContentPresenter HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="ButtonChrome" Property="Opacity" Value="0.55" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
             </Style>
+
+            <Style TargetType="Button" BasedOn="{StaticResource SecondaryButton}" />
 
             <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
                 <Setter Property="Background" Value="{StaticResource ThemeFocusBrush}" />

@@ -8,8 +8,8 @@
         Title="Focus Tracking Timer"
         Width="920"
         Height="720"
-        MinWidth="820"
-        MinHeight="640"
+        MinWidth="1040"
+        MinHeight="700"
         Background="{StaticResource ThemeBaseBackgroundBrush}">
     <Grid Margin="12">
         <Grid.RowDefinitions>
