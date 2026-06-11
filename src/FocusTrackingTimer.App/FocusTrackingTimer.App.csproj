@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FocusTrackingTimer.Core\FocusTrackingTimer.Core.csproj" />
+    <Resource Include="Assets\current-session-pip.png" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -12,12 +13,18 @@
 
   <Target Name="RemovePublishedSymbols"
           AfterTargets="Publish"
-          Condition="'$(RemovePublishSymbols)' == 'true' and '$(PublishDir)' != ''">
-    <ItemGroup>
+          Condition="'$(PublishDir)' != ''">
+    <ItemGroup Condition="'$(RemovePublishSymbols)' == 'true'">
       <PublishedSymbols Include="$(PublishDir)**\*.pdb" />
     </ItemGroup>
 
-    <Delete Files="@(PublishedSymbols)" />
+    <Delete Files="@(PublishedSymbols)" Condition="'$(RemovePublishSymbols)' == 'true'" />
+
+    <ZipDirectory
+        Condition="'$(CreatePublishArchive)' == 'true' and '$(PublishArchivePath)' != '' and Exists('$(PublishDir)')"
+        SourceDirectory="$(PublishDir)"
+        DestinationFile="$(PublishArchivePath)"
+        Overwrite="true" />
   </Target>
 
 </Project>
