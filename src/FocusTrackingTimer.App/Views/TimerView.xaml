@@ -6,7 +6,7 @@
         <Grid Grid.IsSharedSizeScope="True">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="220" />
-                <ColumnDefinition Width="1" />
+                <ColumnDefinition Width="2" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
@@ -21,14 +21,14 @@
 
             <Border Grid.RowSpan="3"
                     Grid.Column="1"
-                    Style="{StaticResource Divider}" />
+                    Style="{StaticResource SectionVerticalDivider}" />
 
             <timerViews:ProjectDetailView Grid.Row="0"
                                           Grid.Column="2" />
 
             <Border Grid.Row="1"
                     Grid.Column="2"
-                    Style="{StaticResource Divider}" />
+                    Style="{StaticResource SectionHorizontalDivider}" />
 
             <timerViews:RegisteredProgramListView Grid.Row="2"
                                                   Grid.Column="2" />

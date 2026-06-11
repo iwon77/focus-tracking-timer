@@ -131,7 +131,8 @@
             </Border>
 
             <Border Grid.Row="1"
-                    Style="{StaticResource Divider}" />
+                    Margin="12,0"
+                    Style="{StaticResource SectionHorizontalDivider}" />
 
             <ScrollViewer Grid.Row="2"
                           VerticalScrollBarVisibility="Auto">

@@ -30,6 +30,18 @@
                 <Setter Property="Background" Value="{StaticResource ThemeSecondaryBorderBrush}" />
             </Style>
 
+            <Style x:Key="SectionVerticalDivider" TargetType="Border">
+                <Setter Property="Background" Value="{StaticResource ThemeHoverBorderBrush}" />
+            </Style>
+
+            <Style x:Key="SectionHorizontalDivider" TargetType="Border">
+                <Setter Property="Height" Value="1" />
+                <Setter Property="Margin" Value="16,0" />
+                <Setter Property="Background" Value="{StaticResource ThemeHoverBorderBrush}" />
+                <Setter Property="Opacity" Value="0.7" />
+                <Setter Property="HorizontalAlignment" Value="Stretch" />
+            </Style>
+
             <Style x:Key="FilterComboBox" TargetType="ComboBox">
                 <Setter Property="Height" Value="32" />
                 <Setter Property="Padding" Value="8,4" />

@@ -5,7 +5,7 @@
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="508" />
-                <ColumnDefinition Width="1" />
+                <ColumnDefinition Width="2" />
                 <ColumnDefinition Width="*" MinWidth="320" />
             </Grid.ColumnDefinitions>
 
@@ -60,7 +60,7 @@
                 </Grid>
 
                 <Border Grid.Row="1"
-                        Style="{StaticResource Divider}" />
+                        Style="{StaticResource SectionHorizontalDivider}" />
 
                 <Grid Grid.Row="2"
                       Width="448"
@@ -228,7 +228,7 @@
             </Grid>
 
             <Border Grid.Column="1"
-                    Style="{StaticResource Divider}" />
+                    Style="{StaticResource SectionVerticalDivider}" />
 
             <Grid Grid.Column="2"
                   Margin="16">
