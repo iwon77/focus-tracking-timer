@@ -85,6 +85,7 @@
                         Content="중지"
                         IsEnabled="{Binding IsTimerStopEnabled}" />
             </StackPanel>
+
         </Grid>
     </Border>
 </UserControl>

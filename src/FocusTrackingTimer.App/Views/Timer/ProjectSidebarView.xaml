@@ -59,10 +59,33 @@
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0"
-                               FontWeight="SemiBold"
-                               Text="{Binding RunningProjectNameText}"
-                               TextTrimming="CharacterEllipsis" />
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0"
+                                   Margin="0,0,8,0"
+                                   FontWeight="SemiBold"
+                                   Text="{Binding RunningProjectNameText}"
+                                   TextTrimming="CharacterEllipsis" />
+
+                        <Button Grid.Column="1"
+                                Width="28"
+                                Height="28"
+                                Background="{StaticResource ThemeTransparentBrush}"
+                                BorderBrush="{StaticResource ThemeTransparentBrush}"
+                                BorderThickness="0"
+                                Click="OpenRunningProjectSummaryPipButton_Click"
+                                Padding="0"
+                                ToolTip="Open running summary PIP">
+                            <Image Width="24"
+                                   Height="24"
+                                   Source="/Assets/current-session-pip.png"
+                                   Stretch="Uniform" />
+                        </Button>
+                    </Grid>
 
                     <Grid Grid.Row="1" Margin="0,12,0,0">
                         <Grid.ColumnDefinitions>

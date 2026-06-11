@@ -21,6 +21,12 @@ public partial class ProjectSidebarView : UserControl
 
     private void ProjectSort_SelectionChanged(object sender, SelectionChangedEventArgs e) => HostWindow.ProjectSort_SelectionChanged(sender, e);
 
+    private void OpenRunningProjectSummaryPipButton_Click(object sender, RoutedEventArgs e)
+    {
+        e.Handled = true;
+        HostWindow.OpenRunningProjectSummaryPipWindow();
+    }
+
     private void RunningProjectSummary_MouseLeftButtonUp(object sender, MouseButtonEventArgs e) =>
         HostWindow.RunningProjectSummary_MouseLeftButtonUp(sender, e);
 }

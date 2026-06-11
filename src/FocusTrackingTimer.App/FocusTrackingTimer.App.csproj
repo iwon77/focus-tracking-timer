@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FocusTrackingTimer.Core\FocusTrackingTimer.Core.csproj" />
+    <Resource Include="Assets\current-session-pip.png" />
   </ItemGroup>
 
   <PropertyGroup>

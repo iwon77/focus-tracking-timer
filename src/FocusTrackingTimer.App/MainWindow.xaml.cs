@@ -38,6 +38,7 @@ public partial class MainWindow : Window
     private DateTimeOffset? _lastUiTickObservedAt;
     private DateTimeOffset? _lastFocusFallbackObservedAt;
     private PerformanceMonitorWindow? _performanceMonitorWindow;
+    private RunningProjectSummaryPipWindow? _runningProjectSummaryPipWindow;
 
     public MainWindow()
     {
@@ -271,6 +272,68 @@ public partial class MainWindow : Window
             _performanceMonitorWindow.Closed -= PerformanceMonitorWindow_Closed;
             _performanceMonitorWindow = null;
         }
+    }
+
+    internal void OpenRunningProjectSummaryPipWindow()
+    {
+        if (!_engine.IsRunning || !_engine.ActiveProjectId.HasValue)
+        {
+            MessageBox.Show(
+                this,
+                "프로젝트가 실행 중이지 않습니다.",
+                "PIP",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        if (_runningProjectSummaryPipWindow is not null)
+        {
+            if (_runningProjectSummaryPipWindow.WindowState == WindowState.Minimized)
+            {
+                _runningProjectSummaryPipWindow.WindowState = WindowState.Normal;
+            }
+
+            _runningProjectSummaryPipWindow.Activate();
+            return;
+        }
+
+        _runningProjectSummaryPipWindow = new RunningProjectSummaryPipWindow(this, Timer);
+        _runningProjectSummaryPipWindow.Closed += RunningProjectSummaryPipWindow_Closed;
+        _runningProjectSummaryPipWindow.Show();
+        _runningProjectSummaryPipWindow.UpdateLayout();
+        PositionRunningProjectSummaryPipWindow(_runningProjectSummaryPipWindow);
+        Hide();
+    }
+
+    internal void RestoreMainWindowFromRunningProjectSummaryPip()
+    {
+        Show();
+        WindowState = WindowState.Normal;
+        Activate();
+
+        if (_runningProjectSummaryPipWindow is not null)
+        {
+            _runningProjectSummaryPipWindow.RestoreMainWindowAndClose();
+        }
+    }
+
+    private void RunningProjectSummaryPipWindow_Closed(object? sender, EventArgs e)
+    {
+        if (_runningProjectSummaryPipWindow is not null)
+        {
+            _runningProjectSummaryPipWindow.Closed -= RunningProjectSummaryPipWindow_Closed;
+            _runningProjectSummaryPipWindow = null;
+        }
+    }
+
+    private void PositionRunningProjectSummaryPipWindow(RunningProjectSummaryPipWindow pipWindow)
+    {
+        double leftOffset = 16d;
+        double topOffset = 48d;
+
+        pipWindow.Left = Left + leftOffset;
+        pipWindow.Top = Top + topOffset;
     }
 
     internal void PreviousRecordYearButton_Click(object sender, RoutedEventArgs e)

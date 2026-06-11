@@ -1,0 +1,107 @@
+<Window x:Class="FocusTrackingTimer.App.Features.Timer.RunningProjectSummaryPipWindow"
+        x:ClassModifier="internal"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Focus Tracking Timer"
+        Width="284"
+        Height="142"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        ShowInTaskbar="True"
+        SizeToContent="Manual"
+        Topmost="True"
+        WindowStyle="None"
+        WindowStartupLocation="Manual">
+    <Border Padding="12,10"
+            Background="{StaticResource ThemeSurfaceBrush}"
+            BorderBrush="{StaticResource ThemeSecondaryBorderBrush}"
+            BorderThickness="1"
+            CornerRadius="14"
+            MouseLeftButtonDown="RootBorder_MouseLeftButtonDown">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0"
+                           Margin="0,4,12,0"
+                           VerticalAlignment="Center"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource ThemePrimaryTextBrush}"
+                           Text="{Binding RunningProjectNameText}"
+                           TextTrimming="CharacterEllipsis" />
+
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal">
+                    <Button Width="28"
+                            Height="28"
+                            Background="{StaticResource ThemeTransparentBrush}"
+                            BorderBrush="{StaticResource ThemeTransparentBrush}"
+                            BorderThickness="0"
+                            Click="RestoreMainWindowButton_Click"
+                            Padding="0"
+                            ToolTip="Close PIP and return to main">
+                        <Image Width="24"
+                               Height="24"
+                               Source="/Assets/current-session-pip.png"
+                               Stretch="Uniform" />
+                    </Button>
+                    <Button Width="28"
+                            Height="28"
+                            Margin="6,0,0,0"
+                            Background="{StaticResource ThemeTransparentBrush}"
+                            BorderBrush="{StaticResource ThemeTransparentBrush}"
+                            BorderThickness="0"
+                            Click="CloseApplicationButton_Click"
+                            Content="✕"
+                            FontSize="14"
+                            FontWeight="SemiBold"
+                            Foreground="{StaticResource ThemePrimaryTextBrush}"
+                            Padding="0"
+                            ToolTip="Close app" />
+                </StackPanel>
+            </Grid>
+
+            <Grid Grid.Row="1"
+                  Margin="0,10,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel>
+                    <TextBlock FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource ThemeSecondaryTextBrush}"
+                               Text="경과 시간" />
+                    <TextBlock Margin="0,6,0,0"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource ThemePrimaryTextBrush}"
+                               Text="{Binding RunningProjectWallClockText}" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1">
+                    <TextBlock FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource ThemeSecondaryTextBrush}"
+                               Text="집중 시간" />
+                    <TextBlock Margin="0,6,0,0"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource ThemeFocusBrush}"
+                               Text="{Binding RunningProjectFocusText}" />
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>
