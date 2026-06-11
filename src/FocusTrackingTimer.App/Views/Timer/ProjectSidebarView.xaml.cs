@@ -1,6 +1,5 @@
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 
 namespace FocusTrackingTimer.App.Views.Timer;
 
@@ -26,7 +25,4 @@ public partial class ProjectSidebarView : UserControl
         e.Handled = true;
         HostWindow.OpenRunningProjectSummaryPipWindow();
     }
-
-    private void RunningProjectSummary_MouseLeftButtonUp(object sender, MouseButtonEventArgs e) =>
-        HostWindow.RunningProjectSummary_MouseLeftButtonUp(sender, e);
 }

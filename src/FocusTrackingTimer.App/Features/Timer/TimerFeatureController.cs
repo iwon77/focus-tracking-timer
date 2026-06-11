@@ -492,6 +492,7 @@ internal sealed class TimerFeatureController
             _viewModel.RunningProjectNameText = "-";
             _viewModel.RunningProjectWallClockText = "-";
             _viewModel.RunningProjectFocusText = "-";
+            _viewModel.RunningProjectSummaryPipButtonVisibility = Visibility.Collapsed;
         }
         else
         {
@@ -500,6 +501,9 @@ internal sealed class TimerFeatureController
                 _engine.GetCurrentWallClockDuration(activeProject.Id, observedAt));
             _viewModel.RunningProjectFocusText = AppTimeFormatter.FormatDuration(
                 _engine.GetCurrentRunDuration(activeProject.Id, observedAt));
+            _viewModel.RunningProjectSummaryPipButtonVisibility = _engine.IsRunning
+                ? Visibility.Visible
+                : Visibility.Collapsed;
         }
 
         ProjectSortMode sortMode = _viewModel.SelectedProjectSortOption?.Mode ?? ProjectSortMode.Created;
