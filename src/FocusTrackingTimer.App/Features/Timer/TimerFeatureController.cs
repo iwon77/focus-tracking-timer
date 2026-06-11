@@ -431,6 +431,24 @@ internal sealed class TimerFeatureController
         DateTimeOffset observedAt,
         IReadOnlyDictionary<string, ProcessRunState>? processStates = null)
     {
+        FocusObservation observation = ForegroundWindowTracker.GetCurrentFocusedApplication(_currentProcessId);
+        return RefreshFocusTracking(observedAt, observation, processStates);
+    }
+
+    public string RefreshFocusTracking(
+        DateTimeOffset observedAt,
+        IntPtr foregroundWindowHandle,
+        IReadOnlyDictionary<string, ProcessRunState>? processStates = null)
+    {
+        FocusObservation observation = ForegroundWindowTracker.GetFocusedApplication(foregroundWindowHandle, _currentProcessId);
+        return RefreshFocusTracking(observedAt, observation, processStates);
+    }
+
+    private string RefreshFocusTracking(
+        DateTimeOffset observedAt,
+        FocusObservation observation,
+        IReadOnlyDictionary<string, ProcessRunState>? processStates)
+    {
         if (!_engine.IsRunning)
         {
             return "타이머 대기 중입니다. 시작 후 등록 프로그램이 포커스된 시간만 기록합니다.";
@@ -441,7 +459,6 @@ internal sealed class TimerFeatureController
             return "타이머가 일시정지 중입니다.";
         }
 
-        FocusObservation observation = ForegroundWindowTracker.GetCurrentFocusedApplication(_currentProcessId);
         IReadOnlyDictionary<string, ProcessRunState> runtimeProcessStates = ResolveProcessStates(processStates);
         string? focusableProcessName = TimerProgramFocusStatus.GetFocusableObservedProcessName(observation.Application, runtimeProcessStates);
         _engine.ObserveFocusedProgram(focusableProcessName, observedAt);
