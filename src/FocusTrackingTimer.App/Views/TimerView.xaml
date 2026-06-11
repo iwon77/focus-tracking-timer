@@ -3,32 +3,35 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:timerViews="clr-namespace:FocusTrackingTimer.App.Views.Timer">
     <Border Style="{StaticResource Panel}">
-        <Grid>
+        <Grid Grid.IsSharedSizeScope="True">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="220" />
-                <ColumnDefinition Width="1" />
+                <ColumnDefinition Width="2" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"
+                               SharedSizeGroup="TimerTopSection" />
+                <RowDefinition Height="1" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
 
-            <timerViews:ProjectSidebarView Grid.Column="0" />
+            <timerViews:ProjectSidebarView Grid.RowSpan="3"
+                                          Grid.Column="0" />
 
-            <Border Grid.Column="1"
-                    Style="{StaticResource Divider}" />
+            <Border Grid.RowSpan="3"
+                    Grid.Column="1"
+                    Style="{StaticResource SectionVerticalDivider}" />
 
-            <Grid Grid.Column="2">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="1" />
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
+            <timerViews:ProjectDetailView Grid.Row="0"
+                                          Grid.Column="2" />
 
-                <timerViews:ProjectDetailView Grid.Row="0" />
+            <Border Grid.Row="1"
+                    Grid.Column="2"
+                    Style="{StaticResource SectionHorizontalDivider}" />
 
-                <Border Grid.Row="1"
-                        Style="{StaticResource Divider}" />
-
-                <timerViews:RegisteredProgramListView Grid.Row="2" />
-            </Grid>
+            <timerViews:RegisteredProgramListView Grid.Row="2"
+                                                  Grid.Column="2" />
         </Grid>
     </Border>
 </UserControl>

@@ -85,9 +85,9 @@ public partial class ProgramManagerWindow : Window
             return;
         }
 
-        if (!WindowFocusService.TryFocusProcessMainWindow(row.ProcessName))
+        if (!WindowFocusService.TryFocusProcessMainWindow(row.ProcessId))
         {
-            MessageBox.Show(this, "프로그램 창을 앞으로 가져오지 못했습니다.", "프로그램 보기");
+            MessageBox.Show(this, "이 프로그램은 화면으로 띄울 수 없습니다.", "프로그램 보기");
         }
     }
 
@@ -97,12 +97,18 @@ public partial class ProgramManagerWindow : Window
             .GetRegisteredProgramInfos(_projectId)
             .Select(item => item.Program.ProcessName)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        List<RunningProcessRow> applications = [.. RunningProcessCatalog.GetVisibleProcesses(_currentProcessId)
+            .Where(application => !registeredProcessNames.Contains(application.ProcessName))];
 
         RunningProcesses.Clear();
-        foreach (TrackedApplication application in RunningProcessCatalog.GetVisibleProcesses(_currentProcessId)
-                     .Where(application => !registeredProcessNames.Contains(application.ProcessName)))
+        for (int index = 0; index < applications.Count; index++)
         {
-            RunningProcesses.Add(new RunningProcessRow(application.DisplayName, application.ProcessName));
+            RunningProcessRow application = applications[index];
+            RunningProcesses.Add(application with
+            {
+                IsFirst = index == 0,
+                IsLast = index == applications.Count - 1
+            });
         }
     }
 

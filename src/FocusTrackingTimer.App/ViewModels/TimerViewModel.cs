@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Windows;
 using System.Windows.Media;
 using FocusTrackingTimer.App.Infrastructure;
 
@@ -13,6 +14,7 @@ public sealed class TimerViewModel : ObservableObject
     private string _runningProjectNameText = "-";
     private string _runningProjectWallClockText = "-";
     private string _runningProjectFocusText = "-";
+    private Visibility _runningProjectSummaryPipButtonVisibility = Visibility.Collapsed;
     private string _activeProjectWallClockText = "00:00:00";
     private string _activeProjectElapsedText = "00:00:00";
     private string _selectedProjectTodayText = "00:00:00";
@@ -84,6 +86,12 @@ public sealed class TimerViewModel : ObservableObject
     {
         get => _runningProjectFocusText;
         set => SetProperty(ref _runningProjectFocusText, value);
+    }
+
+    public Visibility RunningProjectSummaryPipButtonVisibility
+    {
+        get => _runningProjectSummaryPipButtonVisibility;
+        set => SetProperty(ref _runningProjectSummaryPipButtonVisibility, value);
     }
 
     public string ActiveProjectElapsedText

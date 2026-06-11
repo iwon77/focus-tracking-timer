@@ -42,85 +42,99 @@
             Background="{StaticResource ThemeTransparentBrush}">
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto"
+                               SharedSizeGroup="TimerTopSection" />
+                <RowDefinition Height="1" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
             <Border Grid.Row="0"
                     Padding="12"
                     Background="{StaticResource ThemeTransparentBrush}"
-                    BorderBrush="{StaticResource ThemeSecondaryBorderBrush}"
-                    BorderThickness="0,0,0,1"
-                    Cursor="Hand"
-                    MouseLeftButtonUp="RunningProjectSummary_MouseLeftButtonUp">
+                    BorderThickness="0">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <Grid Grid.Row="0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
+                    <Button Grid.Row="0"
+                            Width="28"
+                            Height="28"
+                            HorizontalAlignment="Right"
+                            Background="{StaticResource ThemeTransparentBrush}"
+                            BorderBrush="{StaticResource ThemeTransparentBrush}"
+                            BorderThickness="0"
+                            Click="OpenRunningProjectSummaryPipButton_Click"
+                            Padding="0"
+                            Visibility="{Binding RunningProjectSummaryPipButtonVisibility}"
+                            ToolTip="Open running summary PIP">
+                        <Image Width="24"
+                               Height="24"
+                               Source="/Assets/current-session-pip.png"
+                               Stretch="Uniform" />
+                    </Button>
 
-                        <TextBlock Grid.Column="0"
-                                   Margin="0,0,8,0"
+                    <Grid Grid.Row="1"
+                          Margin="0,12,0,0">
+                        <TextBlock Margin="0,0,8,0"
+                                   FontSize="15"
                                    FontWeight="SemiBold"
+                                   VerticalAlignment="Top"
                                    Text="{Binding RunningProjectNameText}"
+                                   TextWrapping="NoWrap"
                                    TextTrimming="CharacterEllipsis" />
-
-                        <Button Grid.Column="1"
-                                Width="28"
-                                Height="28"
-                                Background="{StaticResource ThemeTransparentBrush}"
-                                BorderBrush="{StaticResource ThemeTransparentBrush}"
-                                BorderThickness="0"
-                                Click="OpenRunningProjectSummaryPipButton_Click"
-                                Padding="0"
-                                ToolTip="Open running summary PIP">
-                            <Image Width="24"
-                                   Height="24"
-                                   Source="/Assets/current-session-pip.png"
-                                   Stretch="Uniform" />
-                        </Button>
                     </Grid>
 
-                    <Grid Grid.Row="1" Margin="0,12,0,0">
+                    <Grid Grid.Row="3">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
 
-                        <StackPanel>
+                        <StackPanel HorizontalAlignment="Center">
                             <TextBlock FontSize="12"
                                        FontWeight="SemiBold"
                                        Foreground="{StaticResource ThemeSecondaryTextBrush}"
+                                       HorizontalAlignment="Center"
+                                       TextAlignment="Center"
                                        Text="경과 시간" />
                             <TextBlock Margin="0,6,0,0"
                                        FontSize="18"
                                        FontWeight="SemiBold"
                                        Foreground="{StaticResource ThemePrimaryTextBrush}"
+                                       HorizontalAlignment="Center"
+                                       TextAlignment="Center"
                                        Text="{Binding RunningProjectWallClockText}" />
                         </StackPanel>
 
-                        <StackPanel Grid.Column="1">
+                        <StackPanel Grid.Column="1"
+                                    HorizontalAlignment="Center">
                             <TextBlock FontSize="12"
                                        FontWeight="SemiBold"
                                        Foreground="{StaticResource ThemeSecondaryTextBrush}"
+                                       HorizontalAlignment="Center"
+                                       TextAlignment="Center"
                                        Text="집중 시간" />
                             <TextBlock Margin="0,6,0,0"
                                        FontSize="18"
                                        FontWeight="SemiBold"
                                        Foreground="{StaticResource ThemeFocusBrush}"
+                                       HorizontalAlignment="Center"
+                                       TextAlignment="Center"
                                        Text="{Binding RunningProjectFocusText}" />
                         </StackPanel>
                     </Grid>
                 </Grid>
             </Border>
 
-            <ScrollViewer Grid.Row="1"
+            <Border Grid.Row="1"
+                    Margin="12,0"
+                    Style="{StaticResource SectionHorizontalDivider}" />
+
+            <ScrollViewer Grid.Row="2"
                           VerticalScrollBarVisibility="Auto">
                 <StackPanel>
                     <TextBlock Margin="14,10,14,8"
