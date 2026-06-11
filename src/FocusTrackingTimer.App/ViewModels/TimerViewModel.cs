@@ -6,7 +6,7 @@ namespace FocusTrackingTimer.App.ViewModels;
 
 public sealed class TimerViewModel : ObservableObject
 {
-    private string _selectedProjectTitle = "프로젝트를 추가해보세요";
+    private string _selectedProjectTitle = "작업을 추가해보세요";
     private string _activeSessionPeriodText = "작업 시작/종료 시간이 여기에 표시됩니다.";
     private string _timerStatusText = "시작 버튼을 누르면 등록 프로그램 포커스 시간만 기록합니다.";
     private string _focusStatusText = "등록 프로그램 포커스 상태가 여기에 표시됩니다.";

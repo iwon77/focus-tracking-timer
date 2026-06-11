@@ -8,11 +8,12 @@ public partial class NameEditDialog : Window, INotifyPropertyChanged
 {
     private string _nameValue;
 
-    public NameEditDialog(string titleText, string initialName, string placeholderText = "")
+    public NameEditDialog(string titleText, string initialName, string placeholderText = "", int maxNameLength = 0)
     {
         InitializeComponent();
         TitleText = titleText;
         PlaceholderText = placeholderText;
+        MaxNameLength = maxNameLength;
         _nameValue = initialName;
         DataContext = this;
     }
@@ -22,6 +23,8 @@ public partial class NameEditDialog : Window, INotifyPropertyChanged
     public string TitleText { get; }
 
     public string PlaceholderText { get; }
+
+    public int MaxNameLength { get; }
 
     public string NameValue
     {

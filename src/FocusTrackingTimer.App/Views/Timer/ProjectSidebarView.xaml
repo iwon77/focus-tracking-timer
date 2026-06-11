@@ -39,7 +39,7 @@
     </UserControl.Resources>
 
     <Border Padding="0"
-            Background="{StaticResource ThemeSurfaceBrush}">
+            Background="{StaticResource ThemeTransparentBrush}">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -48,7 +48,7 @@
 
             <Border Grid.Row="0"
                     Padding="12"
-                    Background="{StaticResource ThemeSurfaceBrush}"
+                    Background="{StaticResource ThemeTransparentBrush}"
                     BorderBrush="{StaticResource ThemeSecondaryBorderBrush}"
                     BorderThickness="0,0,0,1"
                     Cursor="Hand"

@@ -27,7 +27,7 @@ public partial class ProgramManagerWindow : Window
         _onProgramsChanged = onProgramsChanged;
         _projectId = project.Id;
         _currentProcessId = currentProcessId;
-        TitleText = $"{project.Name} 프로그램 추가";
+        TitleText = "프로그램 추가";
 
         _refreshTimer = new DispatcherTimer
         {
