@@ -43,7 +43,7 @@ internal sealed class DailyRecordFeatureController
         Guid? selectedFilterProjectId = _viewModel.SelectedRecordFilter?.ProjectId;
 
         _viewModel.RecordFilterOptions.Clear();
-        _viewModel.RecordFilterOptions.Add(new RecordFilterOption(null, "<모든 프로젝트>"));
+        _viewModel.RecordFilterOptions.Add(new RecordFilterOption(null, "<모든 작업>"));
         foreach (ProjectDefinition project in _engine.Projects.OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase))
         {
             _viewModel.RecordFilterOptions.Add(new RecordFilterOption(project.Id, project.Name));
@@ -137,9 +137,7 @@ internal sealed class DailyRecordFeatureController
             bool isSelected = _selectedDate == date;
             _viewModel.CalendarRows.Add(new CalendarDayRow(
                 date,
-                isSelected
-                    ? AppTimeFormatter.FormatWeeklyBubbleDate(date)
-                    : date.Day.ToString(CultureInfo.CurrentCulture),
+                date.Day.ToString(CultureInfo.CurrentCulture),
                 duration == TimeSpan.Zero ? string.Empty : AppTimeFormatter.FormatDurationShort(duration),
                 duration > TimeSpan.Zero,
                 date == today,
@@ -147,6 +145,11 @@ internal sealed class DailyRecordFeatureController
                 false,
                 isSelected,
                 GetDotSize(duration)));
+        }
+
+        while (_viewModel.CalendarRows.Count < 42)
+        {
+            _viewModel.CalendarRows.Add(new CalendarDayRow(null, string.Empty, string.Empty, false, false, false, true, false, 0));
         }
     }
 

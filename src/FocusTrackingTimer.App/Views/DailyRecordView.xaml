@@ -4,9 +4,9 @@
     <Border Style="{StaticResource Panel}">
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="592" />
                 <ColumnDefinition Width="1" />
-                <ColumnDefinition Width="280" />
+                <ColumnDefinition Width="*" MinWidth="384" />
             </Grid.ColumnDefinitions>
 
             <Grid Grid.Column="0"
@@ -28,27 +28,27 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
 
-                    <StackPanel Margin="0,0,12,0">
-                        <TextBlock Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="작업 일수" />
-                        <TextBlock Margin="0,8,0,0" FontSize="22" FontWeight="SemiBold" Text="{Binding MonthlyWorkedDayCountText}" />
+                    <StackPanel Margin="0,0,12,0" HorizontalAlignment="Center">
+                        <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="작업 일수" />
+                        <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Margin="0,8,0,0" FontSize="22" FontWeight="SemiBold" Text="{Binding MonthlyWorkedDayCountText}" />
                     </StackPanel>
 
                     <Border Grid.Column="1" Style="{StaticResource Divider}" />
-                    <StackPanel Grid.Column="2" Margin="12,0">
-                        <TextBlock Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="월간 작업 시간" />
-                        <TextBlock Margin="0,8,0,0" FontSize="22" FontWeight="SemiBold" Text="{Binding MonthlyTotalWallClockDurationText}" />
+                    <StackPanel Grid.Column="2" Margin="12,0" HorizontalAlignment="Center">
+                        <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="월간 작업 시간" />
+                        <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Margin="0,8,0,0" FontSize="22" FontWeight="SemiBold" Text="{Binding MonthlyTotalWallClockDurationText}" />
                     </StackPanel>
 
                     <Border Grid.Column="3" Style="{StaticResource Divider}" />
-                    <StackPanel Grid.Column="4" Margin="12,0">
-                        <TextBlock Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="월간 집중 시간" />
-                        <TextBlock Margin="0,8,0,0" FontSize="22" FontWeight="SemiBold" Foreground="{StaticResource ThemeFocusBrush}" Text="{Binding MonthlyTotalFocusDurationText}" />
+                    <StackPanel Grid.Column="4" Margin="12,0" HorizontalAlignment="Center">
+                        <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="월간 집중 시간" />
+                        <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Margin="0,8,0,0" FontSize="22" FontWeight="SemiBold" Foreground="{StaticResource ThemeFocusBrush}" Text="{Binding MonthlyTotalFocusDurationText}" />
                     </StackPanel>
 
                     <Border Grid.Column="5" Style="{StaticResource Divider}" />
-                    <StackPanel Grid.Column="6" Margin="12,0,0,0">
-                        <TextBlock Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="평균 집중 시간" />
-                        <TextBlock Margin="0,8,0,0" FontSize="22" FontWeight="SemiBold" Foreground="{StaticResource ThemeFocusBrush}" Text="{Binding MonthlyAverageFocusDurationText}" />
+                    <StackPanel Grid.Column="6" Margin="12,0,0,0" HorizontalAlignment="Center">
+                        <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="평균 집중 시간" />
+                        <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Margin="0,8,0,0" FontSize="22" FontWeight="SemiBold" Foreground="{StaticResource ThemeFocusBrush}" Text="{Binding MonthlyAverageFocusDurationText}" />
                     </StackPanel>
                 </Grid>
 
@@ -56,7 +56,10 @@
                         Style="{StaticResource Divider}" />
 
                 <Grid Grid.Row="2"
-                      Margin="0,16,0,0">
+                      Width="560"
+                      Margin="0,16,0,0"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Top">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
@@ -70,7 +73,7 @@
                         <TextBlock Margin="14,0" VerticalAlignment="Center" FontSize="16" FontWeight="SemiBold" Text="{Binding DisplayedRecordMonthText}" />
                         <Button Width="32" Height="32" Style="{StaticResource SecondaryButton}" Click="NextRecordMonthButton_Click" Content="&gt;" />
                         <Button Width="54" Height="32" Margin="8,0,0,0" Style="{StaticResource SecondaryButton}" Click="NextRecordYearButton_Click" Content="+1Y" />
-                        <Button Width="64" Height="32" Margin="8,0,0,0" Style="{StaticResource SecondaryButton}" Click="CurrentRecordMonthButton_Click" Content="이번 달" />
+                        <Button Width="64" Height="32" Margin="8,0,0,0" Style="{StaticResource SecondaryButton}" Click="CurrentRecordMonthButton_Click" Content="오늘" />
                     </StackPanel>
 
                     <UniformGrid Grid.Row="1"
@@ -86,6 +89,7 @@
                     </UniformGrid>
 
                     <ItemsControl Grid.Row="2"
+                                  Height="396"
                                   ItemsSource="{Binding CalendarRows}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -108,33 +112,45 @@
                                                 <Setter.Value>
                                                     <ControlTemplate TargetType="Button">
                                                         <Border x:Name="CellChrome"
-                                                                MinHeight="62"
+                                                                Height="62"
                                                                 Margin="2"
                                                                 Padding="6"
                                                                 Background="{StaticResource ThemeTransparentBrush}"
                                                                 CornerRadius="8">
                                                             <Grid>
-                                                                <TextBlock HorizontalAlignment="Left"
-                                                                           VerticalAlignment="Top"
-                                                                           FontWeight="SemiBold"
-                                                                           Text="{Binding DayText}">
-                                                                    <TextBlock.Style>
-                                                                        <Style TargetType="TextBlock">
-                                                                            <Setter Property="Foreground" Value="{StaticResource ThemePrimaryTextBrush}" />
-                                                                            <Style.Triggers>
-                                                                                <DataTrigger Binding="{Binding IsSunday}" Value="True">
-                                                                                    <Setter Property="Foreground" Value="{StaticResource ThemeSundayBrush}" />
-                                                                                </DataTrigger>
-                                                                                <DataTrigger Binding="{Binding IsToday}" Value="True">
-                                                                                    <Setter Property="Foreground" Value="{StaticResource ThemeActiveTextBrush}" />
-                                                                                </DataTrigger>
-                                                                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                                                    <Setter Property="Foreground" Value="{StaticResource ThemeActiveTextBrush}" />
-                                                                                </DataTrigger>
-                                                                            </Style.Triggers>
-                                                                        </Style>
-                                                                    </TextBlock.Style>
-                                                                </TextBlock>
+                                                                <StackPanel HorizontalAlignment="Left"
+                                                                            VerticalAlignment="Top"
+                                                                            Orientation="Horizontal">
+                                                                    <TextBlock FontWeight="SemiBold"
+                                                                               Text="{Binding DayText}">
+                                                                        <TextBlock.Style>
+                                                                            <Style TargetType="TextBlock">
+                                                                                <Setter Property="Foreground" Value="{StaticResource ThemePrimaryTextBrush}" />
+                                                                                <Style.Triggers>
+                                                                                    <DataTrigger Binding="{Binding IsSunday}" Value="True">
+                                                                                        <Setter Property="Foreground" Value="{StaticResource ThemeSundayBrush}" />
+                                                                                    </DataTrigger>
+                                                                                </Style.Triggers>
+                                                                            </Style>
+                                                                        </TextBlock.Style>
+                                                                    </TextBlock>
+                                                                    <Border Margin="4,0,0,0">
+                                                                        <Border.Style>
+                                                                            <Style TargetType="Border">
+                                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                                                <Style.Triggers>
+                                                                                    <DataTrigger Binding="{Binding IsToday}" Value="True">
+                                                                                        <Setter Property="Visibility" Value="Visible" />
+                                                                                    </DataTrigger>
+                                                                                </Style.Triggers>
+                                                                            </Style>
+                                                                        </Border.Style>
+                                                                        <TextBlock FontSize="11"
+                                                                                   FontWeight="SemiBold"
+                                                                                   Foreground="{StaticResource ThemeTagTextBrush}"
+                                                                                   Text="오늘" />
+                                                                    </Border>
+                                                                </StackPanel>
 
                                                                 <Border Width="{Binding DotSize}"
                                                                         Margin="0,0,0,4"
@@ -186,10 +202,10 @@
                                                                 <Setter TargetName="CellChrome" Property="Background" Value="{StaticResource ThemeSelectionBrush}" />
                                                             </Trigger>
                                                             <DataTrigger Binding="{Binding IsToday}" Value="True">
-                                                                <Setter TargetName="CellChrome" Property="Background" Value="{StaticResource ThemeActiveBrush}" />
+                                                                <Setter TargetName="CellChrome" Property="Background" Value="{StaticResource ThemeLightSurfaceBrush}" />
                                                             </DataTrigger>
                                                             <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                                <Setter TargetName="CellChrome" Property="Background" Value="{StaticResource ThemeActiveBrush}" />
+                                                                <Setter TargetName="CellChrome" Property="Background" Value="{StaticResource ThemeLightSurfaceBrush}" />
                                                             </DataTrigger>
                                                         </ControlTemplate.Triggers>
                                                     </ControlTemplate>
@@ -208,6 +224,7 @@
                     Style="{StaticResource Divider}" />
 
             <Grid Grid.Column="2"
+                  MinWidth="384"
                   Margin="16">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -220,31 +237,33 @@
                            Text="{Binding SelectedDailyDateText}" />
 
                 <UniformGrid Grid.Row="1"
+                             Width="360"
+                             HorizontalAlignment="Left"
                              Margin="0,14,0,18"
                              Columns="2"
                              Rows="2">
                     <Border Margin="0,0,8,8" Padding="12" Background="{StaticResource ThemeLightSurfaceBrush}" CornerRadius="8">
                         <StackPanel>
                             <TextBlock Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="작업 건수" />
-                            <TextBlock Margin="0,8,0,0" FontWeight="SemiBold" Text="{Binding SelectedDailyRecordCountText}" />
+                            <TextBlock Margin="0,8,0,0" FontSize="14" FontWeight="SemiBold" Text="{Binding SelectedDailyRecordCountText}" />
                         </StackPanel>
                     </Border>
                     <Border Margin="0,0,0,8" Padding="12" Background="{StaticResource ThemeLightSurfaceBrush}" CornerRadius="8">
                         <StackPanel>
                             <TextBlock Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="총 작업 시간" />
-                            <TextBlock Margin="0,8,0,0" FontWeight="SemiBold" Text="{Binding SelectedDailyTotalWallClockDurationText}" />
+                            <TextBlock Margin="0,8,0,0" FontSize="14" FontWeight="SemiBold" Text="{Binding SelectedDailyTotalWallClockDurationText}" />
                         </StackPanel>
                     </Border>
                     <Border Margin="0,0,8,0" Padding="12" Background="{StaticResource ThemeLightSurfaceBrush}" CornerRadius="8">
                         <StackPanel>
                             <TextBlock Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="집중 시간" />
-                            <TextBlock Margin="0,8,0,0" FontWeight="SemiBold" Foreground="{StaticResource ThemeFocusBrush}" Text="{Binding SelectedDailyFocusSummaryText}" />
+                            <TextBlock Margin="0,8,0,0" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource ThemeFocusBrush}" Text="{Binding SelectedDailyFocusSummaryText}" />
                         </StackPanel>
                     </Border>
                     <Border Padding="12" Background="{StaticResource ThemeLightSurfaceBrush}" CornerRadius="8">
                         <StackPanel>
                             <TextBlock Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="선택 날짜" />
-                            <TextBlock Margin="0,8,0,0" FontWeight="SemiBold" Text="{Binding SelectedDailyDateText}" />
+                            <TextBlock Margin="0,8,0,0" FontSize="14" FontWeight="SemiBold" Text="{Binding SelectedDailyDateText}" />
                         </StackPanel>
                     </Border>
                 </UniformGrid>
@@ -278,7 +297,7 @@
                                                     <TextBlock FontWeight="SemiBold" Text="{Binding ProjectName}" TextTrimming="CharacterEllipsis" />
                                                     <TextBlock Margin="0,5,0,0" Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="{Binding PeriodText}" />
                                                 </StackPanel>
-                                                <TextBlock Grid.Column="2" Margin="10,0,0,0" FontWeight="SemiBold" Foreground="{StaticResource ThemeFocusBrush}" Text="{Binding DurationText}" />
+                                                <TextBlock Grid.Column="2" Margin="4,0,14,0" FontWeight="SemiBold" Foreground="{StaticResource ThemeFocusBrush}" Text="{Binding DurationText}" />
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
