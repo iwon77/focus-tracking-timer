@@ -1,0 +1,67 @@
+<Window x:Class="FocusTrackingTimer.App.ThemedMessageDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{Binding WindowTitle}"
+        Icon="/Assets/app-icon.ico"
+        Width="420"
+        MinWidth="360"
+        MaxWidth="420"
+        SizeToContent="Height"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource ThemeBaseBackgroundBrush}">
+    <Grid Margin="{Binding WindowMargin}">
+        <Border Background="{Binding ContainerBackgroundBrush}"
+                BorderBrush="{Binding ContainerBorderBrush}"
+                BorderThickness="{Binding ContainerBorderThickness}"
+                CornerRadius="{Binding ContainerCornerRadius}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="{Binding AccentRowHeight}" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Border Background="{Binding AccentBrush}"
+                        CornerRadius="8,8,0,0"
+                        Visibility="{Binding AccentVisibility}" />
+
+                <StackPanel Grid.Row="1"
+                            Margin="{Binding ContentMargin}">
+                    <TextBlock FontSize="22"
+                               FontWeight="SemiBold"
+                               Foreground="{Binding AccentBrush}"
+                               Text="{Binding DialogTitle}"
+                               Visibility="{Binding TitleVisibility}" />
+                    <TextBlock Margin="0,14,0,0"
+                               Foreground="{StaticResource ThemePrimaryTextBrush}"
+                               FontSize="{Binding MessageFontSize}"
+                               Text="{Binding MessageText}"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+
+                <StackPanel Grid.Row="2"
+                            Margin="{Binding ButtonPanelMargin}"
+                            HorizontalAlignment="Right"
+                            Orientation="Horizontal">
+                    <Button Width="78"
+                            Height="34"
+                            Margin="0,0,8,0"
+                            Click="CancelButton_Click"
+                            Content="취소"
+                            IsCancel="True"
+                            Style="{StaticResource SecondaryButton}"
+                            Visibility="{Binding CancelButtonVisibility}" />
+                    <Button Width="78"
+                            Height="34"
+                            Click="ConfirmButton_Click"
+                            Content="확인"
+                            Foreground="{StaticResource ThemeActiveTextBrush}"
+                            IsDefault="True"
+                            Style="{StaticResource PrimaryButton}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

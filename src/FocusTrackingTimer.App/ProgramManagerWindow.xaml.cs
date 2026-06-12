@@ -71,7 +71,7 @@ public partial class ProgramManagerWindow : Window
         bool wasAdded = _engine.TryRegisterProgram(_projectId, application);
         if (!wasAdded)
         {
-            MessageBox.Show(this, "이미 등록된 프로그램입니다.", "프로그램 추가");
+            AppMessageBox.Show(this, "이미 등록된 프로그램입니다.", "프로그램 추가");
         }
 
         _onProgramsChanged?.Invoke();
@@ -87,7 +87,7 @@ public partial class ProgramManagerWindow : Window
 
         if (!WindowFocusService.TryFocusProcessMainWindow(row.ProcessId))
         {
-            MessageBox.Show(this, "이 프로그램은 화면으로 띄울 수 없습니다.", "프로그램 보기");
+            AppMessageBox.ShowPlain(this, "이 프로그램은 화면으로 띄울 수 없습니다.", "프로그램 보기");
         }
     }
 

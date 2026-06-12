@@ -12,7 +12,7 @@ public partial class App : Application
 
     private static void OnDispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
     {
-        MessageBox.Show(
+        AppMessageBox.Show(
             e.Exception.Message,
             "프로토타입 오류",
             MessageBoxButton.OK,

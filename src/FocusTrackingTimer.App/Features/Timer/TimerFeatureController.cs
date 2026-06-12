@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Media;
+using FocusTrackingTimer.App;
 using FocusTrackingTimer.App.Infrastructure;
 using FocusTrackingTimer.App.ViewModels;
 using FocusTrackingTimer.Core.Persistence;
@@ -150,7 +151,7 @@ internal sealed class TimerFeatureController
             return;
         }
 
-        MessageBoxResult result = MessageBox.Show(
+        MessageBoxResult result = AppMessageBox.ShowPlain(
             _owner,
             $"'{SelectedProject.Name}' 작업을 삭제하시겠습니까?",
             "작업 삭제",
@@ -200,19 +201,19 @@ internal sealed class TimerFeatureController
         string newName = dialog.NameValue.Trim();
         if (string.IsNullOrWhiteSpace(newName))
         {
-            MessageBox.Show(_owner, "작업 이름은 비워둘 수 없습니다.", "작업 이름 수정");
+            AppMessageBox.Show(_owner, "작업 이름은 비워둘 수 없습니다.", "작업 이름 수정");
             return;
         }
 
         if (newName.Length > ProjectDefinition.MaxNameLength)
         {
-            MessageBox.Show(_owner, $"작업 이름은 {ProjectDefinition.MaxNameLength}자 이하로 입력해주세요.", "작업 이름 수정");
+            AppMessageBox.Show(_owner, $"작업 이름은 {ProjectDefinition.MaxNameLength}자 이하로 입력해주세요.", "작업 이름 수정");
             return;
         }
 
         if (!_engine.TryRenameProject(projectId, newName))
         {
-            MessageBox.Show(_owner, "이미 사용 중인 작업 이름입니다.", "작업 이름 수정");
+            AppMessageBox.Show(_owner, "이미 사용 중인 작업 이름입니다.", "작업 이름 수정");
             return;
         }
 
@@ -380,7 +381,7 @@ internal sealed class TimerFeatureController
             return;
         }
 
-        MessageBoxResult result = MessageBox.Show(
+        MessageBoxResult result = AppMessageBox.Show(
             _owner,
             $"'{row.DisplayName}' 프로그램을 삭제하시겠습니까?",
             "등록 프로그램 삭제",
@@ -431,7 +432,7 @@ internal sealed class TimerFeatureController
 
         if (!WindowFocusService.TryFocusProcessMainWindow(row.ProcessName))
         {
-            MessageBox.Show(_owner, "프로그램 창을 앞으로 가져오지 못했습니다.", "프로그램 보기");
+            AppMessageBox.ShowPlain(_owner, "프로그램 창을 앞으로 가져오지 못했습니다.", "프로그램 보기");
         }
     }
 

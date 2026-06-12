@@ -23,6 +23,10 @@ internal static class ThemeBrushes
 
     public static Brush Focus => Get("ThemeFocusBrush");
 
+    public static Brush Surface => Get("ThemeSurfaceBrush");
+
+    public static Brush SecondaryBorder => Get("ThemeSecondaryBorderBrush");
+
     public static Brush PrimaryActionBackground => Get("ThemePrimaryActionBackgroundBrush");
 
     public static Brush Sunday => Get("ThemeSundayBrush");

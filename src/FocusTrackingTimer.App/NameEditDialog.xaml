@@ -4,7 +4,7 @@
         Title="이름 수정"
         Icon="/Assets/app-icon.ico"
         Width="360"
-        Height="180"
+        Height="188.5"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
         Background="{StaticResource ThemeBaseBackgroundBrush}">
@@ -43,6 +43,7 @@
         </Grid>
 
         <StackPanel Grid.Row="2"
+                    Margin="0,8.5,0,0"
                     HorizontalAlignment="Right"
                     Orientation="Horizontal">
             <Button Width="78"
