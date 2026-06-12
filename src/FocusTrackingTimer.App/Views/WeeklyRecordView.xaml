@@ -28,10 +28,18 @@
                 <StackPanel HorizontalAlignment="Center"
                             Orientation="Horizontal">
                     <Button Width="32" Height="32" Style="{StaticResource IconButton}" Click="PreviousWeekButton_Click">
+                        <Button.ToolTip>
+                            <ToolTip Style="{StaticResource CommonToolTipStyle}"
+                                     Content="이전 달로 이동" />
+                        </Button.ToolTip>
                         <Image Width="24" Height="24" Source="/Assets/chevron-left.png" Stretch="Uniform" />
                     </Button>
                     <TextBlock Margin="14,0" VerticalAlignment="Center" FontSize="16" FontWeight="SemiBold" Text="{Binding DisplayedWeekLabelText}" />
                     <Button Width="32" Height="32" Style="{StaticResource IconButton}" Click="NextWeekButton_Click">
+                        <Button.ToolTip>
+                            <ToolTip Style="{StaticResource CommonToolTipStyle}"
+                                     Content="다음 달로 이동" />
+                        </Button.ToolTip>
                         <Image Width="24" Height="24" Source="/Assets/chevron-right.png" Stretch="Uniform" />
                     </Button>
                     <Button Width="48"
@@ -40,7 +48,12 @@
                             Padding="10,0"
                             Style="{StaticResource TextOutlineActionButton}"
                             Click="CurrentWeekButton_Click"
-                            Content="오늘" />
+                            Content="오늘">
+                        <Button.ToolTip>
+                            <ToolTip Style="{StaticResource CommonToolTipStyle}"
+                                     Content="오늘로 이동" />
+                        </Button.ToolTip>
+                    </Button>
                 </StackPanel>
 
                 <ItemsControl Grid.Row="1"

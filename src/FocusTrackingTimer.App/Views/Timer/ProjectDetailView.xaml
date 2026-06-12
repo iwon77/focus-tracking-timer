@@ -34,6 +34,10 @@
                             Style="{StaticResource StaticActionIconButton}"
                             Click="MemoSelectedProjectButton_Click"
                             IsEnabled="{Binding IsProjectMemoEnabled}">
+                        <Button.ToolTip>
+                            <ToolTip Style="{StaticResource CommonToolTipStyle}"
+                                     Content="작업 메모 작성" />
+                        </Button.ToolTip>
                         <Image Width="18"
                                Height="18"
                                Source="/Assets/memo.png"
@@ -50,6 +54,10 @@
                             Style="{StaticResource StaticActionIconButton}"
                             Click="EditSelectedProjectButton_Click"
                             IsEnabled="{Binding IsProjectEditEnabled}">
+                        <Button.ToolTip>
+                            <ToolTip Style="{StaticResource CommonToolTipStyle}"
+                                     Content="작업 이름 바꾸기" />
+                        </Button.ToolTip>
                         <Image Width="18"
                                Height="18"
                                Source="/Assets/edit.png"
@@ -66,6 +74,10 @@
                             Style="{StaticResource StaticActionIconButton}"
                             Click="DeleteProjectButton_Click"
                             IsEnabled="{Binding IsProjectDeleteEnabled}">
+                        <Button.ToolTip>
+                            <ToolTip Style="{StaticResource CommonToolTipStyle}"
+                                     Content="작업 삭제" />
+                        </Button.ToolTip>
                         <Image Width="18"
                                Height="18"
                                Source="/Assets/delete.png"

@@ -48,8 +48,23 @@
                                   Style="{StaticResource StaticActionIconToggleButton}"
                                   Checked="AlwaysOnTopToggleButton_Checked"
                                   Unchecked="AlwaysOnTopToggleButton_Unchecked"
-                                  IsChecked="True"
-                                  ToolTip="Keep PIP above other windows">
+                                  IsChecked="True">
+                        <ToggleButton.ToolTip>
+                            <ToolTip>
+                                <ToolTip.Style>
+                                    <Style TargetType="ToolTip"
+                                           BasedOn="{StaticResource CommonToolTipStyle}">
+                                        <Setter Property="Content" Value="항상 위에 유지" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding PlacementTarget.IsChecked, RelativeSource={RelativeSource Self}}"
+                                                         Value="True">
+                                                <Setter Property="Content" Value="항상 위 유지 해제" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ToolTip.Style>
+                            </ToolTip>
+                        </ToggleButton.ToolTip>
                         <Grid>
                             <Image Width="20"
                                    Height="20"
@@ -93,8 +108,11 @@
                             Height="28"
                             Margin="6,0,0,0"
                             Style="{StaticResource StaticActionIconButton}"
-                            Click="RestoreMainWindowButton_Click"
-                            ToolTip="Close PIP and return to main">
+                            Click="RestoreMainWindowButton_Click">
+                        <Button.ToolTip>
+                            <ToolTip Style="{StaticResource CommonToolTipStyle}"
+                                     Content="메인 창으로 보기" />
+                        </Button.ToolTip>
                         <Image Width="20"
                                Height="20"
                                Source="/Assets/pip.png"
@@ -111,8 +129,12 @@
                             Content="X"
                             FontSize="14"
                             FontWeight="SemiBold"
-                            Foreground="{StaticResource ThemeSecondaryTextBrush}"
-                            ToolTip="Close app" />
+                            Foreground="{StaticResource ThemeSecondaryTextBrush}">
+                        <Button.ToolTip>
+                            <ToolTip Style="{StaticResource CommonToolTipStyle}"
+                                     Content="프로그램 닫기" />
+                        </Button.ToolTip>
+                    </Button>
                 </StackPanel>
             </Grid>
 

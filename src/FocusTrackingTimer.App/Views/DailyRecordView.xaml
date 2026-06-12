@@ -76,16 +76,32 @@
                     <StackPanel HorizontalAlignment="Center"
                                 Orientation="Horizontal">
                         <Button Width="32" Height="32" Margin="0,0,8,0" Style="{StaticResource IconButton}" Click="PreviousRecordYearButton_Click">
+                            <Button.ToolTip>
+                                <ToolTip Style="{StaticResource CommonToolTipStyle}"
+                                         Content="이전 년도로 이동" />
+                            </Button.ToolTip>
                             <Image Width="24" Height="24" Source="/Assets/chevrons-left.png" Stretch="Uniform" />
                         </Button>
                         <Button Width="32" Height="32" Style="{StaticResource IconButton}" Click="PreviousRecordMonthButton_Click">
+                            <Button.ToolTip>
+                                <ToolTip Style="{StaticResource CommonToolTipStyle}"
+                                         Content="이전 달로 이동" />
+                            </Button.ToolTip>
                             <Image Width="24" Height="24" Source="/Assets/chevron-left.png" Stretch="Uniform" />
                         </Button>
                         <TextBlock Margin="14,0" VerticalAlignment="Center" FontSize="16" FontWeight="SemiBold" Text="{Binding DisplayedRecordMonthText}" />
                         <Button Width="32" Height="32" Style="{StaticResource IconButton}" Click="NextRecordMonthButton_Click">
+                            <Button.ToolTip>
+                                <ToolTip Style="{StaticResource CommonToolTipStyle}"
+                                         Content="다음 달로 이동" />
+                            </Button.ToolTip>
                             <Image Width="24" Height="24" Source="/Assets/chevron-right.png" Stretch="Uniform" />
                         </Button>
                         <Button Width="32" Height="32" Margin="8,0,0,0" Style="{StaticResource IconButton}" Click="NextRecordYearButton_Click">
+                            <Button.ToolTip>
+                                <ToolTip Style="{StaticResource CommonToolTipStyle}"
+                                         Content="다음 년도로 이동" />
+                            </Button.ToolTip>
                             <Image Width="24" Height="24" Source="/Assets/chevrons-right.png" Stretch="Uniform" />
                         </Button>
                         <Button Width="48"
@@ -94,7 +110,12 @@
                                 Padding="10,0"
                                 Style="{StaticResource TextOutlineActionButton}"
                                 Click="CurrentRecordMonthButton_Click"
-                                Content="오늘" />
+                                Content="오늘">
+                            <Button.ToolTip>
+                                <ToolTip Style="{StaticResource CommonToolTipStyle}"
+                                         Content="오늘로 이동" />
+                            </Button.ToolTip>
+                        </Button>
                         
                     </StackPanel>
 

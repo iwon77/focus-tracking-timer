@@ -12,12 +12,12 @@ internal static class TimerProgramFocusStatus
     {
         if (!processStates.TryGetValue(processName, out ProcessRunState? state))
         {
-            return (ThemeBrushes.HintText, "등록됨 / 현재 실행 중 아님");
+            return (ThemeBrushes.HintText, "현재 실행 중 아님");
         }
 
         return state.HasFocusableWindow
-            ? (ThemeBrushes.Status, "등록됨 / 실행 중 / 포커스 기록 가능")
-            : (ThemeBrushes.Sunday, "등록됨 / 실행 중 / 포커스 기록 불가");
+            ? (ThemeBrushes.Status, "집중 기록 가능")
+            : (ThemeBrushes.Sunday, "집중 기록 불가");
     }
 
     public static string? GetFocusableObservedProcessName(

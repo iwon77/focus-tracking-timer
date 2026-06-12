@@ -33,7 +33,12 @@
                           DisplayMemberPath="Label"
                           ItemsSource="{Binding ProgramSortOptions}"
                           SelectedItem="{Binding SelectedProgramSortOption, Mode=TwoWay}"
-                          SelectionChanged="ProgramSort_SelectionChanged" />
+                          SelectionChanged="ProgramSort_SelectionChanged">
+                    <ComboBox.ToolTip>
+                        <ToolTip Style="{StaticResource CommonToolTipStyle}"
+                                 Content="프로그램 정렬" />
+                    </ComboBox.ToolTip>
+                </ComboBox>
                 <Button Grid.Column="2"
                         Height="32"
                         Margin="0,2,0,0"
@@ -78,6 +83,10 @@
                                         <Button DockPanel.Dock="Right"
                                                 Style="{StaticResource HoverActionButton}"
                                                 Click="DeleteProgramButton_Click">
+                                            <Button.ToolTip>
+                                                <ToolTip Style="{StaticResource CommonToolTipStyle}"
+                                                         Content="프로그램 삭제" />
+                                            </Button.ToolTip>
                                             <Image Width="18"
                                                    Height="18"
                                                    Source="/Assets/delete.png"
@@ -86,6 +95,10 @@
                                         <Button DockPanel.Dock="Right"
                                                 Style="{StaticResource HoverActionButton}"
                                                 Click="EditProgramButton_Click">
+                                            <Button.ToolTip>
+                                                <ToolTip Style="{StaticResource CommonToolTipStyle}"
+                                                         Content="프로그램 이름 바꾸기" />
+                                            </Button.ToolTip>
                                             <Image Width="18"
                                                    Height="18"
                                                    Source="/Assets/edit.png"
@@ -94,6 +107,10 @@
                                         <Button DockPanel.Dock="Right"
                                                 Style="{StaticResource HoverActionButton}"
                                                 Click="FocusRegisteredProgramButton_Click">
+                                            <Button.ToolTip>
+                                                <ToolTip Style="{StaticResource CommonToolTipStyle}"
+                                                         Content="프로그램 보기" />
+                                            </Button.ToolTip>
                                             <Image Width="20"
                                                    Height="20"
                                                    Source="/Assets/view.png"
@@ -102,6 +119,22 @@
                                         <Button DockPanel.Dock="Right"
                                                 Style="{StaticResource HoverActionButton}"
                                                 Click="PinProgramButton_Click">
+                                            <Button.ToolTip>
+                                                <ToolTip>
+                                                    <ToolTip.Style>
+                                                        <Style TargetType="ToolTip"
+                                                               BasedOn="{StaticResource CommonToolTipStyle}">
+                                                            <Setter Property="Content" Value="프로그램 고정" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding PlacementTarget.DataContext.IsPinned, RelativeSource={RelativeSource Self}}"
+                                                                             Value="True">
+                                                                    <Setter Property="Content" Value="프로그램 고정 해제" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </ToolTip.Style>
+                                                </ToolTip>
+                                            </Button.ToolTip>
                                             <Image Width="20"
                                                    Height="20"
                                                    SnapsToDevicePixels="True"
@@ -126,8 +159,12 @@
                                                      Height="10"
                                                      Margin="0,6,10,0"
                                                      VerticalAlignment="Top"
-                                                     Fill="{Binding StatusBrush}"
-                                                     ToolTip="{Binding StatusText}" />
+                                                     Fill="{Binding StatusBrush}">
+                                                <Ellipse.ToolTip>
+                                                    <ToolTip Style="{StaticResource CommonToolTipStyle}"
+                                                             Content="{Binding StatusText}" />
+                                                </Ellipse.ToolTip>
+                                            </Ellipse>
                                             <StackPanel>
                                                 <StackPanel Orientation="Horizontal">
                                                     <TextBlock FontSize="15"

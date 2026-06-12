@@ -42,6 +42,37 @@
                 <Setter Property="HorizontalAlignment" Value="Stretch" />
             </Style>
 
+            <Style x:Key="CommonToolTipStyle" TargetType="ToolTip">
+                <Setter Property="Background" Value="{StaticResource ThemeSurfaceBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource ThemeHoverBorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Foreground" Value="{StaticResource ThemePrimaryTextBrush}" />
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="Padding" Value="10,6" />
+                <Setter Property="HasDropShadow" Value="False" />
+                <Setter Property="Placement" Value="Top" />
+                <Setter Property="HorizontalOffset" Value="0" />
+                <Setter Property="VerticalOffset" Value="-8" />
+                <Setter Property="ToolTipService.InitialShowDelay" Value="250" />
+                <Setter Property="ToolTipService.BetweenShowDelay" Value="0" />
+                <Setter Property="ToolTipService.ShowDuration" Value="60000" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ToolTip">
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="8"
+                                    SnapsToDevicePixels="True">
+                                <ContentPresenter Margin="{TemplateBinding Padding}"
+                                                  RecognizesAccessKey="True" />
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
             <Style x:Key="ComboBoxToggleButton" TargetType="ToggleButton">
                 <Setter Property="Focusable" Value="False" />
                 <Setter Property="FocusVisualStyle" Value="{x:Null}" />
