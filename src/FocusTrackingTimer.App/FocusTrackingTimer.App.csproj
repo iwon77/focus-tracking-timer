@@ -2,13 +2,15 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FocusTrackingTimer.Core\FocusTrackingTimer.Core.csproj" />
-    <Resource Include="Assets\current-session-pip.png" />
+    <Resource Include="Assets\*.png" />
+    <Resource Include="Assets\app-icon.ico" />
   </ItemGroup>
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
+    <ApplicationIcon>Assets\app-icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <Target Name="RemovePublishedSymbols"

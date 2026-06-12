@@ -21,6 +21,8 @@ internal static class ThemeBrushes
 
     public static Brush Focus => Get("ThemeFocusBrush");
 
+    public static Brush PrimaryActionBackground => Get("ThemePrimaryActionBackgroundBrush");
+
     public static Brush Sunday => Get("ThemeSundayBrush");
 
     public static Brush Transparent => Get("ThemeTransparentBrush");

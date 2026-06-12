@@ -14,6 +14,8 @@
     <SolidColorBrush x:Key="ThemeCalendarBarBrush" Color="#9FE1CB" />
     <SolidColorBrush x:Key="ThemeStatusBrush" Color="#5DCAA5" />
     <SolidColorBrush x:Key="ThemeFocusBrush" Color="#1D9E75" />
+    <SolidColorBrush x:Key="ThemePrimaryActionBackgroundBrush" Color="#1D9E75" />
+    <SolidColorBrush x:Key="ThemePrimaryActionBorderBrush" Color="#1D9E75" />
     <SolidColorBrush x:Key="ThemeTagTextBrush" Color="#0F6E56" />
     <SolidColorBrush x:Key="ThemeSundayBrush" Color="#D85A30" />
     <SolidColorBrush x:Key="ThemeTransparentBrush" Color="Transparent" />

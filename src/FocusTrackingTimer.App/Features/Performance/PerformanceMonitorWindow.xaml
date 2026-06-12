@@ -3,6 +3,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Performance Monitor"
+        Icon="/Assets/app-icon.ico"
         Width="980"
         Height="1040"
         MinWidth="920"
