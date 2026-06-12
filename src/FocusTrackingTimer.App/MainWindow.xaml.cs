@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -7,7 +6,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using FocusTrackingTimer.App.Features.DailyRecords;
-using FocusTrackingTimer.App.Features.Performance;
 using FocusTrackingTimer.App.Features.Timer;
 using FocusTrackingTimer.App.Features.WeeklyRecords;
 using FocusTrackingTimer.App.Infrastructure;
@@ -29,20 +27,16 @@ public partial class MainWindow : Window
     private readonly ProjectTimerEngine _engine = new();
     private readonly SqliteProjectTimerStore _store = new(BuildStorePath());
     private readonly DispatcherTimer _uiTimer;
-    private readonly PerformanceMonitorService _performanceMonitor;
     private readonly ProcessRunStateScanService _processScanService;
     private readonly ForegroundFocusEventService _foregroundFocusEvents = new();
     private readonly TimerFeatureController _timerFeature;
     private readonly DailyRecordFeatureController _dailyRecordFeature;
     private readonly WeeklyRecordFeatureController _weeklyRecordFeature;
-    private DateTimeOffset? _lastUiTickObservedAt;
     private DateTimeOffset? _lastFocusFallbackObservedAt;
-    private PerformanceMonitorWindow? _performanceMonitorWindow;
     private RunningProjectSummaryPipWindow? _runningProjectSummaryPipWindow;
 
     public MainWindow()
     {
-        _performanceMonitor = new PerformanceMonitorService(_store.DatabasePath, BuildPerformanceLogDirectory());
         _processScanService = new ProcessRunStateScanService(Environment.ProcessId);
         InitializeComponent();
         DataContext = this;
@@ -99,13 +93,11 @@ public partial class MainWindow : Window
         string startupMessage = "작업을 추가하고 등록 프로그램을 관리해보세요.";
         bool seededWeeklySample = false;
         bool seededDailySample = false;
-        long persistedFocusSegmentCount = 0;
 
         try
         {
             IReadOnlyList<ProjectState> projectCatalog = _store.LoadProjectCatalog();
             bool hasCompletedRecords = _store.HasCompletedRecords();
-            persistedFocusSegmentCount = _store.LoadFocusSegmentCount();
             _engine.ReplaceState(new ProjectTimerEngineState(projectCatalog, []));
 
             if (projectCatalog.Count > 0 || hasCompletedRecords)
@@ -129,8 +121,6 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }
-
-        _performanceMonitor.Initialize(persistedFocusSegmentCount);
 
         if (seededWeeklySample || seededDailySample)
         {
@@ -158,32 +148,13 @@ public partial class MainWindow : Window
 
         PersistProjectCatalog();
         FlushPendingCompletedRecords();
-        _performanceMonitor.FlushPending();
     }
 
     private void UiTimer_Tick(object? sender, EventArgs e)
     {
         DateTimeOffset observedAt = DateTimeOffset.Now;
-        Stopwatch tickStopwatch = Stopwatch.StartNew();
-
-        try
-        {
-            string message = RefreshFocusTrackingFallbackIfNeeded(observedAt);
-            RefreshTimerUi(observedAt, message, GetLatestProcessStates(), allowPersistentReload: false);
-        }
-        finally
-        {
-            tickStopwatch.Stop();
-            bool isDelayedTick = _lastUiTickObservedAt.HasValue &&
-                observedAt - _lastUiTickObservedAt.Value > _uiTimer.Interval + TimeSpan.FromMilliseconds(200);
-            _lastUiTickObservedAt = observedAt;
-            _performanceMonitor.RecordUiTick(
-                observedAt,
-                tickStopwatch.Elapsed,
-                isDelayedTick,
-                null,
-                0);
-        }
+        string message = RefreshFocusTrackingFallbackIfNeeded(observedAt);
+        RefreshTimerUi(observedAt, message, GetLatestProcessStates(), allowPersistentReload: false);
     }
 
     private void ForegroundFocusEvents_ForegroundChanged(IntPtr foregroundWindowHandle)
@@ -242,36 +213,6 @@ public partial class MainWindow : Window
     private void WeeklyTabButton_Click(object sender, RoutedEventArgs e)
     {
         SetSelectedTab(MainMenuTab.WeeklyRecord);
-    }
-
-    private void OpenPerformanceMonitorButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (_performanceMonitorWindow is not null)
-        {
-            if (_performanceMonitorWindow.WindowState == WindowState.Minimized)
-            {
-                _performanceMonitorWindow.WindowState = WindowState.Normal;
-            }
-
-            _performanceMonitorWindow.Activate();
-            return;
-        }
-
-        _performanceMonitorWindow = new PerformanceMonitorWindow(_performanceMonitor)
-        {
-            Owner = this
-        };
-        _performanceMonitorWindow.Closed += PerformanceMonitorWindow_Closed;
-        _performanceMonitorWindow.Show();
-    }
-
-    private void PerformanceMonitorWindow_Closed(object? sender, EventArgs e)
-    {
-        if (_performanceMonitorWindow is not null)
-        {
-            _performanceMonitorWindow.Closed -= PerformanceMonitorWindow_Closed;
-            _performanceMonitorWindow = null;
-        }
     }
 
     internal void OpenRunningProjectSummaryPipWindow()
@@ -591,11 +532,7 @@ public partial class MainWindow : Window
     {
         try
         {
-            DateTimeOffset observedAt = DateTimeOffset.Now;
-            Stopwatch stopwatch = Stopwatch.StartNew();
             _store.SaveProjectCatalog(_engine.CreateStateSnapshot().Projects);
-            stopwatch.Stop();
-            _performanceMonitor.RecordProjectCatalogSave(observedAt, stopwatch.Elapsed);
         }
         catch (Exception exception)
         {
@@ -612,12 +549,8 @@ public partial class MainWindow : Window
     {
         try
         {
-            DateTimeOffset observedAt = DateTimeOffset.Now;
-            Stopwatch stopwatch = Stopwatch.StartNew();
             _store.AppendCompletedRecord(record);
-            stopwatch.Stop();
             _ = _engine.ForgetCompletedRecord(record);
-            _performanceMonitor.RecordCompletedRecordSave(observedAt, record, stopwatch.Elapsed);
         }
         catch (Exception exception)
         {
@@ -739,14 +672,6 @@ public partial class MainWindow : Window
             AppContext.BaseDirectory,
             "data",
             "focus-tracking-timer.db");
-    }
-
-    private static string BuildPerformanceLogDirectory()
-    {
-        return Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "FocusTrackingTimer",
-            "performance");
     }
 
     private static DateOnly GetWeekStart(DateOnly date)
