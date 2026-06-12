@@ -2,14 +2,6 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <UserControl.Resources>
-        <Style x:Key="SidebarPinToolTipStyle"
-               TargetType="ToolTip"
-               BasedOn="{StaticResource CommonToolTipStyle}">
-            <Setter Property="Placement" Value="Right" />
-            <Setter Property="HorizontalOffset" Value="8" />
-            <Setter Property="VerticalOffset" Value="0" />
-        </Style>
-
         <Style x:Key="ProjectListBoxStyle" TargetType="ListBox">
             <Setter Property="Background" Value="{StaticResource ThemeTransparentBrush}" />
             <Setter Property="BorderThickness" Value="0" />
@@ -170,16 +162,13 @@
                                 <DockPanel LastChildFill="True">
                                     <Button x:Name="PinnedProjectPinButton"
                                             DockPanel.Dock="Right"
-                                            Width="22"
-                                            Height="22"
+                                            Width="28"
+                                            Height="28"
                                             Margin="6,0,0,0"
+                                            Padding="4"
                                             Style="{StaticResource StaticActionIconButton}"
                                             Click="PinProjectRowButton_Click"
                                             Foreground="{StaticResource ThemeHintTextBrush}">
-                                        <Button.ToolTip>
-                                            <ToolTip Style="{StaticResource SidebarPinToolTipStyle}"
-                                                     Content="작업 고정 해제" />
-                                        </Button.ToolTip>
                                         <Image Width="20"
                                                Height="20"
                                                Source="/Assets/pin-filled.png"
@@ -237,18 +226,15 @@
                                 <DockPanel LastChildFill="True">
                                     <Button x:Name="ProjectPinButton"
                                             DockPanel.Dock="Right"
-                                            Width="22"
-                                            Height="22"
+                                            Width="28"
+                                            Height="28"
                                             Margin="6,0,0,0"
+                                            Padding="4"
                                             Style="{StaticResource StaticActionIconButton}"
                                             Click="PinProjectRowButton_Click"
                                             Foreground="{StaticResource ThemeHintTextBrush}"
                                             Opacity="0"
-                                            IsEnabled="False">
-                                        <Button.ToolTip>
-                                            <ToolTip Style="{StaticResource SidebarPinToolTipStyle}"
-                                                     Content="작업 고정" />
-                                        </Button.ToolTip>
+                                            IsHitTestVisible="False">
                                         <Image Width="20"
                                                Height="20"
                                                Source="/Assets/pin.png"
@@ -265,7 +251,7 @@
                                 <DataTemplate.Triggers>
                                     <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsMouseOver}" Value="True">
                                         <Setter TargetName="ProjectPinButton" Property="Opacity" Value="1" />
-                                        <Setter TargetName="ProjectPinButton" Property="IsEnabled" Value="True" />
+                                        <Setter TargetName="ProjectPinButton" Property="IsHitTestVisible" Value="True" />
                                     </DataTrigger>
                                 </DataTemplate.Triggers>
                             </DataTemplate>
