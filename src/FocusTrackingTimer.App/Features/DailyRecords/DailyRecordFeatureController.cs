@@ -43,7 +43,7 @@ internal sealed class DailyRecordFeatureController
         Guid? selectedFilterProjectId = _viewModel.SelectedRecordFilter?.ProjectId;
 
         _viewModel.RecordFilterOptions.Clear();
-        _viewModel.RecordFilterOptions.Add(new RecordFilterOption(null, "<모든 작업>"));
+        _viewModel.RecordFilterOptions.Add(new RecordFilterOption(null, "전체 작업"));
         foreach (ProjectDefinition project in _engine.Projects.OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase))
         {
             _viewModel.RecordFilterOptions.Add(new RecordFilterOption(project.Id, project.Name));
@@ -138,7 +138,7 @@ internal sealed class DailyRecordFeatureController
             _viewModel.CalendarRows.Add(new CalendarDayRow(
                 date,
                 date.Day.ToString(CultureInfo.CurrentCulture),
-                duration == TimeSpan.Zero ? string.Empty : AppTimeFormatter.FormatDurationShort(duration),
+                duration == TimeSpan.Zero ? string.Empty : AppTimeFormatter.FormatDuration(duration),
                 duration > TimeSpan.Zero,
                 date == today,
                 date.DayOfWeek == DayOfWeek.Sunday,
@@ -205,7 +205,7 @@ internal sealed class DailyRecordFeatureController
         {
             _viewModel.SelectedDailyRecordRows.Add(new DailyRecordItemRow(
                 slice.ProjectName,
-                AppTimeFormatter.FormatDurationShort(slice.TotalDuration),
+                AppTimeFormatter.FormatDuration(slice.TotalDuration),
                 AppTimeFormatter.FormatTimeRange(slice.StartedAt, slice.EndedAt)));
         }
 

@@ -3,6 +3,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Focus Tracking Timer"
+        Icon="/Assets/app-icon.ico"
         Width="284"
         Height="142"
         AllowsTransparency="True"
@@ -44,15 +45,12 @@
                             Orientation="Horizontal">
                     <Button Width="28"
                             Height="28"
-                            Background="{StaticResource ThemeTransparentBrush}"
-                            BorderBrush="{StaticResource ThemeTransparentBrush}"
-                            BorderThickness="0"
+                            Style="{StaticResource IconButton}"
                             Click="RestoreMainWindowButton_Click"
-                            Padding="0"
                             ToolTip="Close PIP and return to main">
-                        <Image Width="24"
-                               Height="24"
-                               Source="/Assets/current-session-pip.png"
+                        <Image Width="20"
+                               Height="20"
+                                               Source="/Assets/pip.png"
                                Stretch="Uniform" />
                     </Button>
                     <Button Width="28"

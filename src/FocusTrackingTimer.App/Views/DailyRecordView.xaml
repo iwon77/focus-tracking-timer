@@ -75,12 +75,22 @@
 
                     <StackPanel HorizontalAlignment="Center"
                                 Orientation="Horizontal">
-                        <Button Width="54" Height="32" Margin="0,0,8,0" Style="{StaticResource SecondaryButton}" Click="PreviousRecordYearButton_Click" Content="-1Y" />
-                        <Button Width="32" Height="32" Style="{StaticResource SecondaryButton}" Click="PreviousRecordMonthButton_Click" Content="&lt;" />
+                        <Button Width="32" Height="32" Margin="0,0,8,0" Style="{StaticResource IconButton}" Click="PreviousRecordYearButton_Click">
+                            <Image Width="24" Height="24" Source="/Assets/chevrons-left.png" Stretch="Uniform" />
+                        </Button>
+                        <Button Width="32" Height="32" Style="{StaticResource IconButton}" Click="PreviousRecordMonthButton_Click">
+                            <Image Width="24" Height="24" Source="/Assets/chevron-left.png" Stretch="Uniform" />
+                        </Button>
                         <TextBlock Margin="14,0" VerticalAlignment="Center" FontSize="16" FontWeight="SemiBold" Text="{Binding DisplayedRecordMonthText}" />
-                        <Button Width="32" Height="32" Style="{StaticResource SecondaryButton}" Click="NextRecordMonthButton_Click" Content="&gt;" />
-                        <Button Width="54" Height="32" Margin="8,0,0,0" Style="{StaticResource SecondaryButton}" Click="NextRecordYearButton_Click" Content="+1Y" />
-                        <Button Width="64" Height="32" Margin="8,0,0,0" Style="{StaticResource SecondaryButton}" Click="CurrentRecordMonthButton_Click" Content="오늘" />
+                        <Button Width="32" Height="32" Style="{StaticResource IconButton}" Click="NextRecordMonthButton_Click">
+                            <Image Width="24" Height="24" Source="/Assets/chevron-right.png" Stretch="Uniform" />
+                        </Button>
+                        <Button Width="32" Height="32" Margin="8,0,0,0" Style="{StaticResource IconButton}" Click="NextRecordYearButton_Click">
+                            <Image Width="24" Height="24" Source="/Assets/chevrons-right.png" Stretch="Uniform" />
+                        </Button>
+                        <Button Width="32" Height="32" Margin="8,0,0,0" Style="{StaticResource IconButton}" Click="CurrentRecordMonthButton_Click">
+                            <Image Width="24" Height="24" Source="/Assets/current-month.png" Stretch="Uniform" />
+                        </Button>
                     </StackPanel>
 
                     <UniformGrid Grid.Row="1"
@@ -243,33 +253,26 @@
                            Text="{Binding SelectedDailyDateText}" />
 
                 <UniformGrid Grid.Row="1"
-                             Width="288"
-                             HorizontalAlignment="Left"
+                             HorizontalAlignment="Stretch"
                              Margin="0,14,0,18"
-                             Columns="2"
-                             Rows="2">
-                    <Border Margin="0,0,8,8" Padding="12" Background="{StaticResource ThemeLightSurfaceBrush}" CornerRadius="8">
-                        <StackPanel>
-                            <TextBlock Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="작업 건수" />
-                            <TextBlock Margin="0,8,0,0" FontSize="14" FontWeight="SemiBold" Text="{Binding SelectedDailyRecordCountText}" />
-                        </StackPanel>
-                    </Border>
-                    <Border Margin="0,0,0,8" Padding="12" Background="{StaticResource ThemeLightSurfaceBrush}" CornerRadius="8">
-                        <StackPanel>
-                            <TextBlock Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="총 작업 시간" />
-                            <TextBlock Margin="0,8,0,0" FontSize="14" FontWeight="SemiBold" Text="{Binding SelectedDailyTotalWallClockDurationText}" />
+                             Columns="3"
+                             Rows="1">
+                    <Border Margin="0,0,8,0" Padding="12" Background="{StaticResource ThemeLightSurfaceBrush}" CornerRadius="8">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="작업 건수" />
+                            <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Margin="0,8,0,0" FontSize="14" FontWeight="SemiBold" Text="{Binding SelectedDailyRecordCountText}" />
                         </StackPanel>
                     </Border>
                     <Border Margin="0,0,8,0" Padding="12" Background="{StaticResource ThemeLightSurfaceBrush}" CornerRadius="8">
-                        <StackPanel>
-                            <TextBlock Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="집중 시간" />
-                            <TextBlock Margin="0,8,0,0" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource ThemeFocusBrush}" Text="{Binding SelectedDailyFocusSummaryText}" />
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="총 작업 시간" />
+                            <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Margin="0,8,0,0" FontSize="14" FontWeight="SemiBold" Text="{Binding SelectedDailyTotalWallClockDurationText}" />
                         </StackPanel>
                     </Border>
-                    <Border Padding="12" Background="{StaticResource ThemeLightSurfaceBrush}" CornerRadius="8">
-                        <StackPanel>
-                            <TextBlock Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="선택 날짜" />
-                            <TextBlock Margin="0,8,0,0" FontSize="14" FontWeight="SemiBold" Text="{Binding SelectedDailyDateText}" />
+                    <Border Margin="0" Padding="12" Background="{StaticResource ThemeLightSurfaceBrush}" CornerRadius="8">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource ThemeSecondaryTextBrush}" Text="집중 시간" />
+                            <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Margin="0,8,0,0" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource ThemeFocusBrush}" Text="{Binding SelectedDailyFocusSummaryText}" />
                         </StackPanel>
                     </Border>
                 </UniformGrid>

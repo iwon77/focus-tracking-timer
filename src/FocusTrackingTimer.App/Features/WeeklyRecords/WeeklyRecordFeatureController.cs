@@ -46,7 +46,7 @@ internal sealed class WeeklyRecordFeatureController
         Guid? selectedFilterProjectId = _viewModel.SelectedRecordFilter?.ProjectId;
 
         _viewModel.RecordFilterOptions.Clear();
-        _viewModel.RecordFilterOptions.Add(new RecordFilterOption(null, "<모든 작업>"));
+        _viewModel.RecordFilterOptions.Add(new RecordFilterOption(null, "전체 작업"));
         foreach (ProjectDefinition project in _engine.Projects.OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase))
         {
             _viewModel.RecordFilterOptions.Add(new RecordFilterOption(project.Id, project.Name));

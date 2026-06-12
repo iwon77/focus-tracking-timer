@@ -233,6 +233,7 @@ internal sealed class TimerFeatureController
         }
 
         SetSelectedProject(project);
+        MarkProjectRowsDirty();
         RefreshSelectedProjectArea(DateTimeOffset.Now, "선택한 작업을 표시합니다.", allowPersistentReload: true);
     }
 
@@ -250,6 +251,7 @@ internal sealed class TimerFeatureController
         }
 
         SetSelectedProject(project);
+        MarkProjectRowsDirty();
         _viewModel.SelectedProjectRow = FindProjectRow(project.Id);
         RefreshSelectedProjectArea(DateTimeOffset.Now, "실행 중인 작업을 표시합니다.", allowPersistentReload: true);
     }
@@ -710,7 +712,8 @@ internal sealed class TimerFeatureController
             ProjectSidebarRow row = new(
                 project.Id,
                 project.Name,
-                project.IsPinned);
+                project.IsPinned,
+                selectedProjectId == project.Id);
 
             if (project.IsPinned)
             {

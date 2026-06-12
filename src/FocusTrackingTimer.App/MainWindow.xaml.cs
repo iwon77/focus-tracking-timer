@@ -19,7 +19,7 @@ namespace FocusTrackingTimer.App;
 
 public partial class MainWindow : Window
 {
-    private static readonly Brush StartButtonBackground = ThemeBrushes.Focus;
+    private static readonly Brush StartButtonBackground = ThemeBrushes.PrimaryActionBackground;
     private static readonly Brush StopButtonBackground = ThemeBrushes.ActiveText;
     private static readonly Brush DisabledButtonBackground = ThemeBrushes.HoverBorder;
     private static readonly Brush StartButtonForeground = ThemeBrushes.ActiveText;

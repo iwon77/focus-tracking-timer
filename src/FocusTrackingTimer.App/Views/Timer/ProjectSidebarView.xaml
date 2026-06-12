@@ -24,10 +24,10 @@
                             <ContentPresenter />
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
+                            <DataTrigger Binding="{Binding IsSelected}" Value="True">
                                 <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource ThemeSelectionBrush}" />
                                 <Setter Property="Foreground" Value="{StaticResource ThemeFocusBrush}" />
-                            </Trigger>
+                            </DataTrigger>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource ThemeSelectionBrush}" />
                             </Trigger>
@@ -52,43 +52,39 @@
                     Padding="12"
                     Background="{StaticResource ThemeTransparentBrush}"
                     BorderThickness="0">
-                <Grid>
+                <Grid HorizontalAlignment="Center"
+                      VerticalAlignment="Center">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <Button Grid.Row="0"
-                            Width="28"
-                            Height="28"
-                            HorizontalAlignment="Right"
-                            Background="{StaticResource ThemeTransparentBrush}"
-                            BorderBrush="{StaticResource ThemeTransparentBrush}"
-                            BorderThickness="0"
-                            Click="OpenRunningProjectSummaryPipButton_Click"
-                            Padding="0"
-                            Visibility="{Binding RunningProjectSummaryPipButtonVisibility}"
-                            ToolTip="Open running summary PIP">
-                        <Image Width="24"
-                               Height="24"
-                               Source="/Assets/current-session-pip.png"
-                               Stretch="Uniform" />
-                    </Button>
-
-                    <Grid Grid.Row="1"
-                          Margin="0,12,0,0">
-                        <TextBlock Margin="0,0,8,0"
+                    <Grid Grid.Row="0"
+                          Width="184"
+                          Margin="6,0">
+                        <TextBlock Margin="0,0,36,0"
                                    FontSize="15"
                                    FontWeight="SemiBold"
-                                   VerticalAlignment="Top"
+                                   VerticalAlignment="Center"
                                    Text="{Binding RunningProjectNameText}"
                                    TextWrapping="NoWrap"
                                    TextTrimming="CharacterEllipsis" />
+                        <Button Width="28"
+                                Height="28"
+                                HorizontalAlignment="Right"
+                                Style="{StaticResource IconButton}"
+                                Click="OpenRunningProjectSummaryPipButton_Click"
+                                Visibility="{Binding RunningProjectSummaryPipButtonVisibility}"
+                                ToolTip="Open running summary PIP">
+                            <Image Width="20"
+                                   Height="20"
+                                   Source="/Assets/pip.png"
+                                   Stretch="Uniform" />
+                        </Button>
                     </Grid>
 
-                    <Grid Grid.Row="3">
+                    <Grid Grid.Row="1"
+                          Margin="0,12,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="*" />
@@ -102,11 +98,12 @@
                                        TextAlignment="Center"
                                        Text="경과 시간" />
                             <TextBlock Margin="0,6,0,0"
+                                       Width="86"
                                        FontSize="18"
                                        FontWeight="SemiBold"
                                        Foreground="{StaticResource ThemePrimaryTextBrush}"
                                        HorizontalAlignment="Center"
-                                       TextAlignment="Center"
+                                       TextAlignment="Left"
                                        Text="{Binding RunningProjectWallClockText}" />
                         </StackPanel>
 
@@ -119,11 +116,12 @@
                                        TextAlignment="Center"
                                        Text="집중 시간" />
                             <TextBlock Margin="0,6,0,0"
+                                       Width="86"
                                        FontSize="18"
                                        FontWeight="SemiBold"
                                        Foreground="{StaticResource ThemeFocusBrush}"
                                        HorizontalAlignment="Center"
-                                       TextAlignment="Center"
+                                       TextAlignment="Left"
                                        Text="{Binding RunningProjectFocusText}" />
                         </StackPanel>
                     </Grid>
@@ -138,7 +136,7 @@
                           VerticalScrollBarVisibility="Auto">
                 <StackPanel>
                     <TextBlock Margin="14,10,14,8"
-                               FontSize="11"
+                               FontSize="13"
                                FontWeight="Medium"
                                Foreground="{StaticResource ThemeSecondaryTextBrush}"
                                Text="고정 작업" />
@@ -159,12 +157,15 @@
                                             Width="22"
                                             Height="22"
                                             Margin="6,0,0,0"
-                                            Background="{StaticResource ThemeTransparentBrush}"
-                                            BorderThickness="0"
+                                            Style="{StaticResource IconButton}"
                                             Click="PinProjectRowButton_Click"
-                                            Content="★"
                                             Foreground="{StaticResource ThemeHintTextBrush}"
-                                            ToolTip="작업 고정" />
+                                            ToolTip="작업 고정">
+                                        <Image Width="20"
+                                               Height="20"
+                                               Source="/Assets/pin.png"
+                                               Stretch="Uniform" />
+                                    </Button>
                                     <TextBlock VerticalAlignment="Center"
                                                MaxWidth="150"
                                                Text="{Binding Name}"
@@ -179,12 +180,16 @@
                         <Button DockPanel.Dock="Right"
                                 Width="18"
                                 Height="18"
-                                Style="{StaticResource SecondaryButton}"
+                                Style="{StaticResource IconButton}"
                                 Click="AddProjectButton_Click"
-                                Content="+"
-                                Foreground="{StaticResource ThemePrimaryTextBrush}" />
+                                Foreground="{StaticResource ThemePrimaryTextBrush}">
+                            <Image Width="14"
+                                   Height="14"
+                                   Source="/Assets/add.png"
+                                   Stretch="Uniform" />
+                        </Button>
                         <TextBlock VerticalAlignment="Center"
-                                   FontSize="11"
+                                   FontSize="13"
                                    FontWeight="Medium"
                                    Foreground="{StaticResource ThemeSecondaryTextBrush}"
                                    Text="작업 목록" />
@@ -206,14 +211,17 @@
                                             Width="22"
                                             Height="22"
                                             Margin="6,0,0,0"
-                                            Background="{StaticResource ThemeTransparentBrush}"
-                                            BorderThickness="0"
+                                            Style="{StaticResource IconButton}"
                                             Click="PinProjectRowButton_Click"
-                                            Content="★"
                                             Foreground="{StaticResource ThemeHintTextBrush}"
                                             ToolTip="작업 고정"
                                             Opacity="0"
-                                            IsEnabled="False" />
+                                            IsEnabled="False">
+                                        <Image Width="20"
+                                               Height="20"
+                                               Source="/Assets/pin.png"
+                                               Stretch="Uniform" />
+                                    </Button>
                                     <TextBlock VerticalAlignment="Center"
                                                MaxWidth="150"
                                                Text="{Binding Name}"

@@ -84,22 +84,36 @@
                                         <DockPanel LastChildFill="True">
                                             <Button DockPanel.Dock="Right"
                                                     Style="{StaticResource HoverActionButton}"
-                                                    Click="DeleteProgramButton_Click"
-                                                    Content="×" />
+                                                    Click="DeleteProgramButton_Click">
+                                                <Image Width="18"
+                                                       Height="18"
+                                                       Source="/Assets/delete.png"
+                                                       Stretch="Uniform" />
+                                            </Button>
                                             <Button DockPanel.Dock="Right"
                                                     Style="{StaticResource HoverActionButton}"
-                                                    Click="EditProgramButton_Click"
-                                                    Content="✎" />
+                                                    Click="EditProgramButton_Click">
+                                                <Image Width="18"
+                                                       Height="18"
+                                                       Source="/Assets/edit.png"
+                                                       Stretch="Uniform" />
+                                            </Button>
                                             <Button DockPanel.Dock="Right"
                                                     Style="{StaticResource HoverActionButton}"
-                                                    Width="48"
-                                                    Click="FocusRegisteredProgramButton_Click"
-                                                    Content="보기" />
+                                                    Click="FocusRegisteredProgramButton_Click">
+                                                <Image Width="20"
+                                                       Height="20"
+                                                       Source="/Assets/view.png"
+                                                       Stretch="Uniform" />
+                                            </Button>
                                             <Button DockPanel.Dock="Right"
                                                     Style="{StaticResource HoverActionButton}"
-                                                    Width="48"
-                                                    Click="PinProgramButton_Click"
-                                                    Content="{Binding PinButtonText}" />
+                                                    Click="PinProgramButton_Click">
+                                                <Image Width="20"
+                                                       Height="20"
+                                                       Source="/Assets/pin.png"
+                                                       Stretch="Uniform" />
+                                            </Button>
 
                                             <StackPanel Orientation="Horizontal">
                                                 <Ellipse Width="10"
@@ -115,11 +129,13 @@
                                                                    Foreground="{StaticResource ThemePrimaryTextBrush}"
                                                                    Text="{Binding DisplayName}"
                                                                    TextTrimming="CharacterEllipsis" />
-                                                        <TextBlock Margin="8,0,0,0"
-                                                                   VerticalAlignment="Center"
-                                                                   Foreground="{StaticResource ThemeHintTextBrush}"
-                                                                   Text="★"
-                                                                   Visibility="{Binding PinIconVisibility}" />
+                                                        <Image Width="20"
+                                                               Height="20"
+                                                               Margin="8,0,0,0"
+                                                               VerticalAlignment="Center"
+                                                               Source="/Assets/pin.png"
+                                                               Stretch="Uniform"
+                                                               Visibility="{Binding PinIconVisibility}" />
                                                     </StackPanel>
                                                     <TextBlock Margin="0,3,0,0"
                                                                Foreground="{StaticResource ThemeSecondaryTextBrush}"

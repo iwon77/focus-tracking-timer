@@ -31,28 +31,40 @@
                             Height="26"
                             Margin="8,0,0,0"
                             VerticalAlignment="Center"
-                            Style="{StaticResource SecondaryButton}"
+                            Style="{StaticResource IconButton}"
                             Click="EditSelectedProjectButton_Click"
-                            Content="✎"
-                            IsEnabled="{Binding IsProjectEditEnabled}" />
+                            IsEnabled="{Binding IsProjectEditEnabled}">
+                        <Image Width="18"
+                               Height="18"
+                               Source="/Assets/edit.png"
+                               Stretch="Uniform" />
+                    </Button>
                     <Button Grid.Column="2"
                             Width="28"
                             Height="26"
                             Margin="6,0,0,0"
                             VerticalAlignment="Center"
-                            Style="{StaticResource SecondaryButton}"
+                            Style="{StaticResource IconButton}"
                             Click="DeleteProjectButton_Click"
-                            Content="✕"
-                            IsEnabled="{Binding IsProjectDeleteEnabled}" />
+                            IsEnabled="{Binding IsProjectDeleteEnabled}">
+                        <Image Width="18"
+                               Height="18"
+                               Source="/Assets/delete.png"
+                               Stretch="Uniform" />
+                    </Button>
                     <Button Grid.Column="3"
-                            Width="42"
+                            Width="28"
                             Height="26"
                             Margin="6,0,0,0"
                             VerticalAlignment="Center"
-                            Style="{StaticResource SecondaryButton}"
+                            Style="{StaticResource IconButton}"
                             Click="MemoSelectedProjectButton_Click"
-                            Content="메모"
-                            IsEnabled="{Binding IsProjectMemoEnabled}" />
+                            IsEnabled="{Binding IsProjectMemoEnabled}">
+                        <Image Width="18"
+                               Height="18"
+                               Source="/Assets/memo.png"
+                               Stretch="Uniform" />
+                    </Button>
                 </Grid>
 
                 <TextBlock Margin="0,8,0,0"
@@ -131,7 +143,7 @@
                         Margin="0,14,0,0"
                         HorizontalAlignment="Center"
                         Background="{Binding TimerActionButtonBackground}"
-                        BorderBrush="{StaticResource ThemeActiveBrush}"
+                        BorderBrush="{StaticResource ThemePrimaryActionBorderBrush}"
                         BorderThickness="1"
                         Click="TimerActionButton_Click"
                         Content="{Binding TimerActionButtonText}"
