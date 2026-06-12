@@ -92,7 +92,7 @@
                                 Height="32"
                                 Margin="8,0,0,0"
                                 Padding="10,0"
-                                Style="{StaticResource SecondaryButton}"
+                                Style="{StaticResource TextOutlineActionButton}"
                                 Click="CurrentRecordMonthButton_Click"
                                 Content="오늘" />
                         

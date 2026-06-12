@@ -210,7 +210,9 @@ internal sealed class DailyRecordFeatureController
             $"{AppTimeFormatter.FormatDuration(totalFocusDuration)} ({AppTimeFormatter.FormatPercentage(focusRatio)})";
 
         _viewModel.SelectedDailyRecordRows.Clear();
-        foreach (ProjectTimerRecordSlice slice in slices.OrderBy(static item => item.StartedAt))
+        foreach (ProjectTimerRecordSlice slice in slices
+            .OrderByDescending(static item => item.EndedAt)
+            .ThenByDescending(static item => item.StartedAt))
         {
             _viewModel.SelectedDailyRecordRows.Add(new DailyRecordItemRow(
                 slice.ProjectName,

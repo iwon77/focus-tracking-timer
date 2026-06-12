@@ -38,7 +38,7 @@
                         Height="32"
                         Margin="0,2,0,0"
                         Padding="10,0"
-                        Style="{StaticResource PrimaryButton}"
+                        Style="{StaticResource TextPrimaryActionButton}"
                         Click="OpenProgramManagerButton_Click"
                         Content="프로그램 추가" />
             </Grid>

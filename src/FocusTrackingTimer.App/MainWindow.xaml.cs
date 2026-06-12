@@ -287,6 +287,8 @@ public partial class MainWindow : Window
             return;
         }
 
+        _timerFeature.SelectActiveProject();
+
         if (_runningProjectSummaryPipWindow is not null)
         {
             if (_runningProjectSummaryPipWindow.WindowState == WindowState.Minimized)

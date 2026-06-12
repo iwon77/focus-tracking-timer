@@ -35,6 +35,27 @@ internal sealed partial class RunningProjectSummaryPipWindow : Window
         Close();
     }
 
+    private void AlwaysOnTopToggleButton_Checked(object sender, RoutedEventArgs e)
+    {
+        Topmost = true;
+    }
+
+    private void AlwaysOnTopToggleButton_Unchecked(object sender, RoutedEventArgs e)
+    {
+        Topmost = false;
+    }
+
+    private void TimerActionButton_Click(object sender, RoutedEventArgs e)
+    {
+        _hostWindow.TimerActionButton_Click(sender, e);
+    }
+
+    private void StopTimerButton_Click(object sender, RoutedEventArgs e)
+    {
+        _hostWindow.StopTimerButton_Click(sender, e);
+        _hostWindow.RestoreMainWindowFromRunningProjectSummaryPip();
+    }
+
     private void RootBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (e.LeftButton == MouseButtonState.Pressed)

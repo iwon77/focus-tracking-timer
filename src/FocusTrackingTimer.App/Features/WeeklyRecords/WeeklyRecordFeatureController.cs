@@ -74,8 +74,9 @@ internal sealed class WeeklyRecordFeatureController
 
         IReadOnlyList<ProjectTimerRecordSlice> weeklySlices = LoadRecordSlices(_displayedWeekStart, weekEnd, observedAt, projectFilter);
         List<ProjectTimerRecordSlice> orderedWeeklySlices = [.. weeklySlices
-            .OrderBy(static slice => slice.StartedAt)
-            .ThenBy(static slice => slice.EndedAt)];
+            .OrderBy(static slice => DateOnly.FromDateTime(slice.StartedAt.LocalDateTime.Date))
+            .ThenByDescending(static slice => slice.EndedAt)
+            .ThenByDescending(static slice => slice.StartedAt)];
         Dictionary<DateOnly, (TimeSpan WallClock, TimeSpan Focus)> totalsByDate = orderedWeeklySlices
             .GroupBy(static slice => DateOnly.FromDateTime(slice.StartedAt.LocalDateTime.Date))
             .ToDictionary(

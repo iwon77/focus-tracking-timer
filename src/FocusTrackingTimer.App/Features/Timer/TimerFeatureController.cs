@@ -537,6 +537,7 @@ internal sealed class TimerFeatureController
             _viewModel.ActiveProjectElapsedText = "00:00:00";
             _viewModel.SelectedProjectTodayText = "00:00:00";
             _viewModel.IsTimerActionEnabled = false;
+            _viewModel.IsTimerActionOutlined = false;
             _viewModel.IsTimerStopEnabled = false;
             _viewModel.TimerActionButtonText = "시작";
             _viewModel.TimerActionButtonBackground = _disabledButtonBackground;
@@ -628,6 +629,7 @@ internal sealed class TimerFeatureController
 
         _viewModel.TimerStatusText = message;
         _viewModel.IsTimerActionEnabled = !anotherProjectIsRunning;
+        _viewModel.IsTimerActionOutlined = _engine.IsRunning && isActiveProject;
         _viewModel.IsTimerStopEnabled = isActiveProject && _engine.IsRunning;
         _viewModel.TimerActionButtonText = !_engine.IsRunning
             ? "시작"

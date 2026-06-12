@@ -38,7 +38,7 @@
                             Height="32"
                             Margin="8,0,0,0"
                             Padding="10,0"
-                            Style="{StaticResource SecondaryButton}"
+                            Style="{StaticResource TextOutlineActionButton}"
                             Click="CurrentWeekButton_Click"
                             Content="오늘" />
                 </StackPanel>
