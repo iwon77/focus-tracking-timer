@@ -23,7 +23,7 @@
                     <TextBlock Grid.Column="0"
                                FontSize="22"
                                FontWeight="SemiBold"
-                               Foreground="{StaticResource ThemePrimaryTextBrush}"
+                               Foreground="Black"
                                Text="{Binding SelectedProjectTitle}"
                                TextTrimming="CharacterEllipsis" />
                     <Button Grid.Column="1"
@@ -31,12 +31,19 @@
                             Height="26"
                             Margin="8,0,0,0"
                             VerticalAlignment="Center"
-                            Style="{StaticResource IconButton}"
-                            Click="EditSelectedProjectButton_Click"
-                            IsEnabled="{Binding IsProjectEditEnabled}">
+                            Style="{StaticResource StaticActionIconButton}"
+                            Click="MemoSelectedProjectButton_Click"
+                            IsEnabled="{Binding IsProjectMemoEnabled}">
+                        <Button.ToolTip>
+                            <ToolTip Style="{StaticResource CommonToolTipStyle}"
+                                     Content="작업 메모 작성" />
+                        </Button.ToolTip>
                         <Image Width="18"
                                Height="18"
-                               Source="/Assets/edit.png"
+                               Source="/Assets/memo.png"
+                               SnapsToDevicePixels="True"
+                               UseLayoutRounding="True"
+                               RenderOptions.BitmapScalingMode="NearestNeighbor"
                                Stretch="Uniform" />
                     </Button>
                     <Button Grid.Column="2"
@@ -44,12 +51,19 @@
                             Height="26"
                             Margin="6,0,0,0"
                             VerticalAlignment="Center"
-                            Style="{StaticResource IconButton}"
-                            Click="DeleteProjectButton_Click"
-                            IsEnabled="{Binding IsProjectDeleteEnabled}">
+                            Style="{StaticResource StaticActionIconButton}"
+                            Click="EditSelectedProjectButton_Click"
+                            IsEnabled="{Binding IsProjectEditEnabled}">
+                        <Button.ToolTip>
+                            <ToolTip Style="{StaticResource CommonToolTipStyle}"
+                                     Content="작업 이름 바꾸기" />
+                        </Button.ToolTip>
                         <Image Width="18"
                                Height="18"
-                               Source="/Assets/delete.png"
+                               Source="/Assets/edit.png"
+                               SnapsToDevicePixels="True"
+                               UseLayoutRounding="True"
+                               RenderOptions.BitmapScalingMode="NearestNeighbor"
                                Stretch="Uniform" />
                     </Button>
                     <Button Grid.Column="3"
@@ -57,12 +71,19 @@
                             Height="26"
                             Margin="6,0,0,0"
                             VerticalAlignment="Center"
-                            Style="{StaticResource IconButton}"
-                            Click="MemoSelectedProjectButton_Click"
-                            IsEnabled="{Binding IsProjectMemoEnabled}">
+                            Style="{StaticResource StaticActionIconButton}"
+                            Click="DeleteProjectButton_Click"
+                            IsEnabled="{Binding IsProjectDeleteEnabled}">
+                        <Button.ToolTip>
+                            <ToolTip Style="{StaticResource CommonToolTipStyle}"
+                                     Content="작업 삭제" />
+                        </Button.ToolTip>
                         <Image Width="18"
                                Height="18"
-                               Source="/Assets/memo.png"
+                               Source="/Assets/delete.png"
+                               SnapsToDevicePixels="True"
+                               UseLayoutRounding="True"
+                               RenderOptions.BitmapScalingMode="NearestNeighbor"
                                Stretch="Uniform" />
                     </Button>
                 </Grid>
@@ -136,27 +157,55 @@
                                Text="{Binding ActiveProjectElapsedText}" />
                 </StackPanel>
 
-                <Button Grid.Row="2"
-                        Grid.Column="0"
-                        Width="84"
-                        Height="34"
-                        Margin="0,14,0,0"
-                        HorizontalAlignment="Center"
-                        Background="{Binding TimerActionButtonBackground}"
-                        BorderBrush="{StaticResource ThemePrimaryActionBorderBrush}"
-                        BorderThickness="1"
-                        Click="TimerActionButton_Click"
-                        Content="{Binding TimerActionButtonText}"
-                        Foreground="{Binding TimerActionButtonForeground}"
-                        FontWeight="SemiBold"
-                        IsEnabled="{Binding IsTimerActionEnabled}" />
+                <Grid Grid.Row="2"
+                      Grid.Column="0"
+                      Margin="0,14,0,0">
+                    <Button Width="84"
+                            Height="34"
+                            HorizontalAlignment="Center"
+                            Background="{Binding TimerActionButtonBackground}"
+                            Click="TimerActionButton_Click"
+                            Content="{Binding TimerActionButtonText}"
+                            Foreground="{Binding TimerActionButtonForeground}"
+                            FontWeight="SemiBold"
+                            IsEnabled="{Binding IsTimerActionEnabled}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource TextPrimaryActionButton}">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsTimerActionOutlined}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Width="84"
+                            Height="34"
+                            HorizontalAlignment="Center"
+                            Click="TimerActionButton_Click"
+                            Content="{Binding TimerActionButtonText}"
+                            FontWeight="SemiBold"
+                            IsEnabled="{Binding IsTimerActionEnabled}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource TextOutlineActionButton}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsTimerActionOutlined}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </Grid>
                 <Button Grid.Row="2"
                         Grid.Column="1"
                         Width="84"
                         Height="34"
                         Margin="0,14,0,0"
                         HorizontalAlignment="Center"
-                        Style="{StaticResource SecondaryButton}"
+                        Style="{StaticResource TextOutlineActionButton}"
                         Click="StopTimerButton_Click"
                         Content="중지"
                         IsEnabled="{Binding IsTimerStopEnabled}" />

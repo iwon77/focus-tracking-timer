@@ -9,7 +9,7 @@ public sealed record RegisteredProgramRow(
     Brush StatusBrush,
     string RegisteredAtText = "",
     string InitialDisplayName = "",
-    string StatusText = "실행 중 아님",
+    string StatusText = "현재 실행 중 아님",
     bool IsPinned = false,
     string PinButtonText = "고정",
     bool ShowsPinnedDivider = false)

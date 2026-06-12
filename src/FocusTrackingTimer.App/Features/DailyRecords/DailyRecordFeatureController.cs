@@ -27,7 +27,15 @@ internal sealed class DailyRecordFeatureController
 
     public void MoveDisplayedRecordMonth(int monthOffset)
     {
-        _displayedRecordMonth = _displayedRecordMonth.AddMonths(monthOffset);
+        DateOnly targetMonth = _displayedRecordMonth.AddMonths(monthOffset);
+        DateOnly targetMonthEnd = targetMonth.AddMonths(1).AddDays(-1);
+        Guid? projectFilter = _viewModel.SelectedRecordFilter?.ProjectId;
+        if (!HasAnyRecordsInRange(targetMonth, targetMonthEnd, DateTimeOffset.Now, projectFilter))
+        {
+            return;
+        }
+
+        _displayedRecordMonth = targetMonth;
         RefreshRecordArea(DateTimeOffset.Now);
     }
 
@@ -35,6 +43,7 @@ internal sealed class DailyRecordFeatureController
     {
         DateTime today = DateTime.Now;
         _displayedRecordMonth = new DateOnly(today.Year, today.Month, 1);
+        _selectedDate = DateOnly.FromDateTime(today.Date);
         RefreshRecordArea(DateTimeOffset.Now);
     }
 
@@ -201,7 +210,9 @@ internal sealed class DailyRecordFeatureController
             $"{AppTimeFormatter.FormatDuration(totalFocusDuration)} ({AppTimeFormatter.FormatPercentage(focusRatio)})";
 
         _viewModel.SelectedDailyRecordRows.Clear();
-        foreach (ProjectTimerRecordSlice slice in slices.OrderBy(static item => item.StartedAt))
+        foreach (ProjectTimerRecordSlice slice in slices
+            .OrderByDescending(static item => item.EndedAt)
+            .ThenByDescending(static item => item.StartedAt))
         {
             _viewModel.SelectedDailyRecordRows.Add(new DailyRecordItemRow(
                 slice.ProjectName,
@@ -250,5 +261,14 @@ internal sealed class DailyRecordFeatureController
         }
 
         return summaries;
+    }
+
+    private bool HasAnyRecordsInRange(
+        DateOnly fromDate,
+        DateOnly toDate,
+        DateTimeOffset observedAt,
+        Guid? projectFilter)
+    {
+        return LoadRecordSlices(fromDate, toDate, observedAt, projectFilter).Count > 0;
     }
 }

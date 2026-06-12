@@ -31,8 +31,10 @@
                 BorderBrush="{StaticResource ThemeSecondaryBorderBrush}"
                 BorderThickness="1"
                 CornerRadius="12">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <ItemsControl ItemsSource="{Binding RunningProcesses}">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+                <ItemsControl Width="{Binding ViewportWidth, RelativeSource={RelativeSource AncestorType=ScrollViewer}}"
+                              ItemsSource="{Binding RunningProcesses}">
                     <ItemsControl.ItemContainerStyle>
                         <Style TargetType="ContentPresenter">
                             <Setter Property="HorizontalAlignment" Value="Stretch" />
@@ -77,15 +79,25 @@
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
 
-                                    <StackPanel Margin="0,0,20,0">
+                                    <Grid Margin="0,0,20,0">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+
                                         <TextBlock FontSize="15"
                                                    FontWeight="SemiBold"
                                                    Foreground="{StaticResource ThemePrimaryTextBrush}"
-                                                   Text="{Binding DisplayName}" />
-                                        <TextBlock Margin="0,4,0,0"
+                                                   Text="{Binding DisplayName}"
+                                                   TextWrapping="NoWrap"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Row="1"
+                                                   Margin="0,4,0,0"
                                                    Foreground="{StaticResource ThemeSecondaryTextBrush}"
-                                                   Text="{Binding ProcessName}" />
-                                    </StackPanel>
+                                                   Text="{Binding ProcessName}"
+                                                   TextWrapping="NoWrap"
+                                                   TextTrimming="CharacterEllipsis" />
+                                    </Grid>
 
                                     <Button Grid.Column="1"
                                             Padding="14,7"

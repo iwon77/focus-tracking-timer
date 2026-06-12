@@ -163,6 +163,7 @@ internal sealed class TimerFeatureController
         }
 
         Guid projectId = SelectedProject.Id;
+        Guid? nextSelectedProjectId = FindAdjacentProjectIdForDeletedProject(projectId);
         if (!_engine.TryRemoveProject(projectId))
         {
             _viewModel.TimerStatusText = "실행 중인 작업은 삭제할 수 없습니다.";
@@ -170,7 +171,9 @@ internal sealed class TimerFeatureController
         }
 
         InvalidateProjectCaches(projectId);
-        SetSelectedProject(_engine.Projects.FirstOrDefault());
+        SetSelectedProject(nextSelectedProjectId.HasValue
+            ? _engine.Projects.FirstOrDefault(item => item.Id == nextSelectedProjectId.Value)
+            : null);
         MarkProjectRowsDirty();
         _persistProjectCatalog();
         RefreshProjectFiltersAndVisibleRecord(DateTimeOffset.Now, "작업을 삭제했습니다.");
@@ -537,6 +540,7 @@ internal sealed class TimerFeatureController
             _viewModel.ActiveProjectElapsedText = "00:00:00";
             _viewModel.SelectedProjectTodayText = "00:00:00";
             _viewModel.IsTimerActionEnabled = false;
+            _viewModel.IsTimerActionOutlined = false;
             _viewModel.IsTimerStopEnabled = false;
             _viewModel.TimerActionButtonText = "시작";
             _viewModel.TimerActionButtonBackground = _disabledButtonBackground;
@@ -628,6 +632,7 @@ internal sealed class TimerFeatureController
 
         _viewModel.TimerStatusText = message;
         _viewModel.IsTimerActionEnabled = !anotherProjectIsRunning;
+        _viewModel.IsTimerActionOutlined = _engine.IsRunning && isActiveProject;
         _viewModel.IsTimerStopEnabled = isActiveProject && _engine.IsRunning;
         _viewModel.TimerActionButtonText = !_engine.IsRunning
             ? "시작"
@@ -764,6 +769,30 @@ internal sealed class TimerFeatureController
     {
         return _viewModel.PinnedProjectRows.FirstOrDefault(item => item.ProjectId == projectId)
             ?? _viewModel.ProjectRows.FirstOrDefault(item => item.ProjectId == projectId);
+    }
+
+    private Guid? FindAdjacentProjectIdForDeletedProject(Guid projectId)
+    {
+        List<Guid> visibleProjectIds =
+        [
+            .. _viewModel.PinnedProjectRows.Select(static row => row.ProjectId),
+            .. _viewModel.ProjectRows.Select(static row => row.ProjectId)
+        ];
+
+        int deletedIndex = visibleProjectIds.FindIndex(id => id == projectId);
+        if (deletedIndex < 0)
+        {
+            return _engine.Projects.FirstOrDefault(item => item.Id != projectId)?.Id;
+        }
+
+        if (deletedIndex > 0)
+        {
+            return visibleProjectIds[deletedIndex - 1];
+        }
+
+        return deletedIndex + 1 < visibleProjectIds.Count
+            ? visibleProjectIds[deletedIndex + 1]
+            : null;
     }
 
     private bool ShouldRebuildRegisteredProgramRows(

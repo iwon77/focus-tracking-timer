@@ -13,6 +13,7 @@
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="Margin" Value="0,0,0,2" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Background" Value="{StaticResource ThemeTransparentBrush}" />
             <Setter Property="Template">
                 <Setter.Value>
@@ -25,8 +26,8 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource ThemeSelectionBrush}" />
-                                <Setter Property="Foreground" Value="{StaticResource ThemeFocusBrush}" />
+                                <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource ThemeLightSurfaceBrush}" />
+                                <Setter Property="Foreground" Value="Black" />
                             </DataTrigger>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource ThemeSelectionBrush}" />
@@ -65,6 +66,7 @@
                         <TextBlock Margin="0,0,36,0"
                                    FontSize="15"
                                    FontWeight="SemiBold"
+                                   Foreground="Black"
                                    VerticalAlignment="Center"
                                    Text="{Binding RunningProjectNameText}"
                                    TextWrapping="NoWrap"
@@ -72,13 +74,19 @@
                         <Button Width="28"
                                 Height="28"
                                 HorizontalAlignment="Right"
-                                Style="{StaticResource IconButton}"
+                                Style="{StaticResource StaticActionIconButton}"
                                 Click="OpenRunningProjectSummaryPipButton_Click"
-                                Visibility="{Binding RunningProjectSummaryPipButtonVisibility}"
-                                ToolTip="Open running summary PIP">
+                                Visibility="{Binding RunningProjectSummaryPipButtonVisibility}">
+                            <Button.ToolTip>
+                                <ToolTip Style="{StaticResource CommonToolTipStyle}"
+                                         Content="팝업으로 보기" />
+                            </Button.ToolTip>
                             <Image Width="20"
                                    Height="20"
                                    Source="/Assets/pip.png"
+                                   SnapsToDevicePixels="True"
+                                   UseLayoutRounding="True"
+                                   RenderOptions.BitmapScalingMode="NearestNeighbor"
                                    Stretch="Uniform" />
                         </Button>
                     </Grid>
@@ -103,7 +111,7 @@
                                        FontWeight="SemiBold"
                                        Foreground="{StaticResource ThemePrimaryTextBrush}"
                                        HorizontalAlignment="Center"
-                                       TextAlignment="Left"
+                                       TextAlignment="Center"
                                        Text="{Binding RunningProjectWallClockText}" />
                         </StackPanel>
 
@@ -121,7 +129,7 @@
                                        FontWeight="SemiBold"
                                        Foreground="{StaticResource ThemeFocusBrush}"
                                        HorizontalAlignment="Center"
-                                       TextAlignment="Left"
+                                       TextAlignment="Center"
                                        Text="{Binding RunningProjectFocusText}" />
                         </StackPanel>
                     </Grid>
@@ -137,8 +145,8 @@
                 <StackPanel>
                     <TextBlock Margin="14,10,14,8"
                                FontSize="13"
-                               FontWeight="Medium"
-                               Foreground="{StaticResource ThemeSecondaryTextBrush}"
+                               FontWeight="Bold"
+                               Foreground="Black"
                                Text="고정 작업" />
 
                     <ListBox Background="{StaticResource ThemeTransparentBrush}"
@@ -154,16 +162,19 @@
                                 <DockPanel LastChildFill="True">
                                     <Button x:Name="PinnedProjectPinButton"
                                             DockPanel.Dock="Right"
-                                            Width="22"
-                                            Height="22"
+                                            Width="28"
+                                            Height="28"
                                             Margin="6,0,0,0"
-                                            Style="{StaticResource IconButton}"
+                                            Padding="4"
+                                            Style="{StaticResource StaticActionIconButton}"
                                             Click="PinProjectRowButton_Click"
-                                            Foreground="{StaticResource ThemeHintTextBrush}"
-                                            ToolTip="작업 고정">
+                                            Foreground="{StaticResource ThemeHintTextBrush}">
                                         <Image Width="20"
                                                Height="20"
-                                               Source="/Assets/pin.png"
+                                               Source="/Assets/pin-filled.png"
+                                               SnapsToDevicePixels="True"
+                                               UseLayoutRounding="True"
+                                               RenderOptions.BitmapScalingMode="NearestNeighbor"
                                                Stretch="Uniform" />
                                     </Button>
                                     <TextBlock VerticalAlignment="Center"
@@ -180,18 +191,25 @@
                         <Button DockPanel.Dock="Right"
                                 Width="18"
                                 Height="18"
-                                Style="{StaticResource IconButton}"
+                                Style="{StaticResource StaticActionIconButton}"
                                 Click="AddProjectButton_Click"
                                 Foreground="{StaticResource ThemePrimaryTextBrush}">
+                            <Button.ToolTip>
+                                <ToolTip Style="{StaticResource CommonToolTipStyle}"
+                                         Content="작업 추가" />
+                            </Button.ToolTip>
                             <Image Width="14"
                                    Height="14"
                                    Source="/Assets/add.png"
+                                   SnapsToDevicePixels="True"
+                                   UseLayoutRounding="True"
+                                   RenderOptions.BitmapScalingMode="NearestNeighbor"
                                    Stretch="Uniform" />
                         </Button>
                         <TextBlock VerticalAlignment="Center"
                                    FontSize="13"
-                                   FontWeight="Medium"
-                                   Foreground="{StaticResource ThemeSecondaryTextBrush}"
+                                   FontWeight="Bold"
+                                   Foreground="Black"
                                    Text="작업 목록" />
                     </DockPanel>
 
@@ -208,18 +226,21 @@
                                 <DockPanel LastChildFill="True">
                                     <Button x:Name="ProjectPinButton"
                                             DockPanel.Dock="Right"
-                                            Width="22"
-                                            Height="22"
+                                            Width="28"
+                                            Height="28"
                                             Margin="6,0,0,0"
-                                            Style="{StaticResource IconButton}"
+                                            Padding="4"
+                                            Style="{StaticResource StaticActionIconButton}"
                                             Click="PinProjectRowButton_Click"
                                             Foreground="{StaticResource ThemeHintTextBrush}"
-                                            ToolTip="작업 고정"
                                             Opacity="0"
-                                            IsEnabled="False">
+                                            IsHitTestVisible="False">
                                         <Image Width="20"
                                                Height="20"
                                                Source="/Assets/pin.png"
+                                               SnapsToDevicePixels="True"
+                                               UseLayoutRounding="True"
+                                               RenderOptions.BitmapScalingMode="NearestNeighbor"
                                                Stretch="Uniform" />
                                     </Button>
                                     <TextBlock VerticalAlignment="Center"
@@ -230,7 +251,7 @@
                                 <DataTemplate.Triggers>
                                     <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsMouseOver}" Value="True">
                                         <Setter TargetName="ProjectPinButton" Property="Opacity" Value="1" />
-                                        <Setter TargetName="ProjectPinButton" Property="IsEnabled" Value="True" />
+                                        <Setter TargetName="ProjectPinButton" Property="IsHitTestVisible" Value="True" />
                                     </DataTrigger>
                                 </DataTemplate.Triggers>
                             </DataTemplate>

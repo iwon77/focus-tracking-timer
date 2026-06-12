@@ -11,6 +11,8 @@ internal static class ThemeBrushes
 
     public static Brush HoverBorder => Get("ThemeHoverBorderBrush");
 
+    public static Brush LightSurface => Get("ThemeLightSurfaceBrush");
+
     public static Brush PrimaryText => Get("ThemePrimaryTextBrush");
 
     public static Brush SecondaryText => Get("ThemeSecondaryTextBrush");

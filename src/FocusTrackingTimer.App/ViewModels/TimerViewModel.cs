@@ -19,6 +19,7 @@ public sealed class TimerViewModel : ObservableObject
     private string _activeProjectElapsedText = "00:00:00";
     private string _selectedProjectTodayText = "00:00:00";
     private bool _isTimerActionEnabled;
+    private bool _isTimerActionOutlined;
     private bool _isTimerStopEnabled;
     private bool _isProjectEditEnabled;
     private bool _isProjectDeleteEnabled;
@@ -116,6 +117,12 @@ public sealed class TimerViewModel : ObservableObject
     {
         get => _isTimerActionEnabled;
         set => SetProperty(ref _isTimerActionEnabled, value);
+    }
+
+    public bool IsTimerActionOutlined
+    {
+        get => _isTimerActionOutlined;
+        set => SetProperty(ref _isTimerActionOutlined, value);
     }
 
     public bool IsTimerStopEnabled

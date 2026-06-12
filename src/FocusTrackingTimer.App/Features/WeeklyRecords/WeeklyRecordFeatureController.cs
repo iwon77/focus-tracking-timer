@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Windows;
 using FocusTrackingTimer.App.Infrastructure;
 using FocusTrackingTimer.App.ViewModels;
@@ -29,15 +29,25 @@ internal sealed class WeeklyRecordFeatureController
 
     public void MoveDisplayedWeek(int weekOffset)
     {
-        _displayedWeekStart = _displayedWeekStart.AddDays(weekOffset * 7);
+        DateOnly targetWeekStart = _displayedWeekStart.AddDays(weekOffset * 7);
+        DateOnly targetWeekEnd = targetWeekStart.AddDays(6);
+        Guid? projectFilter = _viewModel.SelectedRecordFilter?.ProjectId;
+        if (!HasAnyRecordsInRange(targetWeekStart, targetWeekEnd, DateTimeOffset.Now, projectFilter))
+        {
+            return;
+        }
+
+        _displayedWeekStart = targetWeekStart;
         AlignSelectedDateToDisplayedWeek();
         RefreshWeeklyRecordArea(DateTimeOffset.Now);
     }
 
     public void MoveDisplayedWeekToCurrent()
     {
-        _displayedWeekStart = GetWeekStart(DateOnly.FromDateTime(DateTime.Now.Date));
-        AlignSelectedDateToDisplayedWeek();
+        DateOnly today = DateOnly.FromDateTime(DateTime.Now.Date);
+        _displayedWeekStart = GetWeekStart(today);
+        _selectedDate = today;
+        _selectedRecordKey = null;
         RefreshWeeklyRecordArea(DateTimeOffset.Now);
     }
 
@@ -64,8 +74,9 @@ internal sealed class WeeklyRecordFeatureController
 
         IReadOnlyList<ProjectTimerRecordSlice> weeklySlices = LoadRecordSlices(_displayedWeekStart, weekEnd, observedAt, projectFilter);
         List<ProjectTimerRecordSlice> orderedWeeklySlices = [.. weeklySlices
-            .OrderBy(static slice => slice.StartedAt)
-            .ThenBy(static slice => slice.EndedAt)];
+            .OrderBy(static slice => DateOnly.FromDateTime(slice.StartedAt.LocalDateTime.Date))
+            .ThenByDescending(static slice => slice.EndedAt)
+            .ThenByDescending(static slice => slice.StartedAt)];
         Dictionary<DateOnly, (TimeSpan WallClock, TimeSpan Focus)> totalsByDate = orderedWeeklySlices
             .GroupBy(static slice => DateOnly.FromDateTime(slice.StartedAt.LocalDateTime.Date))
             .ToDictionary(
@@ -182,6 +193,16 @@ internal sealed class WeeklyRecordFeatureController
             return selectedDateRow;
         }
 
+        DateOnly today = DateOnly.FromDateTime(DateTime.Now.Date);
+        DateOnly displayedWeekEnd = _displayedWeekStart.AddDays(6);
+        if (_selectedDate == today &&
+            today >= _displayedWeekStart &&
+            today <= displayedWeekEnd)
+        {
+            _selectedRecordKey = null;
+            return null;
+        }
+
         WeeklyRecordRow? firstRow = _viewModel.WeeklyRecordRows.FirstOrDefault();
         _selectedRecordKey = firstRow is null ? null : (firstRow.ProjectId, firstRow.StartedAt, firstRow.EndedAt);
         return firstRow;
@@ -198,14 +219,14 @@ internal sealed class WeeklyRecordFeatureController
             _viewModel.SelectedRecordTotalDurationText = "00:00:00";
             _viewModel.SelectedRecordFocusDurationText = "00:00:00";
             _viewModel.SelectedRecordFocusRatioText = "0%";
-            _viewModel.SelectedRecordEmptyText = "선택한 날짜의 작업 기록이 없습니다.";
+            _viewModel.SelectedRecordEmptyText = "선택한 날짜에 작업 기록이 없습니다.";
             _viewModel.SelectedRecordEmptyVisibility = Visibility.Visible;
             _viewModel.SelectedRecordDetailVisibility = Visibility.Collapsed;
             return;
         }
 
         _viewModel.SelectedRecordTitle = row.ProjectName;
-        _viewModel.SelectedRecordSubtitle = $"{row.DateText} · {row.PeriodText}";
+        _viewModel.SelectedRecordSubtitle = $"{row.DateText} {row.PeriodText}";
         _viewModel.SelectedRecordTotalDurationText = row.TotalDurationText;
         _viewModel.SelectedRecordFocusDurationText = row.FocusDurationText;
         _viewModel.SelectedRecordFocusRatioText = row.FocusRatioText;
@@ -216,7 +237,7 @@ internal sealed class WeeklyRecordFeatureController
         }
 
         _viewModel.SelectedRecordEmptyText = row.ProgramRows.Count == 0
-            ? "이 작업에는 등록된 프로그램 집중 시간이 없습니다."
+            ? "기록된 집중 시간이 없습니다."
             : string.Empty;
         _viewModel.SelectedRecordEmptyVisibility = row.ProgramRows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         _viewModel.SelectedRecordDetailVisibility = row.ProgramRows.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
@@ -243,7 +264,7 @@ internal sealed class WeeklyRecordFeatureController
                     : date.Day.ToString(CultureInfo.CurrentCulture),
                 GetBubbleDiameter(duration),
                 hasBubble,
-                hasBubble && _selectedDate == date,
+                _selectedDate == date,
                 isSunday,
                 hasBubble ? Visibility.Visible : Visibility.Collapsed));
         }
@@ -274,6 +295,15 @@ internal sealed class WeeklyRecordFeatureController
         if (availableDates.Count == 0)
         {
             _selectedRecordKey = null;
+            return;
+        }
+
+        DateOnly today = DateOnly.FromDateTime(DateTime.Now.Date);
+        DateOnly weekEnd = _displayedWeekStart.AddDays(6);
+        if (_selectedDate == today &&
+            today >= _displayedWeekStart &&
+            today <= weekEnd)
+        {
             return;
         }
 
@@ -359,5 +389,14 @@ internal sealed class WeeklyRecordFeatureController
         }
 
         return summaries;
+    }
+
+    private bool HasAnyRecordsInRange(
+        DateOnly fromDate,
+        DateOnly toDate,
+        DateTimeOffset observedAt,
+        Guid? projectFilter)
+    {
+        return LoadRecordSlices(fromDate, toDate, observedAt, projectFilter).Count > 0;
     }
 }

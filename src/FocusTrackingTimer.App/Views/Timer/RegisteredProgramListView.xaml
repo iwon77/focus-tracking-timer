@@ -19,7 +19,7 @@
                 <StackPanel Margin="0,0,16,0">
                     <TextBlock FontSize="20"
                                FontWeight="SemiBold"
-                               Foreground="{StaticResource ThemePrimaryTextBrush}"
+                               Foreground="Black"
                                Text="등록 프로그램" />
                     <TextBlock Margin="0,8,0,0"
                                Foreground="{StaticResource ThemeSecondaryTextBrush}"
@@ -33,12 +33,17 @@
                           DisplayMemberPath="Label"
                           ItemsSource="{Binding ProgramSortOptions}"
                           SelectedItem="{Binding SelectedProgramSortOption, Mode=TwoWay}"
-                          SelectionChanged="ProgramSort_SelectionChanged" />
+                          SelectionChanged="ProgramSort_SelectionChanged">
+                    <ComboBox.ToolTip>
+                        <ToolTip Style="{StaticResource CommonToolTipStyle}"
+                                 Content="프로그램 정렬" />
+                    </ComboBox.ToolTip>
+                </ComboBox>
                 <Button Grid.Column="2"
                         Height="32"
                         Margin="0,2,0,0"
                         Padding="10,0"
-                        Style="{StaticResource PrimaryButton}"
+                        Style="{StaticResource TextPrimaryActionButton}"
                         Click="OpenProgramManagerButton_Click"
                         Content="프로그램 추가" />
             </Grid>
@@ -54,106 +59,146 @@
                     </ItemsControl.ItemContainerStyle>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <StackPanel>
-                                <Border Width="96"
-                                        Height="1"
-                                        Margin="0,0,0,0"
-                                        HorizontalAlignment="Left"
-                                        Background="{StaticResource ThemeSecondaryBorderBrush}"
-                                        Visibility="{Binding PinnedDividerVisibility}" />
-                                <Border Padding="8,9"
-                                        BorderBrush="{StaticResource ThemeHoverBorderBrush}"
-                                        BorderThickness="0,0,0,1">
-                                    <Border.Style>
-                                        <Style TargetType="Border">
-                                            <Setter Property="Background" Value="{StaticResource ThemeTransparentBrush}" />
-                                            <Style.Triggers>
-                                                <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter Property="Background" Value="{StaticResource ThemeSelectionBrush}" />
-                                                </Trigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Border.Style>
+                            <Border Padding="8,9"
+                                    BorderBrush="{StaticResource ThemeHoverBorderBrush}"
+                                    BorderThickness="0,0,0,1">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Background" Value="{StaticResource ThemeTransparentBrush}" />
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background" Value="{StaticResource ThemeSelectionBrush}" />
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
 
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
 
-                                        <DockPanel LastChildFill="True">
-                                            <Button DockPanel.Dock="Right"
-                                                    Style="{StaticResource HoverActionButton}"
-                                                    Click="DeleteProgramButton_Click">
-                                                <Image Width="18"
-                                                       Height="18"
-                                                       Source="/Assets/delete.png"
-                                                       Stretch="Uniform" />
-                                            </Button>
-                                            <Button DockPanel.Dock="Right"
-                                                    Style="{StaticResource HoverActionButton}"
-                                                    Click="EditProgramButton_Click">
-                                                <Image Width="18"
-                                                       Height="18"
-                                                       Source="/Assets/edit.png"
-                                                       Stretch="Uniform" />
-                                            </Button>
-                                            <Button DockPanel.Dock="Right"
-                                                    Style="{StaticResource HoverActionButton}"
-                                                    Click="FocusRegisteredProgramButton_Click">
-                                                <Image Width="20"
-                                                       Height="20"
-                                                       Source="/Assets/view.png"
-                                                       Stretch="Uniform" />
-                                            </Button>
-                                            <Button DockPanel.Dock="Right"
-                                                    Style="{StaticResource HoverActionButton}"
-                                                    Click="PinProgramButton_Click">
-                                                <Image Width="20"
-                                                       Height="20"
-                                                       Source="/Assets/pin.png"
-                                                       Stretch="Uniform" />
-                                            </Button>
+                                    <DockPanel LastChildFill="True">
+                                        <Button DockPanel.Dock="Right"
+                                                Style="{StaticResource HoverActionButton}"
+                                                Click="DeleteProgramButton_Click">
+                                            <Button.ToolTip>
+                                                <ToolTip Style="{StaticResource CommonToolTipStyle}"
+                                                         Content="프로그램 삭제" />
+                                            </Button.ToolTip>
+                                            <Image Width="18"
+                                                   Height="18"
+                                                   Source="/Assets/delete.png"
+                                                   Stretch="Uniform" />
+                                        </Button>
+                                        <Button DockPanel.Dock="Right"
+                                                Style="{StaticResource HoverActionButton}"
+                                                Click="EditProgramButton_Click">
+                                            <Button.ToolTip>
+                                                <ToolTip Style="{StaticResource CommonToolTipStyle}"
+                                                         Content="프로그램 이름 바꾸기" />
+                                            </Button.ToolTip>
+                                            <Image Width="18"
+                                                   Height="18"
+                                                   Source="/Assets/edit.png"
+                                                   Stretch="Uniform" />
+                                        </Button>
+                                        <Button DockPanel.Dock="Right"
+                                                Style="{StaticResource HoverActionButton}"
+                                                Click="FocusRegisteredProgramButton_Click">
+                                            <Button.ToolTip>
+                                                <ToolTip Style="{StaticResource CommonToolTipStyle}"
+                                                         Content="프로그램 보기" />
+                                            </Button.ToolTip>
+                                            <Image Width="20"
+                                                   Height="20"
+                                                   Source="/Assets/view.png"
+                                                   Stretch="Uniform" />
+                                        </Button>
+                                        <Button DockPanel.Dock="Right"
+                                                Style="{StaticResource HoverActionButton}"
+                                                Click="PinProgramButton_Click">
+                                            <Button.ToolTip>
+                                                <ToolTip>
+                                                    <ToolTip.Style>
+                                                        <Style TargetType="ToolTip"
+                                                               BasedOn="{StaticResource CommonToolTipStyle}">
+                                                            <Setter Property="Content" Value="프로그램 고정" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding PlacementTarget.DataContext.IsPinned, RelativeSource={RelativeSource Self}}"
+                                                                             Value="True">
+                                                                    <Setter Property="Content" Value="프로그램 고정 해제" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </ToolTip.Style>
+                                                </ToolTip>
+                                            </Button.ToolTip>
+                                            <Image Width="20"
+                                                   Height="20"
+                                                   SnapsToDevicePixels="True"
+                                                   UseLayoutRounding="True"
+                                                   RenderOptions.BitmapScalingMode="NearestNeighbor"
+                                                   Stretch="Uniform">
+                                                <Image.Style>
+                                                    <Style TargetType="Image">
+                                                        <Setter Property="Source" Value="/Assets/pin.png" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsPinned}" Value="True">
+                                                                <Setter Property="Source" Value="/Assets/pin-filled.png" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Image.Style>
+                                            </Image>
+                                        </Button>
 
-                                            <StackPanel Orientation="Horizontal">
-                                                <Ellipse Width="10"
-                                                         Height="10"
-                                                         Margin="0,6,10,0"
-                                                         VerticalAlignment="Top"
-                                                         Fill="{Binding StatusBrush}"
-                                                         ToolTip="{Binding StatusText}" />
-                                                <StackPanel>
-                                                    <StackPanel Orientation="Horizontal">
-                                                        <TextBlock FontSize="15"
-                                                                   FontWeight="SemiBold"
-                                                                   Foreground="{StaticResource ThemePrimaryTextBrush}"
-                                                                   Text="{Binding DisplayName}"
-                                                                   TextTrimming="CharacterEllipsis" />
-                                                        <Image Width="20"
-                                                               Height="20"
-                                                               Margin="8,0,0,0"
-                                                               VerticalAlignment="Center"
-                                                               Source="/Assets/pin.png"
-                                                               Stretch="Uniform"
-                                                               Visibility="{Binding PinIconVisibility}" />
-                                                    </StackPanel>
-                                                    <TextBlock Margin="0,3,0,0"
-                                                               Foreground="{StaticResource ThemeSecondaryTextBrush}"
-                                                               Text="{Binding ProcessName}" />
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Width="10"
+                                                     Height="10"
+                                                     Margin="0,6,10,0"
+                                                     VerticalAlignment="Top"
+                                                     Fill="{Binding StatusBrush}">
+                                                <Ellipse.ToolTip>
+                                                    <ToolTip Style="{StaticResource CommonToolTipStyle}"
+                                                             Content="{Binding StatusText}" />
+                                                </Ellipse.ToolTip>
+                                            </Ellipse>
+                                            <StackPanel>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock FontSize="15"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{StaticResource ThemePrimaryTextBrush}"
+                                                               Text="{Binding DisplayName}"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                    <Image Width="20"
+                                                           Height="20"
+                                                           Margin="8,0,0,0"
+                                                           VerticalAlignment="Center"
+                                                           Source="/Assets/pin-filled.png"
+                                                           SnapsToDevicePixels="True"
+                                                           UseLayoutRounding="True"
+                                                           RenderOptions.BitmapScalingMode="NearestNeighbor"
+                                                           Stretch="Uniform"
+                                                           Visibility="{Binding PinIconVisibility}" />
                                                 </StackPanel>
+                                                <TextBlock Margin="0,3,0,0"
+                                                           Foreground="{StaticResource ThemeSecondaryTextBrush}"
+                                                           Text="{Binding ProcessName}" />
                                             </StackPanel>
-                                        </DockPanel>
+                                        </StackPanel>
+                                    </DockPanel>
 
-                                        <TextBlock Grid.Column="1"
-                                                   Margin="12,0,0,0"
-                                                   VerticalAlignment="Center"
-                                                   FontSize="18"
-                                                   FontWeight="SemiBold"
-                                                   Foreground="{StaticResource ThemeFocusBrush}"
-                                                   Text="{Binding FocusDurationText}" />
-                                    </Grid>
-                                </Border>
-                            </StackPanel>
+                                    <TextBlock Grid.Column="1"
+                                               Margin="12,0,0,0"
+                                               VerticalAlignment="Center"
+                                               FontSize="18"
+                                               FontWeight="SemiBold"
+                                               Foreground="{StaticResource ThemeFocusBrush}"
+                                               Text="{Binding FocusDurationText}" />
+                                </Grid>
+                            </Border>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
