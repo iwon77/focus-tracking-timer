@@ -47,17 +47,6 @@ public sealed class SqliteProjectTimerStore
         return result is not null;
     }
 
-    public long LoadFocusSegmentCount()
-    {
-        using SqliteConnection connection = OpenConnection();
-        EnsureSchema(connection);
-
-        using SqliteCommand command = connection.CreateCommand();
-        command.CommandText = "SELECT COUNT(*) FROM focus_segments;";
-        object? result = command.ExecuteScalar();
-        return result is long count ? count : Convert.ToInt64(result, CultureInfo.InvariantCulture);
-    }
-
     public void SaveState(ProjectTimerEngineState state)
     {
         ArgumentNullException.ThrowIfNull(state);

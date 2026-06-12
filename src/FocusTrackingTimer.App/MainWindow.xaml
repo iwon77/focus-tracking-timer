@@ -1,4 +1,4 @@
-<Window x:Class="FocusTrackingTimer.App.MainWindow"
+﻿<Window x:Class="FocusTrackingTimer.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -24,13 +24,6 @@
                 BorderThickness="1"
                 CornerRadius="8">
             <DockPanel LastChildFill="False">
-                <Button DockPanel.Dock="Right"
-                        Width="84"
-                        Height="32"
-                        Margin="10,0,0,0"
-                        Style="{StaticResource SecondaryButton}"
-                        Click="OpenPerformanceMonitorButton_Click"
-                        Content="성능" />
 
                 <ComboBox DockPanel.Dock="Right"
                           Width="220"
