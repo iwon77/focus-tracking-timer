@@ -17,13 +17,7 @@ internal static class AppTimeFormatter
 
     public static string FormatDurationShort(TimeSpan duration)
     {
-        if (duration < TimeSpan.Zero)
-        {
-            duration = TimeSpan.Zero;
-        }
-
-        int hours = (int)duration.TotalHours;
-        return hours > 0 ? $"{hours}h {duration.Minutes}m" : $"{duration.Minutes}m";
+        return FormatDuration(duration);
     }
 
     public static string FormatDateTime(DateTimeOffset value)
