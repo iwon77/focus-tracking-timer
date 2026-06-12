@@ -23,7 +23,7 @@
                     <TextBlock Grid.Column="0"
                                FontSize="22"
                                FontWeight="SemiBold"
-                               Foreground="{StaticResource ThemePrimaryTextBrush}"
+                               Foreground="Black"
                                Text="{Binding SelectedProjectTitle}"
                                TextTrimming="CharacterEllipsis" />
                     <Button Grid.Column="1"
@@ -31,12 +31,15 @@
                             Height="26"
                             Margin="8,0,0,0"
                             VerticalAlignment="Center"
-                            Style="{StaticResource IconButton}"
-                            Click="EditSelectedProjectButton_Click"
-                            IsEnabled="{Binding IsProjectEditEnabled}">
+                            Style="{StaticResource StaticActionIconButton}"
+                            Click="MemoSelectedProjectButton_Click"
+                            IsEnabled="{Binding IsProjectMemoEnabled}">
                         <Image Width="18"
                                Height="18"
-                               Source="/Assets/edit.png"
+                               Source="/Assets/memo.png"
+                               SnapsToDevicePixels="True"
+                               UseLayoutRounding="True"
+                               RenderOptions.BitmapScalingMode="NearestNeighbor"
                                Stretch="Uniform" />
                     </Button>
                     <Button Grid.Column="2"
@@ -44,12 +47,15 @@
                             Height="26"
                             Margin="6,0,0,0"
                             VerticalAlignment="Center"
-                            Style="{StaticResource IconButton}"
-                            Click="DeleteProjectButton_Click"
-                            IsEnabled="{Binding IsProjectDeleteEnabled}">
+                            Style="{StaticResource StaticActionIconButton}"
+                            Click="EditSelectedProjectButton_Click"
+                            IsEnabled="{Binding IsProjectEditEnabled}">
                         <Image Width="18"
                                Height="18"
-                               Source="/Assets/delete.png"
+                               Source="/Assets/edit.png"
+                               SnapsToDevicePixels="True"
+                               UseLayoutRounding="True"
+                               RenderOptions.BitmapScalingMode="NearestNeighbor"
                                Stretch="Uniform" />
                     </Button>
                     <Button Grid.Column="3"
@@ -57,12 +63,15 @@
                             Height="26"
                             Margin="6,0,0,0"
                             VerticalAlignment="Center"
-                            Style="{StaticResource IconButton}"
-                            Click="MemoSelectedProjectButton_Click"
-                            IsEnabled="{Binding IsProjectMemoEnabled}">
+                            Style="{StaticResource StaticActionIconButton}"
+                            Click="DeleteProjectButton_Click"
+                            IsEnabled="{Binding IsProjectDeleteEnabled}">
                         <Image Width="18"
                                Height="18"
-                               Source="/Assets/memo.png"
+                               Source="/Assets/delete.png"
+                               SnapsToDevicePixels="True"
+                               UseLayoutRounding="True"
+                               RenderOptions.BitmapScalingMode="NearestNeighbor"
                                Stretch="Uniform" />
                     </Button>
                 </Grid>

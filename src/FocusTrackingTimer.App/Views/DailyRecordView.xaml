@@ -88,9 +88,14 @@
                         <Button Width="32" Height="32" Margin="8,0,0,0" Style="{StaticResource IconButton}" Click="NextRecordYearButton_Click">
                             <Image Width="24" Height="24" Source="/Assets/chevrons-right.png" Stretch="Uniform" />
                         </Button>
-                        <Button Width="32" Height="32" Margin="8,0,0,0" Style="{StaticResource IconButton}" Click="CurrentRecordMonthButton_Click">
-                            <Image Width="24" Height="24" Source="/Assets/current-month.png" Stretch="Uniform" />
-                        </Button>
+                        <Button Width="48"
+                                Height="32"
+                                Margin="8,0,0,0"
+                                Padding="10,0"
+                                Style="{StaticResource SecondaryButton}"
+                                Click="CurrentRecordMonthButton_Click"
+                                Content="오늘" />
+                        
                     </StackPanel>
 
                     <UniformGrid Grid.Row="1"

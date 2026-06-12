@@ -45,26 +45,26 @@
                             Orientation="Horizontal">
                     <Button Width="28"
                             Height="28"
-                            Style="{StaticResource IconButton}"
+                            Style="{StaticResource StaticActionIconButton}"
                             Click="RestoreMainWindowButton_Click"
                             ToolTip="Close PIP and return to main">
                         <Image Width="20"
                                Height="20"
-                                               Source="/Assets/pip.png"
+                               Source="/Assets/pip.png"
+                               SnapsToDevicePixels="True"
+                               UseLayoutRounding="True"
+                               RenderOptions.BitmapScalingMode="NearestNeighbor"
                                Stretch="Uniform" />
                     </Button>
                     <Button Width="28"
                             Height="28"
                             Margin="6,0,0,0"
-                            Background="{StaticResource ThemeTransparentBrush}"
-                            BorderBrush="{StaticResource ThemeTransparentBrush}"
-                            BorderThickness="0"
+                            Style="{StaticResource StaticActionIconButton}"
                             Click="CloseApplicationButton_Click"
                             Content="✕"
                             FontSize="14"
                             FontWeight="SemiBold"
-                            Foreground="{StaticResource ThemePrimaryTextBrush}"
-                            Padding="0"
+                            Foreground="{StaticResource ThemeSecondaryTextBrush}"
                             ToolTip="Close app" />
                 </StackPanel>
             </Grid>

@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Windows;
 using FocusTrackingTimer.App.Infrastructure;
 using FocusTrackingTimer.App.ViewModels;
@@ -36,8 +36,10 @@ internal sealed class WeeklyRecordFeatureController
 
     public void MoveDisplayedWeekToCurrent()
     {
-        _displayedWeekStart = GetWeekStart(DateOnly.FromDateTime(DateTime.Now.Date));
-        AlignSelectedDateToDisplayedWeek();
+        DateOnly today = DateOnly.FromDateTime(DateTime.Now.Date);
+        _displayedWeekStart = GetWeekStart(today);
+        _selectedDate = today;
+        _selectedRecordKey = null;
         RefreshWeeklyRecordArea(DateTimeOffset.Now);
     }
 
@@ -46,7 +48,7 @@ internal sealed class WeeklyRecordFeatureController
         Guid? selectedFilterProjectId = _viewModel.SelectedRecordFilter?.ProjectId;
 
         _viewModel.RecordFilterOptions.Clear();
-        _viewModel.RecordFilterOptions.Add(new RecordFilterOption(null, "전체 작업"));
+        _viewModel.RecordFilterOptions.Add(new RecordFilterOption(null, "?꾩껜 ?묒뾽"));
         foreach (ProjectDefinition project in _engine.Projects.OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase))
         {
             _viewModel.RecordFilterOptions.Add(new RecordFilterOption(project.Id, project.Name));
@@ -182,6 +184,16 @@ internal sealed class WeeklyRecordFeatureController
             return selectedDateRow;
         }
 
+        DateOnly today = DateOnly.FromDateTime(DateTime.Now.Date);
+        DateOnly displayedWeekEnd = _displayedWeekStart.AddDays(6);
+        if (_selectedDate == today &&
+            today >= _displayedWeekStart &&
+            today <= displayedWeekEnd)
+        {
+            _selectedRecordKey = null;
+            return null;
+        }
+
         WeeklyRecordRow? firstRow = _viewModel.WeeklyRecordRows.FirstOrDefault();
         _selectedRecordKey = firstRow is null ? null : (firstRow.ProjectId, firstRow.StartedAt, firstRow.EndedAt);
         return firstRow;
@@ -193,19 +205,19 @@ internal sealed class WeeklyRecordFeatureController
 
         if (row is null)
         {
-            _viewModel.SelectedRecordTitle = "선택한 작업이 없습니다.";
+            _viewModel.SelectedRecordTitle = "?좏깮???묒뾽???놁뒿?덈떎.";
             _viewModel.SelectedRecordSubtitle = AppTimeFormatter.FormatGroupDate(_selectedDate);
             _viewModel.SelectedRecordTotalDurationText = "00:00:00";
             _viewModel.SelectedRecordFocusDurationText = "00:00:00";
             _viewModel.SelectedRecordFocusRatioText = "0%";
-            _viewModel.SelectedRecordEmptyText = "선택한 날짜의 작업 기록이 없습니다.";
+            _viewModel.SelectedRecordEmptyText = "?좏깮???좎쭨???묒뾽 湲곕줉???놁뒿?덈떎.";
             _viewModel.SelectedRecordEmptyVisibility = Visibility.Visible;
             _viewModel.SelectedRecordDetailVisibility = Visibility.Collapsed;
             return;
         }
 
         _viewModel.SelectedRecordTitle = row.ProjectName;
-        _viewModel.SelectedRecordSubtitle = $"{row.DateText} · {row.PeriodText}";
+        _viewModel.SelectedRecordSubtitle = $"{row.DateText} {row.PeriodText}";
         _viewModel.SelectedRecordTotalDurationText = row.TotalDurationText;
         _viewModel.SelectedRecordFocusDurationText = row.FocusDurationText;
         _viewModel.SelectedRecordFocusRatioText = row.FocusRatioText;
@@ -216,7 +228,7 @@ internal sealed class WeeklyRecordFeatureController
         }
 
         _viewModel.SelectedRecordEmptyText = row.ProgramRows.Count == 0
-            ? "이 작업에는 등록된 프로그램 집중 시간이 없습니다."
+            ? "기록된 집중 시간이 없습니다."
             : string.Empty;
         _viewModel.SelectedRecordEmptyVisibility = row.ProgramRows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         _viewModel.SelectedRecordDetailVisibility = row.ProgramRows.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
@@ -243,7 +255,7 @@ internal sealed class WeeklyRecordFeatureController
                     : date.Day.ToString(CultureInfo.CurrentCulture),
                 GetBubbleDiameter(duration),
                 hasBubble,
-                hasBubble && _selectedDate == date,
+                _selectedDate == date,
                 isSunday,
                 hasBubble ? Visibility.Visible : Visibility.Collapsed));
         }
@@ -274,6 +286,15 @@ internal sealed class WeeklyRecordFeatureController
         if (availableDates.Count == 0)
         {
             _selectedRecordKey = null;
+            return;
+        }
+
+        DateOnly today = DateOnly.FromDateTime(DateTime.Now.Date);
+        DateOnly weekEnd = _displayedWeekStart.AddDays(6);
+        if (_selectedDate == today &&
+            today >= _displayedWeekStart &&
+            today <= weekEnd)
+        {
             return;
         }
 

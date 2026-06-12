@@ -35,6 +35,7 @@ internal sealed class DailyRecordFeatureController
     {
         DateTime today = DateTime.Now;
         _displayedRecordMonth = new DateOnly(today.Year, today.Month, 1);
+        _selectedDate = DateOnly.FromDateTime(today.Date);
         RefreshRecordArea(DateTimeOffset.Now);
     }
 
