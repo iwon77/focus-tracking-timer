@@ -27,7 +27,15 @@ internal sealed class DailyRecordFeatureController
 
     public void MoveDisplayedRecordMonth(int monthOffset)
     {
-        _displayedRecordMonth = _displayedRecordMonth.AddMonths(monthOffset);
+        DateOnly targetMonth = _displayedRecordMonth.AddMonths(monthOffset);
+        DateOnly targetMonthEnd = targetMonth.AddMonths(1).AddDays(-1);
+        Guid? projectFilter = _viewModel.SelectedRecordFilter?.ProjectId;
+        if (!HasAnyRecordsInRange(targetMonth, targetMonthEnd, DateTimeOffset.Now, projectFilter))
+        {
+            return;
+        }
+
+        _displayedRecordMonth = targetMonth;
         RefreshRecordArea(DateTimeOffset.Now);
     }
 
@@ -251,5 +259,14 @@ internal sealed class DailyRecordFeatureController
         }
 
         return summaries;
+    }
+
+    private bool HasAnyRecordsInRange(
+        DateOnly fromDate,
+        DateOnly toDate,
+        DateTimeOffset observedAt,
+        Guid? projectFilter)
+    {
+        return LoadRecordSlices(fromDate, toDate, observedAt, projectFilter).Count > 0;
     }
 }

@@ -29,7 +29,15 @@ internal sealed class WeeklyRecordFeatureController
 
     public void MoveDisplayedWeek(int weekOffset)
     {
-        _displayedWeekStart = _displayedWeekStart.AddDays(weekOffset * 7);
+        DateOnly targetWeekStart = _displayedWeekStart.AddDays(weekOffset * 7);
+        DateOnly targetWeekEnd = targetWeekStart.AddDays(6);
+        Guid? projectFilter = _viewModel.SelectedRecordFilter?.ProjectId;
+        if (!HasAnyRecordsInRange(targetWeekStart, targetWeekEnd, DateTimeOffset.Now, projectFilter))
+        {
+            return;
+        }
+
+        _displayedWeekStart = targetWeekStart;
         AlignSelectedDateToDisplayedWeek();
         RefreshWeeklyRecordArea(DateTimeOffset.Now);
     }
@@ -380,5 +388,14 @@ internal sealed class WeeklyRecordFeatureController
         }
 
         return summaries;
+    }
+
+    private bool HasAnyRecordsInRange(
+        DateOnly fromDate,
+        DateOnly toDate,
+        DateTimeOffset observedAt,
+        Guid? projectFilter)
+    {
+        return LoadRecordSlices(fromDate, toDate, observedAt, projectFilter).Count > 0;
     }
 }
