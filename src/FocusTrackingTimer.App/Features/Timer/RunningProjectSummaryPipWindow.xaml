@@ -5,7 +5,7 @@
         Title="Focus Tracking Timer"
         Icon="/Assets/app-icon.ico"
         Width="262"
-        Height="126"
+        Height="138"
         AllowsTransparency="True"
         Background="Transparent"
         ResizeMode="NoResize"
@@ -124,21 +124,26 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Column="0"
-                            Margin="18,8,0,0"
+                            Margin="0,10,0,0"
+                            HorizontalAlignment="Center"
                             VerticalAlignment="Top">
                     <TextBlock FontSize="18"
                                FontWeight="SemiBold"
                                Foreground="{StaticResource ThemePrimaryTextBrush}"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"
                                Text="{Binding RunningProjectWallClockText}" />
                     <TextBlock Margin="0,8,0,0"
                                FontSize="18"
                                FontWeight="SemiBold"
                                Foreground="{StaticResource ThemeFocusBrush}"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"
                                Text="{Binding RunningProjectFocusText}" />
                 </StackPanel>
 
                 <StackPanel Grid.Column="1"
-                            Margin="0,0,2,0"
+                            Margin="0,0,2,4"
                             VerticalAlignment="Top">
                     <Grid>
                         <Button Width="82"

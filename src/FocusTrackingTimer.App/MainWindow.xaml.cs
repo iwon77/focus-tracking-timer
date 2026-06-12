@@ -601,8 +601,8 @@ public partial class MainWindow : Window
         {
             MessageBox.Show(
                 this,
-                $"?곗씠?곕? ??ν븯吏 紐삵뻽?듬땲??{Environment.NewLine}{exception.Message}",
-                "SQLite ????ㅻ쪟",
+                $"데이터를 저장하지 못했습니다.{Environment.NewLine}{exception.Message}",
+                "SQLite 저장 오류",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }
@@ -623,8 +623,8 @@ public partial class MainWindow : Window
         {
             MessageBox.Show(
                 this,
-                $"?곗씠?곕? ??ν븯吏 紐삵뻽?듬땲??{Environment.NewLine}{exception.Message}",
-                "SQLite ????ㅻ쪟",
+                $"데이터를 저장하지 못했습니다.{Environment.NewLine}{exception.Message}",
+                "SQLite 저장 오류",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }

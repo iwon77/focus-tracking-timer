@@ -44,6 +44,7 @@
 
             <Style x:Key="ComboBoxToggleButton" TargetType="ToggleButton">
                 <Setter Property="Focusable" Value="False" />
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
                 <Setter Property="Background" Value="{StaticResource ThemeTransparentBrush}" />
                 <Setter Property="BorderBrush" Value="{StaticResource ThemeTransparentBrush}" />
                 <Setter Property="BorderThickness" Value="0" />
@@ -71,6 +72,7 @@
             <Style TargetType="ComboBoxItem">
                 <Setter Property="Margin" Value="0,1" />
                 <Setter Property="Padding" Value="10,7" />
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
                 <Setter Property="Foreground" Value="{StaticResource ThemePrimaryTextBrush}" />
                 <Setter Property="Background" Value="{StaticResource ThemeTransparentBrush}" />
                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -106,6 +108,7 @@
             <Style TargetType="ComboBox">
                 <Setter Property="Height" Value="32" />
                 <Setter Property="Padding" Value="10,4" />
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
                 <Setter Property="Background" Value="{StaticResource ThemeBaseBackgroundBrush}" />
                 <Setter Property="BorderBrush" Value="{StaticResource ThemeSecondaryBorderBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
@@ -191,6 +194,7 @@
                 <Setter Property="Background" Value="{StaticResource ThemeBaseBackgroundBrush}" />
                 <Setter Property="BorderBrush" Value="{StaticResource ThemeSecondaryBorderBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
                 <Setter Property="Foreground" Value="{StaticResource ThemePrimaryTextBrush}" />
                 <Setter Property="Template">
                     <Setter.Value>
@@ -329,6 +333,7 @@
 
             <Style x:Key="MenuTabButton" TargetType="Button">
                 <Setter Property="Padding" Value="18,7" />
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
                 <Setter Property="BorderBrush" Value="{StaticResource ThemeTransparentBrush}" />
                 <Setter Property="BorderThickness" Value="0" />
                 <Setter Property="Foreground" Value="{StaticResource ThemeSecondaryTextBrush}" />
@@ -368,6 +373,7 @@
                 <Setter Property="Height" Value="28" />
                 <Setter Property="Margin" Value="6,0,0,0" />
                 <Setter Property="Padding" Value="0" />
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
                 <Setter Property="Background" Value="{StaticResource ThemeTransparentBrush}" />
                 <Setter Property="BorderBrush" Value="{StaticResource ThemeTransparentBrush}" />
                 <Setter Property="BorderThickness" Value="0" />
@@ -404,6 +410,7 @@
 
             <Style x:Key="StaticActionIconButton" TargetType="Button">
                 <Setter Property="Padding" Value="0" />
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
                 <Setter Property="Background" Value="{StaticResource ThemeTransparentBrush}" />
                 <Setter Property="BorderBrush" Value="{StaticResource ThemeTransparentBrush}" />
                 <Setter Property="BorderThickness" Value="0" />
@@ -437,6 +444,7 @@
 
             <Style x:Key="StaticActionIconToggleButton" TargetType="ToggleButton">
                 <Setter Property="Padding" Value="0" />
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
                 <Setter Property="Background" Value="{StaticResource ThemeTransparentBrush}" />
                 <Setter Property="BorderBrush" Value="{StaticResource ThemeTransparentBrush}" />
                 <Setter Property="BorderThickness" Value="0" />

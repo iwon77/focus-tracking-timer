@@ -56,7 +56,7 @@ internal sealed class WeeklyRecordFeatureController
         Guid? selectedFilterProjectId = _viewModel.SelectedRecordFilter?.ProjectId;
 
         _viewModel.RecordFilterOptions.Clear();
-        _viewModel.RecordFilterOptions.Add(new RecordFilterOption(null, "?꾩껜 ?묒뾽"));
+        _viewModel.RecordFilterOptions.Add(new RecordFilterOption(null, "전체 작업"));
         foreach (ProjectDefinition project in _engine.Projects.OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase))
         {
             _viewModel.RecordFilterOptions.Add(new RecordFilterOption(project.Id, project.Name));
@@ -214,12 +214,12 @@ internal sealed class WeeklyRecordFeatureController
 
         if (row is null)
         {
-            _viewModel.SelectedRecordTitle = "?좏깮???묒뾽???놁뒿?덈떎.";
+            _viewModel.SelectedRecordTitle = "선택한 작업이 없습니다.";
             _viewModel.SelectedRecordSubtitle = AppTimeFormatter.FormatGroupDate(_selectedDate);
             _viewModel.SelectedRecordTotalDurationText = "00:00:00";
             _viewModel.SelectedRecordFocusDurationText = "00:00:00";
             _viewModel.SelectedRecordFocusRatioText = "0%";
-            _viewModel.SelectedRecordEmptyText = "?좏깮???좎쭨???묒뾽 湲곕줉???놁뒿?덈떎.";
+            _viewModel.SelectedRecordEmptyText = "선택한 날짜에 작업 기록이 없습니다.";
             _viewModel.SelectedRecordEmptyVisibility = Visibility.Visible;
             _viewModel.SelectedRecordDetailVisibility = Visibility.Collapsed;
             return;
