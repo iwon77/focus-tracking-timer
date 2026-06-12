@@ -122,7 +122,7 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            MessageBox.Show(
+            AppMessageBox.Show(
                 this,
                 $"저장한 데이터를 불러오지 못했습니다.{Environment.NewLine}{exception.Message}",
                 "SQLite 로드 오류",
@@ -278,7 +278,7 @@ public partial class MainWindow : Window
     {
         if (!_engine.IsRunning || !_engine.ActiveProjectId.HasValue)
         {
-            MessageBox.Show(
+            AppMessageBox.Show(
                 this,
                 "프로젝트가 실행 중이지 않습니다.",
                 "PIP",
@@ -578,7 +578,7 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            MessageBox.Show(
+            AppMessageBox.Show(
                 this,
                 $"데이터를 저장하지 못했습니다.{Environment.NewLine}{exception.Message}",
                 "SQLite 저장 오류",
@@ -599,7 +599,7 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            MessageBox.Show(
+            AppMessageBox.Show(
                 this,
                 $"데이터를 저장하지 못했습니다.{Environment.NewLine}{exception.Message}",
                 "SQLite 저장 오류",
@@ -621,7 +621,7 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            MessageBox.Show(
+            AppMessageBox.Show(
                 this,
                 $"데이터를 저장하지 못했습니다.{Environment.NewLine}{exception.Message}",
                 "SQLite 저장 오류",
