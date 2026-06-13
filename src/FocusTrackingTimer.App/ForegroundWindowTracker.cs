@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using FocusTrackingTimer.Core.Tracking;
 
@@ -15,40 +14,56 @@ internal static class ForegroundWindowTracker
     {
         if (foregroundWindowHandle == IntPtr.Zero)
         {
-            return new FocusObservation(null, "활성 창을 확인하지 못해 포커스 추적을 대기 중입니다.");
+            return new FocusObservation(null, "활성 창을 확인하지 못해 작업 추적이 대기 중입니다.");
         }
 
         _ = GetWindowThreadProcessId(foregroundWindowHandle, out uint processId);
         if (processId == 0)
         {
-            return new FocusObservation(null, "활성 프로세스를 읽지 못해 포커스 추적을 대기 중입니다.");
+            return new FocusObservation(null, "활성 프로세스를 읽지 못해 작업 추적이 대기 중입니다.");
         }
 
         if (processId == currentProcessId)
         {
-            return new FocusObservation(null, "프로토타입 창이 활성화되어 프로그램 포커스 집계를 잠시 멈췄습니다.");
+            return new FocusObservation(null, "프로그램 창이 활성화되어 프로그램 작업 집계를 잠시 멈춥니다.");
         }
 
-        try
+        string? processName = ProcessIdentityResolver.TryGetProcessName((int)processId);
+        if (string.IsNullOrWhiteSpace(processName))
         {
-            using Process process = Process.GetProcessById((int)processId);
-            string displayName = string.IsNullOrWhiteSpace(process.MainWindowTitle)
-                ? process.ProcessName
-                : process.MainWindowTitle.Trim();
+            return new FocusObservation(null, "프로세스 정보를 읽는 중 오류가 있어 이번 집계는 건너뜁니다.");
+        }
 
-            return new FocusObservation(
-                new TrackedApplication(process.ProcessName, displayName),
-                $"{displayName} 포커스를 감지했습니다.");
-        }
-        catch (Exception exception) when (
-            exception is ArgumentException or InvalidOperationException or NotSupportedException)
+        string displayName = GetWindowTitle(foregroundWindowHandle) ?? processName;
+
+        return new FocusObservation(
+            new TrackedApplication(processName, displayName),
+            $"{displayName} 작업을 감지했습니다.");
+    }
+
+    private static string? GetWindowTitle(IntPtr windowHandle)
+    {
+        int textLength = GetWindowTextLength(windowHandle);
+        if (textLength <= 0)
         {
-            return new FocusObservation(null, "프로세스 정보를 읽는 중 오류가 있어 이번 틱은 건너뜁니다.");
+            return null;
         }
+
+        char[] title = new char[textLength + 1];
+        int copiedLength = GetWindowText(windowHandle, title, title.Length);
+        return copiedLength > 0
+            ? new string(title, 0, copiedLength)
+            : null;
     }
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "GetWindowTextLengthW")]
+    private static extern int GetWindowTextLength(IntPtr windowHandle);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "GetWindowTextW")]
+    private static extern int GetWindowText(IntPtr windowHandle, [Out] char[] text, int maxCount);
 
     [DllImport("user32.dll")]
     private static extern uint GetWindowThreadProcessId(IntPtr windowHandle, out uint processId);
