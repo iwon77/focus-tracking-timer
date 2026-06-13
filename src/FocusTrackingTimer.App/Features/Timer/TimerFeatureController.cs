@@ -312,6 +312,7 @@ internal sealed class TimerFeatureController
     {
         if (SelectedProject is null)
         {
+            AppMessageBox.ShowPlain(_owner, "프로그램을 추가하려면 먼저 작업을 추가해주세요.", "프로그램 추가");
             _viewModel.TimerStatusText = "프로그램을 추가하려면 먼저 작업을 선택해주세요.";
             return;
         }

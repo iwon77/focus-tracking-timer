@@ -91,8 +91,6 @@ public partial class MainWindow : Window
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         string startupMessage = "작업을 추가하고 등록 프로그램을 관리해보세요.";
-        bool seededWeeklySample = false;
-        bool seededDailySample = false;
 
         try
         {
@@ -104,13 +102,6 @@ public partial class MainWindow : Window
             {
                 startupMessage = "저장한 작업과 완료 기록을 불러왔습니다.";
             }
-
-            seededWeeklySample = EnsureWeeklyClickTestSeed();
-            seededDailySample = EnsureDailyCalendarVisualSeed();
-            if (seededWeeklySample)
-            {
-                startupMessage = "이번 주 클릭 테스트용 샘플 기록을 추가했습니다.";
-            }
         }
         catch (Exception exception)
         {
@@ -120,12 +111,6 @@ public partial class MainWindow : Window
                 "SQLite 로드 오류",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
-        }
-
-        if (seededWeeklySample || seededDailySample)
-        {
-            PersistProjectCatalog();
-            FlushPendingCompletedRecords();
         }
 
         _processScanService.RequestRefresh();
