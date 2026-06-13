@@ -381,7 +381,7 @@ internal sealed class TimerFeatureController
             return;
         }
 
-        MessageBoxResult result = AppMessageBox.Show(
+        MessageBoxResult result = AppMessageBox.ShowPlain(
             _owner,
             $"'{row.DisplayName}' 프로그램을 삭제하시겠습니까?",
             "등록 프로그램 삭제",
