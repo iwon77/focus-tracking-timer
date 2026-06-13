@@ -153,6 +153,7 @@ public partial class MainWindow : Window
     private void UiTimer_Tick(object? sender, EventArgs e)
     {
         DateTimeOffset observedAt = DateTimeOffset.Now;
+        _processScanService.RequestRefresh();
         string message = RefreshFocusTrackingFallbackIfNeeded(observedAt);
         RefreshTimerUi(observedAt, message, GetLatestProcessStates(), allowPersistentReload: false);
     }
