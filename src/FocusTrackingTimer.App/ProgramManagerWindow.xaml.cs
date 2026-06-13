@@ -85,7 +85,7 @@ public partial class ProgramManagerWindow : Window
             return;
         }
 
-        if (!WindowFocusService.TryFocusProcessMainWindow(row.ProcessId))
+        if (!WindowFocusService.TryFocusWindow(row.WindowHandle))
         {
             AppMessageBox.ShowPlain(this, "이 프로그램은 화면으로 띄울 수 없습니다.", "프로그램 보기");
         }

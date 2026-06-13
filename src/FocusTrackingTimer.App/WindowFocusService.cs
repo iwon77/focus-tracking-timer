@@ -10,6 +10,20 @@ internal static class WindowFocusService
     private const int ForegroundCheckRetryCount = 5;
     private const int ForegroundCheckDelayMilliseconds = 40;
 
+    public static bool TryFocusWindow(IntPtr windowHandle)
+    {
+        if (windowHandle == IntPtr.Zero)
+        {
+            return false;
+        }
+
+        _ = ShowWindow(windowHandle, RestoreWindow);
+        _ = SetForegroundWindow(windowHandle);
+        _ = GetWindowThreadProcessId(windowHandle, out uint processId);
+
+        return processId != 0 && DidProcessBecomeForeground((int)processId);
+    }
+
     public static bool TryFocusProcessMainWindow(int processId)
     {
         if (processId <= 0)
@@ -34,6 +48,11 @@ internal static class WindowFocusService
         if (string.IsNullOrWhiteSpace(processName))
         {
             return false;
+        }
+
+        if (RunningProcessCatalog.TryGetRepresentativeWindowHandle(processName.Trim(), out IntPtr windowHandle))
+        {
+            return TryFocusWindow(windowHandle);
         }
 
         foreach (Process process in Process.GetProcessesByName(processName.Trim()))
@@ -61,16 +80,7 @@ internal static class WindowFocusService
 
     private static bool TryFocusProcessMainWindow(Process process)
     {
-        IntPtr windowHandle = process.MainWindowHandle;
-        if (windowHandle == IntPtr.Zero)
-        {
-            return false;
-        }
-
-        _ = ShowWindow(windowHandle, RestoreWindow);
-        _ = SetForegroundWindow(windowHandle);
-
-        return DidProcessBecomeForeground(process.Id);
+        return TryFocusWindow(process.MainWindowHandle);
     }
 
     private static bool DidProcessBecomeForeground(int processId)

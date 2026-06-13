@@ -8,6 +8,8 @@ namespace FocusTrackingTimer.App;
 internal static class RunningProcessCatalog
 {
     private const int ExtendedWindowStyleIndex = -20;
+    private const int DwmWindowAttributeCloaked = 14;
+    private const int SuccessHResult = 0;
     private const long ExtendedToolWindowStyle = 0x00000080L;
     private const long ExtendedNoActivateStyle = 0x08000000L;
 
@@ -36,31 +38,88 @@ internal static class RunningProcessCatalog
     public static ProcessRunStateScanResult MeasureProcessRunStates(int currentProcessId)
     {
         Stopwatch stopwatch = Stopwatch.StartNew();
-        Dictionary<string, ProcessRunState> processStates = new(StringComparer.OrdinalIgnoreCase);
+        ProcessCatalogSnapshot snapshot = BuildProcessCatalogSnapshot(currentProcessId);
+        Dictionary<string, ProcessRunState> processStates = snapshot.ProcessNames
+            .ToDictionary(
+                static processName => processName,
+                static processName => new ProcessRunState(processName, false),
+                StringComparer.OrdinalIgnoreCase);
+
+        foreach (string processName in EnumerateRepresentativeWindows(
+            snapshot.EligibleProcessesById,
+            requireDisplayTitle: false).Keys)
+        {
+            processStates[processName] = new ProcessRunState(processName, true);
+        }
+
+        stopwatch.Stop();
+        return new ProcessRunStateScanResult(processStates, stopwatch.Elapsed, snapshot.ExceptionCount);
+    }
+
+    public static IReadOnlyList<RunningProcessRow> GetVisibleProcesses(int currentProcessId)
+    {
+        ProcessCatalogSnapshot snapshot = BuildProcessCatalogSnapshot(currentProcessId);
+
+        return [.. EnumerateRepresentativeWindows(snapshot.EligibleProcessesById, requireDisplayTitle: true)
+            .Values
+            .OrderBy(static item => item.DisplayName, StringComparer.CurrentCultureIgnoreCase)
+            .ThenBy(static item => item.ProcessId)
+            .Select(static item => new RunningProcessRow(
+                item.DisplayName,
+                item.ProcessName,
+                item.ProcessId,
+                item.WindowHandle))];
+    }
+
+    public static bool TryGetRepresentativeWindowHandle(string processName, out IntPtr windowHandle)
+    {
+        if (string.IsNullOrWhiteSpace(processName))
+        {
+            windowHandle = IntPtr.Zero;
+            return false;
+        }
+
+        ProcessCatalogSnapshot snapshot = BuildProcessCatalogSnapshot(currentProcessId: null);
+        bool exists = EnumerateRepresentativeWindows(snapshot.EligibleProcessesById, requireDisplayTitle: false)
+            .TryGetValue(processName.Trim(), out FocusableWindowCandidate? candidate);
+
+        windowHandle = exists ? candidate!.WindowHandle : IntPtr.Zero;
+        return exists;
+    }
+
+    private static ProcessCatalogSnapshot BuildProcessCatalogSnapshot(int? currentProcessId)
+    {
+        HashSet<string> processNames = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<int, EligibleProcessInfo> eligibleProcessesById = [];
         int exceptionCount = 0;
 
         foreach (Process process in Process.GetProcesses())
         {
             try
             {
-                if (process.Id == currentProcessId)
+                int processId = process.Id;
+                if (currentProcessId.HasValue && processId == currentProcessId.Value)
                 {
                     continue;
                 }
 
-                string processName = process.ProcessName;
-                bool hasFocusableWindow = IsFocusTrackingCandidate(process);
-
-                if (processStates.TryGetValue(processName, out ProcessRunState? current))
+                string? processName = ProcessIdentityResolver.TryGetProcessName(process);
+                if (string.IsNullOrWhiteSpace(processName))
                 {
-                    processStates[processName] = current with
-                    {
-                        HasFocusableWindow = current.HasFocusableWindow || hasFocusableWindow
-                    };
+                    exceptionCount++;
                     continue;
                 }
 
-                processStates[processName] = new ProcessRunState(processName, hasFocusableWindow);
+                processNames.Add(processName);
+
+                if (!IsFocusTrackingCandidate(processName))
+                {
+                    continue;
+                }
+
+                _ = eligibleProcessesById.TryAdd(
+                    processId,
+                    new EligibleProcessInfo(processId, processName));
             }
             catch (Exception exception) when (
                 exception is InvalidOperationException or NotSupportedException or System.ComponentModel.Win32Exception)
@@ -74,44 +133,87 @@ internal static class RunningProcessCatalog
             }
         }
 
-        stopwatch.Stop();
-        return new ProcessRunStateScanResult(processStates, stopwatch.Elapsed, exceptionCount);
+        return new ProcessCatalogSnapshot(processNames, eligibleProcessesById, exceptionCount);
     }
 
-    public static IReadOnlyList<RunningProcessRow> GetVisibleProcesses(int currentProcessId)
+    private static Dictionary<string, FocusableWindowCandidate> EnumerateRepresentativeWindows(
+        IReadOnlyDictionary<int, EligibleProcessInfo> eligibleProcessesById,
+        bool requireDisplayTitle)
     {
-        List<RunningProcessRow> applications = [];
+        Dictionary<string, FocusableWindowCandidate> windowsByProcessName = new(StringComparer.OrdinalIgnoreCase);
 
-        foreach (Process process in Process.GetProcesses())
+        _ = EnumWindows((windowHandle, _) =>
         {
-            try
+            if (!TryCreateFocusableWindowCandidate(
+                windowHandle,
+                eligibleProcessesById,
+                requireDisplayTitle,
+                out FocusableWindowCandidate? candidate))
             {
-                if (process.Id == currentProcessId ||
-                    !IsFocusTrackingCandidate(process) ||
-                    string.IsNullOrWhiteSpace(process.MainWindowTitle))
-                {
-                    continue;
-                }
+                return true;
+            }
 
-                applications.Add(new RunningProcessRow(
-                    process.MainWindowTitle.Trim(),
-                    process.ProcessName,
-                    process.Id));
-            }
-            catch (Exception exception) when (
-                exception is InvalidOperationException or NotSupportedException or System.ComponentModel.Win32Exception)
+            FocusableWindowCandidate windowCandidate = candidate!;
+            if (!windowsByProcessName.TryGetValue(windowCandidate.ProcessName, out FocusableWindowCandidate? current) ||
+                ShouldReplaceRepresentativeWindow(current, windowCandidate))
             {
-                continue;
+                windowsByProcessName[windowCandidate.ProcessName] = windowCandidate;
             }
-            finally
-            {
-                process.Dispose();
-            }
+
+            return true;
+        }, IntPtr.Zero);
+
+        return windowsByProcessName;
+    }
+
+    private static bool TryCreateFocusableWindowCandidate(
+        IntPtr windowHandle,
+        IReadOnlyDictionary<int, EligibleProcessInfo> eligibleProcessesById,
+        bool requireDisplayTitle,
+        out FocusableWindowCandidate? candidate)
+    {
+        candidate = null;
+
+        if (!HasMeasurableFocusWindow(windowHandle))
+        {
+            return false;
         }
 
-        return [.. applications
-            .OrderBy(static item => item.DisplayName, StringComparer.CurrentCultureIgnoreCase)
-            .ThenBy(static item => item.ProcessId)];
+        _ = GetWindowThreadProcessId(windowHandle, out uint processId);
+        if (processId == 0 ||
+            !eligibleProcessesById.TryGetValue((int)processId, out EligibleProcessInfo? processInfo))
+        {
+            return false;
+        }
+
+        string? displayName = GetWindowTitle(windowHandle);
+        if (requireDisplayTitle && string.IsNullOrWhiteSpace(displayName))
+        {
+            return false;
+        }
+
+        candidate = new FocusableWindowCandidate(
+            string.IsNullOrWhiteSpace(displayName) ? processInfo.ProcessName : displayName.Trim(),
+            processInfo.ProcessName,
+            processInfo.ProcessId,
+            windowHandle,
+            IsIconic(windowHandle));
+        return true;
+    }
+
+    private static bool ShouldReplaceRepresentativeWindow(
+        FocusableWindowCandidate current,
+        FocusableWindowCandidate candidate)
+    {
+        if (current.IsMinimized != candidate.IsMinimized)
+        {
+            return current.IsMinimized && !candidate.IsMinimized;
+        }
+
+        bool currentHasTitle = !string.IsNullOrWhiteSpace(current.DisplayName);
+        bool candidateHasTitle = !string.IsNullOrWhiteSpace(candidate.DisplayName);
+
+        return currentHasTitle != candidateHasTitle && candidateHasTitle;
     }
 
     private static string? GetExecutablePath(Process process)
@@ -127,17 +229,14 @@ internal static class RunningProcessCatalog
         }
     }
 
-    private static bool IsFocusTrackingCandidate(Process process)
+    private static bool IsFocusTrackingCandidate(string processName)
     {
-        if (ExcludedVisibleProcessNames.Contains(process.ProcessName) ||
-            !HasMeasurableFocusWindow(process))
+        if (ExcludedVisibleProcessNames.Contains(processName))
         {
             return false;
         }
 
-        string? executablePath = GetExecutablePath(process);
-
-        return !IsSystemProcessPath(executablePath);
+        return true;
     }
 
     private static bool IsSystemProcessPath(string? executablePath)
@@ -171,13 +270,12 @@ internal static class RunningProcessCatalog
                 StringComparison.OrdinalIgnoreCase);
     }
 
-    private static bool HasMeasurableFocusWindow(Process process)
+    private static bool HasMeasurableFocusWindow(IntPtr windowHandle)
     {
-        IntPtr windowHandle = process.MainWindowHandle;
-
         if (windowHandle == IntPtr.Zero ||
             !IsWindowVisible(windowHandle) ||
-            !IsWindowEnabled(windowHandle))
+            !IsWindowEnabled(windowHandle) ||
+            IsCloakedWindow(windowHandle))
         {
             return false;
         }
@@ -188,15 +286,80 @@ internal static class RunningProcessCatalog
             (extendedStyle & ExtendedNoActivateStyle) == 0;
     }
 
+    private static bool IsCloakedWindow(IntPtr windowHandle)
+    {
+        return DwmGetWindowAttribute(
+            windowHandle,
+            DwmWindowAttributeCloaked,
+            out int cloaked,
+            Marshal.SizeOf<int>()) == SuccessHResult &&
+            cloaked != 0;
+    }
+
+    private static string? GetWindowTitle(IntPtr windowHandle)
+    {
+        int textLength = GetWindowTextLength(windowHandle);
+        if (textLength <= 0)
+        {
+            return null;
+        }
+
+        char[] title = new char[textLength + 1];
+        int copiedLength = GetWindowText(windowHandle, title, title.Length);
+        return copiedLength > 0
+            ? new string(title, 0, copiedLength)
+            : null;
+    }
+
     [DllImport("user32.dll")]
     private static extern bool IsWindowVisible(IntPtr windowHandle);
 
     [DllImport("user32.dll")]
     private static extern bool IsWindowEnabled(IntPtr windowHandle);
 
+    [DllImport("user32.dll")]
+    private static extern bool EnumWindows(EnumWindowsProc enumProc, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    private static extern bool IsIconic(IntPtr windowHandle);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "GetWindowTextLengthW")]
+    private static extern int GetWindowTextLength(IntPtr windowHandle);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "GetWindowTextW")]
+    private static extern int GetWindowText(IntPtr windowHandle, [Out] char[] text, int maxCount);
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr windowHandle, out uint processId);
+
     [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
     private static extern IntPtr GetWindowLongPtr(IntPtr windowHandle, int index);
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmGetWindowAttribute(
+        IntPtr windowHandle,
+        int attribute,
+        out int attributeValue,
+        int attributeSize);
+
+    private delegate bool EnumWindowsProc(IntPtr windowHandle, IntPtr lParam);
 }
+
+internal sealed record EligibleProcessInfo(
+    int ProcessId,
+    string ProcessName);
+
+internal sealed record FocusableWindowCandidate(
+    string DisplayName,
+    string ProcessName,
+    int ProcessId,
+    IntPtr WindowHandle,
+    bool IsMinimized);
+
+internal sealed record ProcessCatalogSnapshot(
+    IReadOnlyCollection<string> ProcessNames,
+    IReadOnlyDictionary<int, EligibleProcessInfo> EligibleProcessesById,
+    int ExceptionCount);
 
 internal sealed record ProcessRunState(
     string ProcessName,
