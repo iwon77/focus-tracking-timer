@@ -59,6 +59,7 @@ public sealed class SqliteProjectTimerStore
             connection,
             transaction,
             """
+            DELETE FROM work_segments;
             DELETE FROM focus_segments;
             DELETE FROM completed_records;
             DELETE FROM registered_programs;
@@ -75,6 +76,11 @@ public sealed class SqliteProjectTimerStore
             for (int segmentIndex = 0; segmentIndex < record.FocusSegments.Count; segmentIndex++)
             {
                 InsertFocusSegment(connection, transaction, record.FocusSegments[segmentIndex], recordIndex, segmentIndex);
+            }
+
+            for (int segmentIndex = 0; segmentIndex < record.WorkSegments.Count; segmentIndex++)
+            {
+                InsertWorkSegment(connection, transaction, record.WorkSegments[segmentIndex], recordIndex, segmentIndex);
             }
         }
 
@@ -109,6 +115,11 @@ public sealed class SqliteProjectTimerStore
         for (int segmentIndex = 0; segmentIndex < record.FocusSegments.Count; segmentIndex++)
         {
             InsertFocusSegment(connection, transaction, record.FocusSegments[segmentIndex], nextRecordOrder, segmentIndex);
+        }
+
+        for (int segmentIndex = 0; segmentIndex < record.WorkSegments.Count; segmentIndex++)
+        {
+            InsertWorkSegment(connection, transaction, record.WorkSegments[segmentIndex], nextRecordOrder, segmentIndex);
         }
 
         transaction.Commit();
@@ -222,6 +233,7 @@ public sealed class SqliteProjectTimerStore
                 project_name TEXT NOT NULL,
                 started_at TEXT NOT NULL,
                 ended_at TEXT NOT NULL,
+                uses_work_segments INTEGER NOT NULL DEFAULT 0,
                 FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE
             );
 
@@ -230,6 +242,15 @@ public sealed class SqliteProjectTimerStore
                 segment_order INTEGER NOT NULL,
                 process_name TEXT NOT NULL,
                 display_name TEXT NOT NULL,
+                started_at TEXT NOT NULL,
+                ended_at TEXT NOT NULL,
+                PRIMARY KEY (record_order, segment_order),
+                FOREIGN KEY (record_order) REFERENCES completed_records(record_order) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS work_segments (
+                record_order INTEGER NOT NULL,
+                segment_order INTEGER NOT NULL,
                 started_at TEXT NOT NULL,
                 ended_at TEXT NOT NULL,
                 PRIMARY KEY (record_order, segment_order),
@@ -247,6 +268,9 @@ public sealed class SqliteProjectTimerStore
 
             CREATE INDEX IF NOT EXISTS ix_focus_segments_started_at
             ON focus_segments (started_at);
+
+            CREATE INDEX IF NOT EXISTS ix_work_segments_record_order_started_at
+            ON work_segments (record_order, started_at);
             """);
 
         EnsureColumn(connection, "projects", "is_deleted", "ALTER TABLE projects ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0;");
@@ -255,6 +279,7 @@ public sealed class SqliteProjectTimerStore
         EnsureColumn(connection, "projects", "memo", "ALTER TABLE projects ADD COLUMN memo TEXT NOT NULL DEFAULT '';");
         EnsureColumn(connection, "projects", "memo_updated_at", "ALTER TABLE projects ADD COLUMN memo_updated_at TEXT NOT NULL DEFAULT '';");
         EnsureColumn(connection, "registered_programs", "is_pinned", "ALTER TABLE registered_programs ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0;");
+        EnsureColumn(connection, "completed_records", "uses_work_segments", "ALTER TABLE completed_records ADD COLUMN uses_work_segments INTEGER NOT NULL DEFAULT 0;");
     }
 
     private static List<ProjectState> LoadProjects(SqliteConnection connection)
@@ -334,7 +359,7 @@ public sealed class SqliteProjectTimerStore
         {
             recordCommand.CommandText =
                 """
-                SELECT record_order, project_id, project_name, started_at, ended_at
+                SELECT record_order, project_id, project_name, started_at, ended_at, uses_work_segments
                 FROM completed_records
                 ORDER BY record_order;
                 """;
@@ -348,45 +373,15 @@ public sealed class SqliteProjectTimerStore
                     reader.GetString(2),
                     ParseDateTimeOffset(reader.GetString(3)),
                     ParseDateTimeOffset(reader.GetString(4)),
+                    reader.GetInt32(5) != 0,
+                    [],
                     []));
             }
         }
 
-        Dictionary<int, List<ProgramFocusSegment>> segmentsByRecordOrder = rows.ToDictionary(
-            row => row.RecordOrder,
-            row => row.FocusSegments);
-
-        using (SqliteCommand segmentCommand = connection.CreateCommand())
-        {
-            segmentCommand.CommandText =
-                """
-                SELECT record_order, process_name, display_name, started_at, ended_at
-                FROM focus_segments
-                ORDER BY record_order, segment_order;
-                """;
-
-            using SqliteDataReader reader = segmentCommand.ExecuteReader();
-            while (reader.Read())
-            {
-                int recordOrder = reader.GetInt32(0);
-                if (!segmentsByRecordOrder.TryGetValue(recordOrder, out List<ProgramFocusSegment>? segments))
-                {
-                    throw new InvalidOperationException("Focus segment references a missing completed record.");
-                }
-
-                segments.Add(new ProgramFocusSegment(
-                    new TrackedApplication(reader.GetString(1), reader.GetString(2)),
-                    ParseDateTimeOffset(reader.GetString(3)),
-                    ParseDateTimeOffset(reader.GetString(4))));
-            }
-        }
-
-        return [.. rows.Select(row => new ProjectTimerRecord(
-            row.ProjectId,
-            row.ProjectName,
-            row.StartedAt,
-            row.EndedAt,
-            row.FocusSegments))];
+        LoadFocusSegments(connection, rows);
+        LoadWorkSegments(connection, rows);
+        return [.. rows.Select(CreateRecord)];
     }
 
     private static List<ProjectTimerRecord> LoadCompletedRecordsInRange(
@@ -403,47 +398,36 @@ public sealed class SqliteProjectTimerStore
         DateTimeOffset rangeStart = GetLocalBoundary(fromDate);
         DateTimeOffset rangeEnd = GetLocalBoundary(toDate.AddDays(1));
         List<CompletedRecordRow> rows = [];
-        Dictionary<int, CompletedRecordRow> rowByRecordOrder = [];
 
         using SqliteCommand command = connection.CreateCommand();
         command.CommandText =
             projectId.HasValue
                 ? """
                   SELECT
-                      r.record_order,
-                      r.project_id,
-                      r.project_name,
-                      r.started_at,
-                      r.ended_at,
-                      s.process_name,
-                      s.display_name,
-                      s.started_at,
-                      s.ended_at
-                  FROM completed_records AS r
-                  LEFT JOIN focus_segments AS s
-                      ON s.record_order = r.record_order
-                  WHERE r.project_id = $project_id
-                    AND r.ended_at > $range_start
-                    AND r.started_at < $range_end
-                  ORDER BY r.record_order, s.segment_order;
+                      record_order,
+                      project_id,
+                      project_name,
+                      started_at,
+                      ended_at,
+                      uses_work_segments
+                  FROM completed_records
+                  WHERE project_id = $project_id
+                    AND ended_at > $range_start
+                    AND started_at < $range_end
+                  ORDER BY record_order;
                   """
                 : """
                   SELECT
-                      r.record_order,
-                      r.project_id,
-                      r.project_name,
-                      r.started_at,
-                      r.ended_at,
-                      s.process_name,
-                      s.display_name,
-                      s.started_at,
-                      s.ended_at
-                  FROM completed_records AS r
-                  LEFT JOIN focus_segments AS s
-                      ON s.record_order = r.record_order
-                  WHERE r.ended_at > $range_start
-                    AND r.started_at < $range_end
-                  ORDER BY r.record_order, s.segment_order;
+                      record_order,
+                      project_id,
+                      project_name,
+                      started_at,
+                      ended_at,
+                      uses_work_segments
+                  FROM completed_records
+                  WHERE ended_at > $range_start
+                    AND started_at < $range_end
+                  ORDER BY record_order;
                   """;
         _ = command.Parameters.AddWithValue("$range_start", FormatDateTimeOffset(rangeStart));
         _ = command.Parameters.AddWithValue("$range_end", FormatDateTimeOffset(rangeEnd));
@@ -455,37 +439,143 @@ public sealed class SqliteProjectTimerStore
         using SqliteDataReader reader = command.ExecuteReader();
         while (reader.Read())
         {
-            int recordOrder = reader.GetInt32(0);
-            if (!rowByRecordOrder.TryGetValue(recordOrder, out CompletedRecordRow? row))
-            {
-                row = new CompletedRecordRow(
-                    recordOrder,
-                    ParseGuid(reader.GetString(1)),
-                    reader.GetString(2),
-                    ParseDateTimeOffset(reader.GetString(3)),
-                    ParseDateTimeOffset(reader.GetString(4)),
-                    []);
-                rowByRecordOrder[recordOrder] = row;
-                rows.Add(row);
-            }
-
-            if (reader.IsDBNull(5))
-            {
-                continue;
-            }
-
-            row.FocusSegments.Add(new ProgramFocusSegment(
-                new TrackedApplication(reader.GetString(5), reader.GetString(6)),
-                ParseDateTimeOffset(reader.GetString(7)),
-                ParseDateTimeOffset(reader.GetString(8))));
+            rows.Add(new CompletedRecordRow(
+                reader.GetInt32(0),
+                ParseGuid(reader.GetString(1)),
+                reader.GetString(2),
+                ParseDateTimeOffset(reader.GetString(3)),
+                ParseDateTimeOffset(reader.GetString(4)),
+                reader.GetInt32(5) != 0,
+                [],
+                []));
         }
 
-        return [.. rows.Select(row => new ProjectTimerRecord(
-            row.ProjectId,
-            row.ProjectName,
-            row.StartedAt,
-            row.EndedAt,
-            row.FocusSegments))];
+        LoadFocusSegments(connection, rows);
+        LoadWorkSegments(connection, rows);
+        return [.. rows.Select(CreateRecord)];
+    }
+
+    private static void LoadFocusSegments(SqliteConnection connection, List<CompletedRecordRow> rows)
+    {
+        if (rows.Count == 0)
+        {
+            return;
+        }
+
+        Dictionary<int, List<ProgramFocusSegment>> segmentsByRecordOrder = rows.ToDictionary(
+            row => row.RecordOrder,
+            row => row.FocusSegments);
+
+        foreach (List<int> batch in BuildRecordOrderBatches(rows))
+        {
+            using SqliteCommand segmentCommand = connection.CreateCommand();
+            string recordOrderFilter = BuildRecordOrderFilter(segmentCommand, batch);
+            segmentCommand.CommandText =
+                $"""
+                 SELECT record_order, process_name, display_name, started_at, ended_at
+                 FROM focus_segments
+                 WHERE record_order IN ({recordOrderFilter})
+                 ORDER BY record_order, segment_order;
+                 """;
+
+            using SqliteDataReader reader = segmentCommand.ExecuteReader();
+            while (reader.Read())
+            {
+                int recordOrder = reader.GetInt32(0);
+                if (!segmentsByRecordOrder.TryGetValue(recordOrder, out List<ProgramFocusSegment>? segments))
+                {
+                    continue;
+                }
+
+                segments.Add(new ProgramFocusSegment(
+                    new TrackedApplication(reader.GetString(1), reader.GetString(2)),
+                    ParseDateTimeOffset(reader.GetString(3)),
+                    ParseDateTimeOffset(reader.GetString(4))));
+            }
+        }
+    }
+
+    private static void LoadWorkSegments(SqliteConnection connection, List<CompletedRecordRow> rows)
+    {
+        if (rows.Count == 0)
+        {
+            return;
+        }
+
+        Dictionary<int, List<ProjectWorkSegment>> segmentsByRecordOrder = rows.ToDictionary(
+            row => row.RecordOrder,
+            row => row.WorkSegments);
+
+        foreach (List<int> batch in BuildRecordOrderBatches(rows))
+        {
+            using SqliteCommand segmentCommand = connection.CreateCommand();
+            string recordOrderFilter = BuildRecordOrderFilter(segmentCommand, batch);
+            segmentCommand.CommandText =
+                $"""
+                 SELECT record_order, started_at, ended_at
+                 FROM work_segments
+                 WHERE record_order IN ({recordOrderFilter})
+                 ORDER BY record_order, segment_order;
+                 """;
+
+            using SqliteDataReader reader = segmentCommand.ExecuteReader();
+            while (reader.Read())
+            {
+                int recordOrder = reader.GetInt32(0);
+                if (!segmentsByRecordOrder.TryGetValue(recordOrder, out List<ProjectWorkSegment>? segments))
+                {
+                    continue;
+                }
+
+                segments.Add(new ProjectWorkSegment(
+                    ParseDateTimeOffset(reader.GetString(1)),
+                    ParseDateTimeOffset(reader.GetString(2))));
+            }
+        }
+    }
+
+    private static ProjectTimerRecord CreateRecord(CompletedRecordRow row)
+    {
+        return row.UsesWorkSegments
+            ? new ProjectTimerRecord(
+                row.ProjectId,
+                row.ProjectName,
+                row.StartedAt,
+                row.EndedAt,
+                row.WorkSegments,
+                row.FocusSegments)
+            : new ProjectTimerRecord(
+                row.ProjectId,
+                row.ProjectName,
+                row.StartedAt,
+                row.EndedAt,
+                row.FocusSegments);
+    }
+
+    private static string BuildRecordOrderFilter(SqliteCommand command, List<int> recordOrders)
+    {
+        List<string> parameterNames = [];
+
+        for (int index = 0; index < recordOrders.Count; index++)
+        {
+            string parameterName = $"$record_order_{index}";
+            _ = command.Parameters.AddWithValue(parameterName, recordOrders[index]);
+            parameterNames.Add(parameterName);
+        }
+
+        return string.Join(", ", parameterNames);
+    }
+
+    private static IEnumerable<List<int>> BuildRecordOrderBatches(List<CompletedRecordRow> rows)
+    {
+        const int batchSize = 900;
+        List<int> recordOrders = [.. rows.Select(row => row.RecordOrder)];
+
+        for (int index = 0; index < recordOrders.Count; index += batchSize)
+        {
+            int count = Math.Min(batchSize, recordOrders.Count - index);
+            yield return recordOrders.GetRange(index, count);
+        }
     }
 
     private static void InsertProject(
@@ -597,19 +687,22 @@ public sealed class SqliteProjectTimerStore
                 project_id,
                 project_name,
                 started_at,
-                ended_at)
+                ended_at,
+                uses_work_segments)
             VALUES (
                 $record_order,
                 $project_id,
                 $project_name,
                 $started_at,
-                $ended_at);
+                $ended_at,
+                $uses_work_segments);
             """;
         _ = command.Parameters.AddWithValue("$record_order", recordOrder);
         _ = command.Parameters.AddWithValue("$project_id", record.ProjectId.ToString("D"));
         _ = command.Parameters.AddWithValue("$project_name", record.ProjectName);
         _ = command.Parameters.AddWithValue("$started_at", FormatDateTimeOffset(record.StartedAt));
         _ = command.Parameters.AddWithValue("$ended_at", FormatDateTimeOffset(record.EndedAt));
+        _ = command.Parameters.AddWithValue("$uses_work_segments", record.UsesWorkSegments ? 1 : 0);
         _ = command.ExecuteNonQuery();
     }
 
@@ -643,6 +736,35 @@ public sealed class SqliteProjectTimerStore
         _ = command.Parameters.AddWithValue("$segment_order", segmentOrder);
         _ = command.Parameters.AddWithValue("$process_name", segment.Program.ProcessName);
         _ = command.Parameters.AddWithValue("$display_name", segment.Program.DisplayName);
+        _ = command.Parameters.AddWithValue("$started_at", FormatDateTimeOffset(segment.StartedAt));
+        _ = command.Parameters.AddWithValue("$ended_at", FormatDateTimeOffset(segment.EndedAt));
+        _ = command.ExecuteNonQuery();
+    }
+
+    private static void InsertWorkSegment(
+        SqliteConnection connection,
+        SqliteTransaction transaction,
+        ProjectWorkSegment segment,
+        int recordOrder,
+        int segmentOrder)
+    {
+        using SqliteCommand command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText =
+            """
+            INSERT INTO work_segments (
+                record_order,
+                segment_order,
+                started_at,
+                ended_at)
+            VALUES (
+                $record_order,
+                $segment_order,
+                $started_at,
+                $ended_at);
+            """;
+        _ = command.Parameters.AddWithValue("$record_order", recordOrder);
+        _ = command.Parameters.AddWithValue("$segment_order", segmentOrder);
         _ = command.Parameters.AddWithValue("$started_at", FormatDateTimeOffset(segment.StartedAt));
         _ = command.Parameters.AddWithValue("$ended_at", FormatDateTimeOffset(segment.EndedAt));
         _ = command.ExecuteNonQuery();
@@ -771,5 +893,7 @@ public sealed class SqliteProjectTimerStore
         string ProjectName,
         DateTimeOffset StartedAt,
         DateTimeOffset EndedAt,
+        bool UsesWorkSegments,
+        List<ProjectWorkSegment> WorkSegments,
         List<ProgramFocusSegment> FocusSegments);
 }

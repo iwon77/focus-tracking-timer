@@ -69,6 +69,11 @@ public sealed class SqliteProjectTimerStoreTests
             Assert.Equal(record.ProjectName, loadedRecord.ProjectName);
             Assert.Equal(record.StartedAt, loadedRecord.StartedAt);
             Assert.Equal(record.EndedAt, loadedRecord.EndedAt);
+            Assert.True(loadedRecord.UsesWorkSegments);
+            Assert.Equal(TimeSpan.FromMinutes(25), loadedRecord.WallClockDuration);
+            ProjectWorkSegment loadedWorkSegment = Assert.Single(loadedRecord.WorkSegments);
+            Assert.Equal(startedAt, loadedWorkSegment.StartedAt);
+            Assert.Equal(startedAt.AddMinutes(25), loadedWorkSegment.EndedAt);
             Assert.Collection(
                 loadedRecord.FocusSegments,
                 segment =>
@@ -217,6 +222,9 @@ public sealed class SqliteProjectTimerStoreTests
                 project.Name,
                 startedAt,
                 startedAt.AddMinutes(15),
+                [new ProjectWorkSegment(
+                    startedAt,
+                    startedAt.AddMinutes(15))],
                 [new ProgramFocusSegment(
                     new TrackedApplication("code", "Code"),
                     startedAt,
@@ -227,8 +235,54 @@ public sealed class SqliteProjectTimerStoreTests
 
             ProjectTimerRecord loadedRecord = Assert.Single(loadedState.CompletedRecords);
             Assert.Equal(project.Id, loadedRecord.ProjectId);
+            Assert.True(loadedRecord.UsesWorkSegments);
+            Assert.Equal(TimeSpan.FromMinutes(15), loadedRecord.WallClockDuration);
             Assert.Equal(TimeSpan.FromMinutes(15), loadedRecord.TotalDuration);
             Assert.Single(loadedState.Projects);
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+
+            if (Directory.Exists(tempDirectory))
+            {
+                Directory.Delete(tempDirectory, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public void SaveAndLoadStateKeepsPausedDurationOutOfPersistedWorkTime()
+    {
+        string tempDirectory = Path.Combine(Path.GetTempPath(), "FocusTrackingTimer.Tests", Guid.NewGuid().ToString("N"));
+        string databasePath = Path.Combine(tempDirectory, "focus-tracking-timer.db");
+
+        try
+        {
+            ProjectTimerEngine engine = new();
+            Assert.True(engine.TryAddProject("Work", out ProjectDefinition project));
+            Assert.True(engine.TryRegisterProgram(project.Id, new TrackedApplication("code", "Code")));
+
+            DateTimeOffset startedAt = new(2026, 6, 8, 9, 0, 0, TimeSpan.Zero);
+            engine.StartProject(project.Id, startedAt);
+            engine.ObserveFocusedProgram("code", startedAt);
+            engine.PauseProject(startedAt.AddMinutes(10));
+            ProjectTimerRecord record = engine.StopProject(startedAt.AddMinutes(30));
+
+            SqliteProjectTimerStore store = new(databasePath);
+            store.SaveState(engine.CreateStateSnapshot());
+
+            ProjectTimerRecord loadedRecord = Assert.Single(store.LoadState().CompletedRecords);
+
+            Assert.True(record.UsesWorkSegments);
+            Assert.True(loadedRecord.UsesWorkSegments);
+            Assert.Equal(TimeSpan.FromMinutes(10), loadedRecord.WallClockDuration);
+            Assert.Equal(TimeSpan.FromMinutes(10), loadedRecord.TotalDuration);
+            ProjectTimerRecordSlice slice = Assert.Single(store.LoadRecordSlices(
+                new DateOnly(2026, 6, 8),
+                new DateOnly(2026, 6, 8),
+                project.Id));
+            Assert.Equal(TimeSpan.FromMinutes(10), slice.WallClockDuration);
         }
         finally
         {

@@ -97,23 +97,46 @@ internal static class ProjectTimerRecordSummaryBuilder
     {
         DateTimeOffset rangeStart = GetLocalBoundary(fromDate);
         DateTimeOffset rangeEnd = GetLocalBoundary(toDate.AddDays(1));
-        DateTimeOffset sliceStart = record.StartedAt > rangeStart ? record.StartedAt : rangeStart;
-        DateTimeOffset sliceEnd = record.EndedAt < rangeEnd ? record.EndedAt : rangeEnd;
-
-        if (sliceEnd <= sliceStart)
+        IEnumerable<ProjectWorkSegment> workSegments = record.UsesWorkSegments
+            ? record.WorkSegments
+            : [new ProjectWorkSegment(record.StartedAt, record.EndedAt)];
+        List<ProjectWorkSegment> slicedWorkSegments = [.. SliceWorkSegments(workSegments, rangeStart, rangeEnd)];
+        if (slicedWorkSegments.Count == 0)
         {
             slice = null;
             return false;
         }
 
-        List<ProgramFocusSegment> slicedSegments = [.. SliceFocusSegments(record.FocusSegments, sliceStart, sliceEnd)];
+        DateTimeOffset sliceStart = slicedWorkSegments[0].StartedAt;
+        DateTimeOffset sliceEnd = slicedWorkSegments[^1].EndedAt;
+        List<ProgramFocusSegment> slicedSegments = [.. SliceFocusSegments(record.FocusSegments, rangeStart, rangeEnd)];
         slice = new ProjectTimerRecordSlice(
             record.ProjectId,
             record.ProjectName,
             sliceStart,
             sliceEnd,
+            slicedWorkSegments,
             slicedSegments);
         return true;
+    }
+
+    private static IEnumerable<ProjectWorkSegment> SliceWorkSegments(
+        IEnumerable<ProjectWorkSegment> workSegments,
+        DateTimeOffset sliceStart,
+        DateTimeOffset sliceEnd)
+    {
+        foreach (ProjectWorkSegment segment in workSegments)
+        {
+            DateTimeOffset overlappedStart = segment.StartedAt > sliceStart ? segment.StartedAt : sliceStart;
+            DateTimeOffset overlappedEnd = segment.EndedAt < sliceEnd ? segment.EndedAt : sliceEnd;
+
+            if (overlappedEnd <= overlappedStart)
+            {
+                continue;
+            }
+
+            yield return new ProjectWorkSegment(overlappedStart, overlappedEnd);
+        }
     }
 
     private static IEnumerable<ProgramFocusSegment> SliceFocusSegments(

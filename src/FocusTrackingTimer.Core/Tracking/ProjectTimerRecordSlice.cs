@@ -9,6 +9,7 @@ public sealed class ProjectTimerRecordSlice
         string projectName,
         DateTimeOffset startedAt,
         DateTimeOffset endedAt,
+        IEnumerable<ProjectWorkSegment> workSegments,
         IEnumerable<ProgramFocusSegment> focusSegments)
     {
         if (projectId == Guid.Empty)
@@ -26,16 +27,19 @@ public sealed class ProjectTimerRecordSlice
             throw new ArgumentOutOfRangeException(nameof(endedAt), "End time must be later than start time.");
         }
 
+        ArgumentNullException.ThrowIfNull(workSegments);
         ArgumentNullException.ThrowIfNull(focusSegments);
 
-        List<ProgramFocusSegment> materializedSegments = focusSegments.ToList();
+        List<ProjectWorkSegment> materializedWorkSegments = workSegments.ToList();
+        List<ProgramFocusSegment> materializedFocusSegments = focusSegments.ToList();
 
         ProjectId = projectId;
         ProjectName = projectName.Trim();
         StartedAt = startedAt;
         EndedAt = endedAt;
-        FocusSegments = new ReadOnlyCollection<ProgramFocusSegment>(materializedSegments);
-        ProgramSummaries = new ReadOnlyCollection<ProgramFocusSummary>(BuildProgramSummaries(materializedSegments));
+        WorkSegments = new ReadOnlyCollection<ProjectWorkSegment>(materializedWorkSegments);
+        FocusSegments = new ReadOnlyCollection<ProgramFocusSegment>(materializedFocusSegments);
+        ProgramSummaries = new ReadOnlyCollection<ProgramFocusSummary>(BuildProgramSummaries(materializedFocusSegments));
     }
 
     public Guid ProjectId { get; }
@@ -46,7 +50,9 @@ public sealed class ProjectTimerRecordSlice
 
     public DateTimeOffset EndedAt { get; }
 
-    public TimeSpan WallClockDuration => EndedAt - StartedAt;
+    public TimeSpan WallClockDuration => WorkSegments.Aggregate(TimeSpan.Zero, static (total, segment) => total + segment.Duration);
+
+    public ReadOnlyCollection<ProjectWorkSegment> WorkSegments { get; }
 
     public ReadOnlyCollection<ProgramFocusSegment> FocusSegments { get; }
 

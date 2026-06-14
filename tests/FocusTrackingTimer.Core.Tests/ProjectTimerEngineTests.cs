@@ -90,6 +90,28 @@ public class ProjectTimerEngineTests
     }
 
     [Fact]
+    public void StopProjectWhilePausedExcludesPausedDurationFromRecordedWorkTime()
+    {
+        ProjectTimerEngine engine = new();
+        Assert.True(engine.TryAddProject("Study", out ProjectDefinition project));
+        Assert.True(engine.TryRegisterProgram(project.Id, new TrackedApplication("code", "Code")));
+        DateTimeOffset startedAt = new(2026, 6, 3, 9, 0, 0, TimeSpan.Zero);
+
+        engine.StartProject(project.Id, startedAt);
+        engine.ObserveFocusedProgram("code", startedAt);
+        engine.PauseProject(startedAt.AddMinutes(10));
+
+        ProjectTimerRecord record = engine.StopProject(startedAt.AddMinutes(30));
+
+        Assert.True(record.UsesWorkSegments);
+        Assert.Equal(TimeSpan.FromMinutes(10), record.WallClockDuration);
+        Assert.Equal(TimeSpan.FromMinutes(10), record.TotalDuration);
+        ProjectWorkSegment segment = Assert.Single(record.WorkSegments);
+        Assert.Equal(startedAt, segment.StartedAt);
+        Assert.Equal(startedAt.AddMinutes(10), segment.EndedAt);
+    }
+
+    [Fact]
     public void PausedActiveSessionDoesNotExtendRecordSlicesBeyondPauseTime()
     {
         ProjectTimerEngine engine = new();

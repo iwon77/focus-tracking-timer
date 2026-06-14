@@ -256,12 +256,14 @@ public sealed class ProjectTimerEngine
         }
 
         session.CloseFocusedProgram(endedAt);
+        session.CloseCurrentWorkSegment(endedAt);
 
         ProjectTimerRecord record = new(
             session.Project.Id,
             session.Project.Name,
             session.StartedAt,
             endedAt,
+            session.GetWorkSegments(),
             session.GetFocusSegments());
 
         _completedRecords.Add(record);
@@ -498,6 +500,7 @@ public sealed class ProjectTimerEngine
             _activeSession.Project.Name,
             _activeSession.StartedAt,
             summaryEndedAt,
+            _activeSession.GetWorkSegments(summaryEndedAt),
             _activeSession.GetFocusSegments(summaryEndedAt));
     }
 
@@ -588,12 +591,14 @@ public sealed class ProjectTimerEngine
 
     private sealed class ActiveProjectSession
     {
+        private readonly List<ProjectWorkSegment> _completedWorkSegments = [];
         private readonly List<ProgramFocusSegment> _completedFocusSegments = [];
 
         public ActiveProjectSession(ProjectDefinition project, DateTimeOffset startedAt)
         {
             Project = project;
             StartedAt = startedAt;
+            WorkStartedAt = startedAt;
         }
 
         public ProjectDefinition Project { get; }
@@ -606,9 +611,9 @@ public sealed class ProjectTimerEngine
 
         public DateTimeOffset? FocusStartedAt { get; private set; }
 
-        private DateTimeOffset? PauseStartedAt { get; set; }
+        private DateTimeOffset? WorkStartedAt { get; set; }
 
-        private TimeSpan PausedDuration { get; set; }
+        private DateTimeOffset? PauseStartedAt { get; set; }
 
         public void SetFocusedProgram(TrackedApplication? program, DateTimeOffset observedAt)
         {
@@ -632,6 +637,21 @@ public sealed class ProjectTimerEngine
             FocusStartedAt = null;
         }
 
+        public void CloseCurrentWorkSegment(DateTimeOffset observedAt)
+        {
+            if (WorkStartedAt is null)
+            {
+                return;
+            }
+
+            if (observedAt > WorkStartedAt.Value)
+            {
+                _completedWorkSegments.Add(new ProjectWorkSegment(WorkStartedAt.Value, observedAt));
+            }
+
+            WorkStartedAt = null;
+        }
+
         public void Pause(DateTimeOffset pausedAt)
         {
             if (pausedAt < StartedAt)
@@ -645,6 +665,7 @@ public sealed class ProjectTimerEngine
             }
 
             CloseFocusedProgram(pausedAt);
+            CloseCurrentWorkSegment(pausedAt);
             PauseStartedAt = pausedAt;
         }
 
@@ -660,25 +681,13 @@ public sealed class ProjectTimerEngine
                 throw new ArgumentOutOfRangeException(nameof(resumedAt), "Resume time cannot be before pause time.");
             }
 
-            PausedDuration += resumedAt - PauseStartedAt.Value;
             PauseStartedAt = null;
+            WorkStartedAt = resumedAt;
         }
 
         public TimeSpan GetWallClockDuration(DateTimeOffset observedAt)
         {
-            if (observedAt < StartedAt)
-            {
-                return TimeSpan.Zero;
-            }
-
-            TimeSpan currentPauseDuration = PausedDuration;
-            if (PauseStartedAt is not null && observedAt > PauseStartedAt.Value)
-            {
-                currentPauseDuration += observedAt - PauseStartedAt.Value;
-            }
-
-            TimeSpan duration = observedAt - StartedAt - currentPauseDuration;
-            return duration < TimeSpan.Zero ? TimeSpan.Zero : duration;
+            return GetWorkSegments(observedAt).Aggregate(TimeSpan.Zero, static (total, segment) => total + segment.Duration);
         }
 
         public DateTimeOffset GetSummaryEndedAt(DateTimeOffset observedAt)
@@ -699,6 +708,24 @@ public sealed class ProjectTimerEngine
         public List<ProgramFocusSegment> GetFocusSegments()
         {
             return [.. _completedFocusSegments];
+        }
+
+        public List<ProjectWorkSegment> GetWorkSegments()
+        {
+            return [.. _completedWorkSegments];
+        }
+
+        public List<ProjectWorkSegment> GetWorkSegments(DateTimeOffset observedAt)
+        {
+            List<ProjectWorkSegment> segments = [.. _completedWorkSegments];
+
+            if (WorkStartedAt is not null &&
+                observedAt >= WorkStartedAt.Value)
+            {
+                segments.Add(new ProjectWorkSegment(WorkStartedAt.Value, observedAt));
+            }
+
+            return segments;
         }
 
         public List<ProgramFocusSegment> GetFocusSegments(DateTimeOffset observedAt)
