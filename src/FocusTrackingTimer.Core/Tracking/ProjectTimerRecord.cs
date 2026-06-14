@@ -10,6 +10,29 @@ public sealed class ProjectTimerRecord
         DateTimeOffset startedAt,
         DateTimeOffset endedAt,
         IEnumerable<ProgramFocusSegment> focusSegments)
+        : this(projectId, projectName, startedAt, endedAt, workSegments: null, focusSegments: focusSegments, usesWorkSegments: false)
+    {
+    }
+
+    public ProjectTimerRecord(
+        Guid projectId,
+        string projectName,
+        DateTimeOffset startedAt,
+        DateTimeOffset endedAt,
+        IEnumerable<ProjectWorkSegment> workSegments,
+        IEnumerable<ProgramFocusSegment> focusSegments)
+        : this(projectId, projectName, startedAt, endedAt, workSegments: workSegments, focusSegments: focusSegments, usesWorkSegments: true)
+    {
+    }
+
+    private ProjectTimerRecord(
+        Guid projectId,
+        string projectName,
+        DateTimeOffset startedAt,
+        DateTimeOffset endedAt,
+        IEnumerable<ProjectWorkSegment>? workSegments,
+        IEnumerable<ProgramFocusSegment> focusSegments,
+        bool usesWorkSegments)
     {
         if (projectId == Guid.Empty)
         {
@@ -27,15 +50,22 @@ public sealed class ProjectTimerRecord
         }
 
         ArgumentNullException.ThrowIfNull(focusSegments);
+        if (usesWorkSegments)
+        {
+            ArgumentNullException.ThrowIfNull(workSegments);
+        }
 
-        List<ProgramFocusSegment> materializedSegments = focusSegments.ToList();
+        List<ProjectWorkSegment> materializedWorkSegments = workSegments?.ToList() ?? [];
+        List<ProgramFocusSegment> materializedFocusSegments = focusSegments.ToList();
 
         ProjectId = projectId;
         ProjectName = projectName.Trim();
         StartedAt = startedAt;
         EndedAt = endedAt;
-        FocusSegments = new ReadOnlyCollection<ProgramFocusSegment>(materializedSegments);
-        ProgramSummaries = new ReadOnlyCollection<ProgramFocusSummary>(BuildProgramSummaries(materializedSegments));
+        UsesWorkSegments = usesWorkSegments;
+        WorkSegments = new ReadOnlyCollection<ProjectWorkSegment>(materializedWorkSegments);
+        FocusSegments = new ReadOnlyCollection<ProgramFocusSegment>(materializedFocusSegments);
+        ProgramSummaries = new ReadOnlyCollection<ProgramFocusSummary>(BuildProgramSummaries(materializedFocusSegments));
     }
 
     public Guid ProjectId { get; }
@@ -46,7 +76,13 @@ public sealed class ProjectTimerRecord
 
     public DateTimeOffset EndedAt { get; }
 
-    public TimeSpan WallClockDuration => EndedAt - StartedAt;
+    public bool UsesWorkSegments { get; }
+
+    public TimeSpan WallClockDuration => UsesWorkSegments
+        ? WorkSegments.Aggregate(TimeSpan.Zero, static (total, segment) => total + segment.Duration)
+        : EndedAt - StartedAt;
+
+    public ReadOnlyCollection<ProjectWorkSegment> WorkSegments { get; }
 
     public ReadOnlyCollection<ProgramFocusSegment> FocusSegments { get; }
 
